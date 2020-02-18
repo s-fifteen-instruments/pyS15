@@ -65,6 +65,8 @@ class PowerMeter():
     def get_power(self, wave_length):
         """Get optical power (Watts).
 
+        It automatically selects the correct range.
+
         Keyword Arguments:
             wave_length {number} -- Wave length of the light in nm
 

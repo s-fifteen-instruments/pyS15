@@ -10,7 +10,7 @@ import numpy as np
 
 
 # Used to search the serial devices for power meters
-DEVICE_IDENTIFIER = 'power meter'
+
 """
 Calibration table for Hamamatsu S5107 [http://qoptics.quantumlah.org/wiki/index.php/Hamamatsu_S5107]
 """
@@ -36,6 +36,9 @@ def volt2power(volt, wave_length, resistance):
 
 class PowerMeter():
     """Module for communicating with the power meter"""
+
+    DEVICE_IDENTIFIER = 'power meter'
+
     def __init__(self, device_path='', resistors=[1e6, 1 / (1 / 110e3 + 1 / 1e6), 10e3, 1e3, 20]):
         # if no path is indicated it tries to init the first power_meter device
         self._resistors = resistors

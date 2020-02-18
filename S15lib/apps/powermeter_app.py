@@ -7,8 +7,8 @@ import PyQt5
 
 from datetime import datetime
 import time
-from S15lib.devices import powermeter
-from S15lib.devices import serialconnection
+from S15lib.instruments import powermeter
+from S15lib.instruments import serialconnection
 
 PLT_SAMPLES = 500
 

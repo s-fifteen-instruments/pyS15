@@ -62,11 +62,11 @@ class PowerMeter():
         assert type(self._com) is serialconnection.SerialConnection
         return float(self._com._getresponse_1l('VOLT?'))
 
-    def get_power(self, wave_length=780):
+    def get_power(self, wave_length):
         """Get optical power (Watts).
 
         Keyword Arguments:
-            wave_length {number} -- Wave length of the light (default: 780)
+            wave_length {number} -- Wave length of the light in nm
 
         Returns:
             (number) -- optical power in Watt
@@ -94,13 +94,13 @@ class PowerMeter():
             break
         return volt2power(volt, wave_length, self._resistors[range - 1])
 
-    def get_avg_power(self, samples=10, wave_length=780):
+    def get_avg_power(self, wave_length, samples=10):
         """Returns the mean and the standard deviation of the optical power
             after sampling it for "samples" times.
 
         Keyword Arguments:
             samples (number) -- number of samples to average from (default: 10)
-            wave_length (number) -- wave length of the light in nm (default: 780)
+            wave_length (number) -- wave length of the light in nm 
 
         Returns:
             (number, number) -- mean and standard deviation of optical power

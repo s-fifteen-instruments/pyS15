@@ -20,7 +20,7 @@ Open a command-line terminal, go into the repository folder and type
 ### 3 Use a device in your python script
 Here an example to use the s-fivteen power meter:
 
-    from S15lib.devices import PowerMeter
+    from S15lib.instruments import PowerMeter
     pm_dev = PowerMeter('/dev/seriabl/by-id/....')
     wave_length = 780 # impending light on the power meter has a wavelength of 780 nm
     optical_power = pm_dev.get_power(wave_length)
@@ -29,5 +29,15 @@ Here an example to use the s-fivteen power meter:
     print(op, op_std)
     
  ### 4 Use a device app
- The apps folder contains graphical user interfaces for s-fifteen devices.
+ The apps folder contains graphical user interfaces (GUI) for s-fifteen devices.
  Those with plotting features require PyQt5 and pyqtgraph (install them with:  pip install PyQt5, pyqtgraph).
+ 
+ The GUIs can be started by 
+ 
+     from S15lib.apps import powermeter_app
+     powermeter_app.main()
+  
+ or by downloading them from https://github.com/s-fifteen-instruments/pyS15/tree/master/S15lib/apps and then starting them with
+ 
+    python an_app.py
+ 

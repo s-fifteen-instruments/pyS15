@@ -8,6 +8,6 @@ setuptools.setup(
     author='https://s-fifteen.com/',
     author_email='',
     license='MIT',
-    packages=["S15lib", "S15apps", "S15lib.devices"],
+    packages=setuptools.find_packages(),
     install_requires=['pyserial', 'numpy'],
 )

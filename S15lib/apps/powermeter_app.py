@@ -89,7 +89,7 @@ class MainWindow(QMainWindow):
 
         # Device selection drop down
         dev_list = serialconnection.search_for_serial_devices(
-            powermeter.DEVICE_IDENTIFIER)
+            powermeter.PowerMeter.DEVICE_IDENTIFIER)
         self.comboBox = QtGui.QComboBox()
         self.comboBox.addItems(dev_list)
         # self.comboBox.setStyleSheet("font-size: 20px;height:30px");

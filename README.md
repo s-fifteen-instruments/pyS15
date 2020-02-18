@@ -6,15 +6,16 @@ S15lib is a python package to control [s-fifteen instruments](https://s-fifteen.
 - [pip](https://pypi.org/project/pip/) installed (Already installed if you are using Python 2 >=2.7.9 or Python 3 >=3.4)
 
 ### 2 Install S15lib
-Clone or download https://github.com/s-fifteen-instruments/pyS15.git.
+Install the package directly with
+ 
+    pip install git+https://github.com/s-fifteen-instruments/pyS15.git
 
+Alternatively you can clone or download the package from https://github.com/s-fifteen-instruments/pyS15.git.
 Open a command-line terminal, go into the repository folder and type
   
     pip install -e .
     
-Or install directly with
- 
-    pip install git+https://github.com/s-fifteen-instruments/pyS15.git
+
     
 ### 3 Use a device in your python script
 Here an example to use the s-fivteen power meter:

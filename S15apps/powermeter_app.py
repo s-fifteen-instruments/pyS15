@@ -40,7 +40,7 @@ class DataLoggingThread(QThread):
         pm_dev = powermeter.PowerMeter(self.device_path)
 
         while (now - start) < self.tot_time and self.stop_flag() is False:
-            pwr, pwr_std = pm_dev.get_avg_power(10, self.wave_length)
+            pwr, pwr_std = pm_dev.get_avg_power(self.wave_length, 15)
             time.sleep(1 / self.sampling_rate)
             now = time.time()
             self.signal.emit(pwr)
@@ -244,7 +244,7 @@ class MainWindow(QMainWindow):
         self.data_line = self.graphWidget.plot(self.x, self.y, pen=pen)
 
     def update_plot_data(self):
-        pwr, _ = self._pm_dev.get_avg_power(10, self._wave_length)
+        pwr, _ = self._pm_dev.get_avg_power(self._wave_length, 10)
         if len(self.x) == PLT_SAMPLES:
             self.x = self.x[1:]
             self.x.append(self.x[-1] + 1)

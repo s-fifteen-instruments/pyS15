@@ -1,4 +1,4 @@
-# S-fifteen python library
+# s-fifteen python library
 S15lib is a python package to control [s-fifteen instruments](https://s-fifteen.com/).
 
 ### 1 Requirements

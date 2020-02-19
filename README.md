@@ -21,7 +21,7 @@ Open a command-line terminal, go into the repository folder and type
 Here an example to use the s-fivteen power meter:
 
     from S15lib.instruments import PowerMeter
-    pm_dev = PowerMeter('/dev/seriabl/by-id/....')
+    pm_dev = PowerMeter('/dev/serial/by-id/....')
     wave_length = 780 # impending light on the power meter has a wavelength of 780 nm
     optical_power = pm_dev.get_power(wave_length)
     print(optical_power)

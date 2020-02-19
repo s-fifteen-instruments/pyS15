@@ -12,7 +12,6 @@ from S15lib.instruments import serialconnection
 
 PLT_SAMPLES = 500
 
-
 def convert_to_pwr_string(pwr):
     if pwr < 1e-3:
         return "{:06.2f} \u03BCW".format(pwr * 1e6)
@@ -43,8 +42,6 @@ class DataLoggingThread(QThread):
         except IOError:
             f = open(self.file_name, 'w')
             f.write('#time_stamp,power(Watt)\n')
-
-
         while (now - start) < self.tot_time and self.stop_flag() is False:
             pwr = pm_dev.get_power(self.wave_length)
             time.sleep(1 / self.sampling_rate)
@@ -54,7 +51,6 @@ class DataLoggingThread(QThread):
                 write_str = '{},{}\n'.format(
                     datetime.now().isoformat(), pwr)
                 f.write(write_str)
-
         self.signal_thread_finished.emit('Finished logging')
 
 
@@ -118,6 +114,7 @@ class MainWindow(QMainWindow):
         self.stopLoggin_buton = QtGui.QPushButton('Stop logging')
         self.startLoggin_button.clicked.connect(self.on_clicked_start_log)
         self.startLoggin_button.setEnabled(False)
+        # self.startLoggin_button.setAlignment(PyQt5.QtCore.Qt.AlignTop)
         self.logfile_button.clicked.connect(self.file_save)
         self.log_tot_time = QtGui.QSpinBox()
         self.log_sample_rate = QtGui.QSpinBox()
@@ -148,7 +145,7 @@ class MainWindow(QMainWindow):
         self.grid.addWidget(self.log_tot_time, 1, 3, 1, 1)
         self.grid.addWidget(label_sample_rate, 2, 2, 1, 1)
         self.grid.addWidget(self.log_sample_rate, 2, 3, 1, 1)
-        self.grid.addWidget(self.startLoggin_button, 3, 2, 1, 1)
+        self.grid.addWidget(self.startLoggin_button, 3, 2, 1, 1, alignment=PyQt5.QtCore.Qt.AlignTop)
         self.grid.addWidget(self.curr_power_label, 3, 0, 1, 2)
         self.grid.addWidget(self.graphWidget, 4, 0, 1, 5)
 

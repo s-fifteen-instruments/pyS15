@@ -38,22 +38,23 @@ class DataLoggingThread(QThread):
         start = time.time()
         now = start
         pm_dev = powermeter.PowerMeter(self.device_path)
+        try:
+            open(self.file_name)
+        except IOError:
+            f = open(self.file_name, 'w')
+            f.write('#time_stamp,power(Watt)\n')
+
 
         while (now - start) < self.tot_time and self.stop_flag() is False:
             pwr = pm_dev.get_power(self.wave_length)
             time.sleep(1 / self.sampling_rate)
             now = time.time()
             self.signal.emit(pwr)
-            try:
-                f = open(self.file_name)
-            except IOError:
-                f = open(self.file_name, 'w')
-                f.write('#time_stamp,power(Watt)\n')
-            finally:
-                with open(self.file_name, 'a+') as f:
-                    write_str = '{},{}\n'.format(
-                        datetime.now().isoformat(), pwr)
-                    f.write(write_str)
+            with open(self.file_name, 'a+') as f:
+                write_str = '{},{}\n'.format(
+                    datetime.now().isoformat(), pwr)
+                f.write(write_str)
+
         self.signal_thread_finished.emit('Finished logging')
 
 

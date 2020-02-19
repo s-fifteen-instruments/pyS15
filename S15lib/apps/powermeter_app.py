@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
         self.live_refresh_rate.setRange(1, 15)
         self.live_refresh_rate.setValue(10)
         self.live_refresh_rate.valueChanged.connect(self.update_refresh_rate)
-        refresh_rate_label = QtGui.QLabel('Refresh rate (1/s):')
+        refresh_rate_label = QtGui.QLabel('Plot refresh rate (1/s):')
 
 
         # Grid

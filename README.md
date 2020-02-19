@@ -30,7 +30,7 @@ Here an example to use the s-fivteen power meter:
     
  ### 4 Use a device app
  The apps folder contains graphical user interfaces (GUI) for s-fifteen devices.
- Those with plotting features require PyQt5 and pyqtgraph (install them with:  pip install PyQt5, pyqtgraph).
+ Those with plotting features __require PyQt5 and pyqtgraph__ (install them with:  pip install PyQt5, pyqtgraph).
  
  The GUIs can be started by 
  

@@ -40,7 +40,7 @@ class DataLoggingThread(QThread):
         pm_dev = powermeter.PowerMeter(self.device_path)
 
         while (now - start) < self.tot_time and self.stop_flag() is False:
-            pwr, pwr_std = pm_dev.get_avg_power(self.wave_length, 15)
+            pwr = pm_dev.get_power(self.wave_length)
             time.sleep(1 / self.sampling_rate)
             now = time.time()
             self.signal.emit(pwr)
@@ -48,11 +48,11 @@ class DataLoggingThread(QThread):
                 f = open(self.file_name)
             except IOError:
                 f = open(self.file_name, 'w')
-                f.write('#time_stamp,power(Watt),power_standard_deviation(Watt)\n')
+                f.write('#time_stamp,power(Watt)\n')
             finally:
                 with open(self.file_name, 'a+') as f:
-                    write_str = '{},{},{}\n'.format(
-                        datetime.now().isoformat(), pwr, pwr_std)
+                    write_str = '{},{}\n'.format(
+                        datetime.now().isoformat(), pwr)
                     f.write(write_str)
         self.signal_thread_finished.emit('Finished logging')
 
@@ -124,6 +124,12 @@ class MainWindow(QMainWindow):
         self.log_tot_time.setValue(10)
         self.log_sample_rate.setRange(0, 200)
         self.log_sample_rate.setValue(10)
+        self.live_refresh_rate = QtGui.QSpinBox()
+        self.live_refresh_rate.setRange(1, 15)
+        self.live_refresh_rate.setValue(10)
+        self.live_refresh_rate.valueChanged.connect(self.update_refresh_rate)
+        refresh_rate_label = QtGui.QLabel('Refresh rate (1/s):')
+
 
         # Grid
         self.grid = QGridLayout()
@@ -132,8 +138,9 @@ class MainWindow(QMainWindow):
         self.grid.addWidget(self.button, 0, 0, 1, 1)
         self.grid.addWidget(self.wavelength_label, 1, 0, 1, 1)
         self.grid.addWidget(self.wavelength_spinBox, 1, 1, 1, 1)
-        self.grid.addWidget(self.curr_power_label, 3, 0, 1, 2)
-        self.grid.addWidget(self.graphWidget, 4, 0, 1, 5)
+        self.grid.addWidget(refresh_rate_label, 2, 0, 1,1)
+        self.grid.addWidget(self.live_refresh_rate, 2, 1, 1, 1)
+        
         self.grid.addWidget(self.logfile_button, 0, 2, 1, 1)
         self.grid.addWidget(self.label_logfile, 0, 3, 1, 2)
         self.grid.addWidget(label_tot_time, 1, 2, 1, 1)
@@ -141,6 +148,9 @@ class MainWindow(QMainWindow):
         self.grid.addWidget(label_sample_rate, 2, 2, 1, 1)
         self.grid.addWidget(self.log_sample_rate, 2, 3, 1, 1)
         self.grid.addWidget(self.startLoggin_button, 3, 2, 1, 1)
+        self.grid.addWidget(self.curr_power_label, 3, 0, 1, 2)
+        self.grid.addWidget(self.graphWidget, 4, 0, 1, 5)
+
 
         # Create widget
         self.widget = QWidget()
@@ -175,9 +185,12 @@ class MainWindow(QMainWindow):
     def update_wavelength(self):
         self._wave_length = self.wavelength_spinBox.value()
 
+    def update_refresh_rate(self):
+        self.timer.setInterval(int(1/self.live_refresh_rate.value()*1e3))
+
     def file_save(self):
         default_filetype = 'csv'
-        start = datetime.now().strftime('%Y%m%d') + 'powermeter.' + default_filetype
+        start = datetime.now().strftime('%Y%m%d_%Hh%Mm%Ss') + '_powermeter.' + default_filetype
         self._logfile_name = QtGui.QFileDialog.getSaveFileName(
             self, 'Save to log file', start)[0]
         self.label_logfile.setText(self._logfile_name)

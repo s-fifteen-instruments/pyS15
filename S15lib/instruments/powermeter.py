@@ -37,7 +37,7 @@ def volt2power(volt, wave_length, resistance):
 class PowerMeter():
     """Module for communicating with the power meter"""
 
-    DEVICE_IDENTIFIER = 'power meter'
+    DEVICE_IDENTIFIER = 'OPM'
 
     def __init__(self, device_path='', resistors=[1e6, 1 / (1 / 110e3 + 1 / 1e6), 10e3, 1e3, 20]):
         # if no path is indicated it tries to init the first power_meter device

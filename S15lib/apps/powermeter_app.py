@@ -8,7 +8,7 @@ import PyQt5
 from datetime import datetime
 import time
 from S15lib.instruments import powermeter
-from S15lib.instruments import serialconnection
+from S15lib.instruments import serial_connection
 
 PLT_SAMPLES = 500
 
@@ -85,7 +85,7 @@ class MainWindow(QMainWindow):
         self.draw_plot()
 
         # Device selection drop down
-        dev_list = serialconnection.search_for_serial_devices(
+        dev_list = serial_connection.search_for_serial_devices(
             powermeter.PowerMeter.DEVICE_IDENTIFIER)
         self.comboBox = QtGui.QComboBox()
         self.comboBox.addItems(dev_list)
@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
         # wavelength selection
         self.wavelength_label = QtGui.QLabel(self.tr("wave length (nm):"))
         self.wavelength_spinBox = QtGui.QSpinBox()
-        self.wavelength_spinBox.setRange(400, 900)
+        self.wavelength_spinBox.setRange(400, 1800)
         self.wavelength_spinBox.setValue(780)
         self.wavelength_spinBox.valueChanged.connect(self.update_wavelength)
 

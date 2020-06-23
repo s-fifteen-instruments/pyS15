@@ -32,8 +32,8 @@ def search_for_serial_devices(device):
     result = []
     for port in ports:
         try:
-            s = serial.Serial(port, timeout=0.1)
-            s.write(b'*idn?\n')
+            s = serial.Serial(port, timeout=1)
+            s.write(b'*idn?\r\n')
             id_str = (s.readline()).decode()
             s.close()
             if device in id_str:
@@ -41,7 +41,6 @@ def search_for_serial_devices(device):
         except (OSError, serial.SerialException):
             pass
     return result
-
 
 
 class SerialConnection(serial.Serial):
@@ -56,7 +55,7 @@ class SerialConnection(serial.Serial):
         It requires the full path to the serial device as arguments
         """
         try:
-            super(SerialConnection, self).__init__(device_path, timeout=0.1)
+            super(SerialConnection, self).__init__(device_path, timeout=1)
         except SerialException:
             print('Connection failed')
         self._reset_buffers()
@@ -96,10 +95,10 @@ class SerialConnection(serial.Serial):
         :rtype: {string}
         """
         self._cleanup()
-        self.write((cmd + '\n').encode())
+        self.write((cmd + '\r\n').encode())
         return [k.decode().strip() for k in self.readlines()]
 
-    def _getresponse_1l(self, cmd, timeout=.5):
+    def _getresponse_1l(self, cmd, timeout=1):
         """
         Send commands and reads a single line as response from the device.
 
@@ -116,7 +115,7 @@ class SerialConnection(serial.Serial):
         :rtype: {string}
         """
         self._cleanup()
-        self.write((cmd + '\n').encode())
+        self.write((cmd + '\r\n').encode())
         t_start = time.time()
         while True:
             if self.inWaiting() > 0:
@@ -124,6 +123,21 @@ class SerialConnection(serial.Serial):
             if time.time() > t_start + timeout:
                 raise serial.SerialTimeoutException('Command timeout')
         return self.readline().decode().strip()
+
+    def _stream_response_into_buffer(self, cmd: str, acq_time: float):
+        # this function bypass the termination character (since there is none for timestamp mode), 
+        # streams data from device for the integration time.
+        self._reset_buffers()
+        self.write((cmd + '\r\n').encode())
+        memory = b''
+        time0 = time.time()
+        # Stream data for duration of integration time plus some delay set in usbcount_class.
+        while ((time.time() - time0) <= acq_time):
+            Buffer_length = self.in_waiting
+            memory = memory + self.read(Buffer_length)
+        Rlength = len(memory)
+        print(str(Rlength) + " Bytes Recorded")
+        return memory
 
     def help(self):
         """

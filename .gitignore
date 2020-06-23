@@ -1,2 +1,9 @@
 
 .DS_Store
+S15lib/__pycache__/__init__.cpython-38.pyc
+*.pyc
+S15lib.egg-info/dependency_links.txt
+S15lib.egg-info/PKG-INFO
+S15lib.egg-info/requires.txt
+S15lib.egg-info/SOURCES.txt
+S15lib.egg-info/top_level.txt

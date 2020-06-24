@@ -22,7 +22,17 @@ from tempfile import NamedTemporaryFile
 
 from . import serial_connection
 
-READEVENTS_PROG = expanduser("~")+"/programs/usbcntfpga/apps/readevents4a"
+READEVENTS_PROG = expanduser("~") + "/programs/usbcntfpga/apps/readevents4a"
+
+
+def pattern_to_channel(pattern):
+    if pattern == 4:
+        return 3
+    elif pattern == 8:
+        return 4
+    elif pattern == 1 or pattern == 2 or pattern == 0:
+        return pattern
+
 
 class TimeStampTDC1(object):
     """
@@ -69,42 +79,40 @@ class TimeStampTDC1(object):
         self._acc_correction()
         self._int_time = integration_time
 
-
     @property
     def int_time(self):
         """
         Controls the integration time set in the counter
 
-        :getter: returns integration time in ms
+        :getter: returns integration time in seconds
         :setter: Set integration
-        :param value: integration time in ms
+        :param value: integration time in seconds
         :type value: int
-        :returns: integration time in ms
+        :returns: integration time in seconds
         :rtype: int
         """
         self._int_time = int(self._com._getresponse_1l('TIME?'))
-        return self._int_time
+        return self._int_time / 1000
 
     @int_time.setter
     def int_time(self, value: float):
+        value *= 1000
         if value < 1:
             print('Invalid integration time.')
         else:
             self._com.write('time {:d};time?\r\n'.format(int(value)).encode())
             self._int_time = int(self._com.readline().decode().strip())
 
-
-    def counts(self):
+    def get_singles(self):
         """
         Return the actual number of count read from the device buffer.
         :return: a three-element array
         :rtype: {int}
         """
-        if self._mode == 3:
-            self.mode = 'singles'
-        return [int(x) 
-                for x 
-                in self._com._getresponse_1l('counts?', self._int_time + 0.05).split()]
+        # self.mode = 'singles'
+        return [int(x)
+                for x
+                in self._com._getresponse_1l('singles;counts?', self._int_time + 0.05).split()]
 
     @property
     def mode(self):
@@ -227,10 +235,10 @@ class TimeStampTDC1(object):
         self._binwidth = int(value)
         self._g2bins_setter()
 
-
     def _acc_correction(self):
         try:
-            self._acc_corr = ((self._t_max - self._t_min) / (self._acc_t_max - self._acc_t_min))
+            self._acc_corr = ((self._t_max - self._t_min) /
+                              (self._acc_t_max - self._acc_t_min))
         except ZeroDivisionError:
             self._acc_corr = 1
 
@@ -260,45 +268,49 @@ class TimeStampTDC1(object):
         self._g2bins_setter()
         self._acc_correction()
 
-    def get_timestamps(self, t_acq: float=1000) -> Tuple[list, list]:
+    def get_timestamps(self, t_acq: float=1, level: str= 'NIM') -> Tuple[list, list]:
         '''Acquires timestamps and returns 2 lists. The first one containing the time and the second
         the event channel. 
-        
-        Keyword Arguments:
-            t_acq {float} -- Duration of the the timestamp acquisition in milliseconds (default: {1000})
-        '''
-        buffer = self._com._stream_response_into_buffer('TIME '+str(t_acq)+';TIMESTAMP;COUNTS?', t_acq)
 
-        # buffer contains the timestamp information in binary. 
+        Keyword Arguments:
+            t_acq {float} -- Duration of the the timestamp acquisition in seconds (default: {1})
+        '''
+        buffer = self._com._stream_response_into_buffer(
+            '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
+
+        # buffer contains the timestamp information in binary.
         # We need to convert them into time and identify the event channel.
         # each timestamp is 32 bits long.
-        t = []
-        channel = []
-        ts_length = 32
-        periode_duration = 2**28 * 2 # in nano seconds
+        ts_list = []
+        event_channel_list = []
+        ts_length = 32 / 8  # bits
+        periode_duration = 2**28 * 2  # in nano seconds
         periode_counter = 0
-        for i in range(0, len(buffer), ts_length):
-            time_stamp = buffer[i:i+ts_length]
-            if time_stamp[27] == 1: # a periode passed, indicated by bit 28
-                periode_counter += 1
-            time = int(time_stamp[0:27], base=2) * 2
-            pattern = int(time_stamp, base=2) & 0xf
-            if pattern == 4:
-                tmp_channel = 3
-            if pattern == 8:
-                tmp_channel = 4
-            if pattern == 1 or pattern == 2:
-                tmp_channel = pattern
-            if pattern != 0:
-                t.append(time + periode_counter * periode_duration)
-                channel.append(tmp_channel)
-        
 
-                
+        bytes_hex = buffer[::-1].hex()
+        ts_word_list = [int(bytes_hex[i:i + 8], 16)
+                        for i in range(0, len(bytes_hex), 8)][::-1]
 
-            
+        ts_list = []
+        event_channel_list = []
+        periode_count = 0
+        periode_duration = 1 << 27
+        prev_ts = -1
+        for ts_word in ts_word_list:
+            time_stamp = ts_word >> 5
+            pattern = ts_word & 0x1f
+            if prev_ts != -1 and \
+                    (time_stamp < prev_ts or ((prev_pattern & 0x10) == 0 and time_stamp == 67112824)):
+                periode_count += 1
+            prev_ts = time_stamp
+            prev_pattern = pattern
+            if (pattern & 0x10) == 0:
+                ts_list.append(time_stamp + periode_duration * periode_count)
+                event_channel_list.append(pattern_to_channel(pattern & 0xf))
 
-
+        ts_list = np.array(ts_list) * 2
+        event_channel_list = np.array(event_channel_list)
+        return ts_list, event_channel_list
 
     def count_g2(self, t_acq):
         """Returns pairs and singles counts from usbcounter timestamp data.
@@ -314,19 +326,34 @@ class TimeStampTDC1(object):
         """
 
         # open a temporary file to store the processed g2
-        with NamedTemporaryFile() as f_raw:
-            self._timestamp_acq(t_acq, f_raw)
-            f_raw.seek(0)
-            g2, t_bins, s1, s2, time_total = g2lib.g2_extr(f_raw.name,
-                                                           bins=self._maxbins,
-                                                   bin_width=self._binwidth)
-        # calculates the pairs from the processed g2
-        pairs = np.sum(g2 * self._mask_coinc)
+        if self._use_native_timestamps_acq is False:
+            with NamedTemporaryFile() as f_raw:
+                self._timestamp_acq(t_acq, f_raw)
+                f_raw.seek(0)
+                g2, t_bins, s1, s2, time_total = g2lib.g2_extr(f_raw.name,
+                                                               bins=self._maxbins,
+                                                               bin_width=self._binwidth)
+            # calculates the pairs from the processed g2
+            pairs = np.sum(g2 * self._mask_coinc)
 
-        # estimates accidentals for the integration time-window
-        acc = np.sum(g2 * self._mask_acc) * self._acc_corr
-        return {'channel1': s1, 'channel2': s2, 'pairs': pairs,
-                'accidentals': acc, 'total_time': time_total}, t_bins, g2
+            # estimates accidentals for the integration time-window
+            acc = np.sum(g2 * self._mask_acc) * self._acc_corr
+            return {'channel1': s1, 'channel2': s2, 'pairs': pairs,
+                    'accidentals': acc, 'total_time': time_total}, t_bins, g2
+        else:
+            print('use python readevents')
+            bins = 500
+            bin_width = 2
+            t, channel = self.get_timestamps(t_acq)
+            # print(channel)
+            t_ch1 = t[channel == 1]
+            t_ch2 = t[channel == 2]
+            histo = g2lib.delta_loop(
+                t_ch1, t_ch2, bins=bins, bin_width=bin_width)
+            total_time = t[-1]
+            return {'channel1': len(t_ch1),
+                    'channel2': len(t_ch2),
+                    'total_time': total_time}, np.arange(0, bins * bin_width, bin_width), histo
 
 
 if __name__ == '__main__':

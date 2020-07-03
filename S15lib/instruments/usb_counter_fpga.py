@@ -299,11 +299,10 @@ class TimeStampTDC1(object):
         for ts_word in ts_word_list:
             time_stamp = ts_word >> 5
             pattern = ts_word & 0x1f
-            if prev_ts != -1 and \
-                    (time_stamp < prev_ts or ((prev_pattern & 0x10) == 0 and time_stamp == 67112824)):
+            if prev_ts != -1 and time_stamp < prev_ts:
                 periode_count += 1
             prev_ts = time_stamp
-            prev_pattern = pattern
+            # prev_pattern = pattern
             if (pattern & 0x10) == 0:
                 ts_list.append(time_stamp + periode_duration * periode_count)
                 event_channel_list.append(pattern_to_channel(pattern & 0xf))

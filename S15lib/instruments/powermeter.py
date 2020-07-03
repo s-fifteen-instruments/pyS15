@@ -33,41 +33,42 @@ Responsivity (A/W) table for Thorlabs FDG50, which is a Ge photo diode.
 This table was provided by Thorlabs and represents typical values.
 These values can vary slightly depending on reverse bias voltage, temperature, and production lot.
 """
-wl_FDG50 = [ 800.,  810.,  820.,  830.,  840.,  850.,  860.,  870.,  880.,
-        890.,  900.,  910.,  920.,  930.,  940.,  950.,  960.,  970.,
-        980.,  990., 1000., 1010., 1020., 1030., 1040., 1050., 1060.,
-       1070., 1080., 1090., 1100., 1110., 1120., 1130., 1140., 1150.,
-       1160., 1170., 1180., 1190., 1200., 1210., 1220., 1230., 1240.,
-       1250., 1260., 1270., 1280., 1290., 1300., 1310., 1320., 1330.,
-       1340., 1350., 1360., 1370., 1380., 1390., 1400., 1410., 1420.,
-       1430., 1440., 1450., 1460., 1470., 1480., 1490., 1500., 1510.,
-       1520., 1530., 1540., 1550., 1560., 1570., 1580., 1590., 1600.,
-       1610., 1620., 1630., 1640., 1650., 1660., 1670., 1680., 1690.,
-       1700., 1710., 1720., 1730., 1740., 1750., 1760., 1770., 1780.,
-       1790., 1800.]
+wl_FDG50 = [800., 810., 820., 830., 840., 850., 860., 870., 880.,
+            890., 900., 910., 920., 930., 940., 950., 960., 970.,
+            980., 990., 1000., 1010., 1020., 1030., 1040., 1050., 1060.,
+            1070., 1080., 1090., 1100., 1110., 1120., 1130., 1140., 1150.,
+            1160., 1170., 1180., 1190., 1200., 1210., 1220., 1230., 1240.,
+            1250., 1260., 1270., 1280., 1290., 1300., 1310., 1320., 1330.,
+            1340., 1350., 1360., 1370., 1380., 1390., 1400., 1410., 1420.,
+            1430., 1440., 1450., 1460., 1470., 1480., 1490., 1500., 1510.,
+            1520., 1530., 1540., 1550., 1560., 1570., 1580., 1590., 1600.,
+            1610., 1620., 1630., 1640., 1650., 1660., 1670., 1680., 1690.,
+            1700., 1710., 1720., 1730., 1740., 1750., 1760., 1770., 1780.,
+            1790., 1800.]
 
 responsivity_FDG50 = [0.22508, 0.24665, 0.26523, 0.26213, 0.26513, 0.27525, 0.29272,
-       0.30612, 0.29395, 0.29197, 0.31639, 0.34314, 0.33874, 0.35345,
-       0.36875, 0.375  , 0.3837 , 0.39427, 0.41518, 0.42412, 0.43576,
-       0.43922, 0.45196, 0.46431, 0.4764 , 0.48833, 0.49845, 0.51611,
-       0.52045, 0.5321 , 0.54247, 0.54571, 0.55472, 0.5618 , 0.56882,
-       0.5811 , 0.58872, 0.60078, 0.60694, 0.6187 , 0.62561, 0.63318,
-       0.64138, 0.64911, 0.65293, 0.65686, 0.66692, 0.67623, 0.68537,
-       0.69418, 0.71071, 0.70957, 0.71724, 0.72821, 0.72881, 0.73514,
-       0.73725, 0.70826, 0.74667, 0.72364, 0.74545, 0.75398, 0.76239,
-       0.78291, 0.78974, 0.8    , 0.82617, 0.81905, 0.82667, 0.83774,
-       0.84074, 0.85138, 0.85405, 0.87207, 0.87857, 0.87788, 0.86667,
-       0.8386 , 0.78947, 0.7193 , 0.64561, 0.59115, 0.54513, 0.51071,
-       0.48288, 0.45018, 0.42606, 0.40636, 0.37981, 0.35736, 0.33524,
-       0.31423, 0.29608, 0.2788 , 0.25818, 0.24016, 0.22004, 0.20042,
-       0.18139, 0.16173, 0.14279]
+                      0.30612, 0.29395, 0.29197, 0.31639, 0.34314, 0.33874, 0.35345,
+                      0.36875, 0.375, 0.3837, 0.39427, 0.41518, 0.42412, 0.43576,
+                      0.43922, 0.45196, 0.46431, 0.4764, 0.48833, 0.49845, 0.51611,
+                      0.52045, 0.5321, 0.54247, 0.54571, 0.55472, 0.5618, 0.56882,
+                      0.5811, 0.58872, 0.60078, 0.60694, 0.6187, 0.62561, 0.63318,
+                      0.64138, 0.64911, 0.65293, 0.65686, 0.66692, 0.67623, 0.68537,
+                      0.69418, 0.71071, 0.70957, 0.71724, 0.72821, 0.72881, 0.73514,
+                      0.73725, 0.70826, 0.74667, 0.72364, 0.74545, 0.75398, 0.76239,
+                      0.78291, 0.78974, 0.8, 0.82617, 0.81905, 0.82667, 0.83774,
+                      0.84074, 0.85138, 0.85405, 0.87207, 0.87857, 0.87788, 0.86667,
+                      0.8386, 0.78947, 0.7193, 0.64561, 0.59115, 0.54513, 0.51071,
+                      0.48288, 0.45018, 0.42606, 0.40636, 0.37981, 0.35736, 0.33524,
+                      0.31423, 0.29608, 0.2788, 0.25818, 0.24016, 0.22004, 0.20042,
+                      0.18139, 0.16173, 0.14279]
 
 
-def volt2power(volt: float, wave_length:int, resistance: float) -> float:
+def volt2power_HamamatsuS5107(volt: float, wave_length: float, resistance: float) -> float:
     alpha = np.interp(wave_length, wl, eff)
     return volt / resistance / alpha
 
-def volt2power_FDG50(volt: float, wave_length: int, resistance: float) -> float:
+
+def volt2power_FDG50(volt: float, wave_length: float, resistance: float) -> float:
     '''
     Voltage to optical power conversion for Thorlabs FDG50
     '''
@@ -86,9 +87,16 @@ class PowerMeter():
         if device_path == '':
             device_path = (serial_connection.search_for_serial_devices(
                 self.DEVICE_IDENTIFIER))[0]
-            print('Connected to',  device_path)
+            print('Connected to', device_path)
         self._device_path = device_path
         self._com = serial_connection.SerialConnection(device_path)
+        self._identity = self._com._getresponse_1l('*idn?')
+        # check for diode type in the device identifier
+        if 'OPMGE' in self._identity:
+        	self._volt2power = volt2power_FDG50
+        elif 'OPM' in self._identity:
+        	self._volt2power = volt2power_HamamatsuS5107
+
 
     def reset(self):
         '''Resets the device.
@@ -138,9 +146,9 @@ class PowerMeter():
                     self.range = range = range - 1
             else:
                 break
-        return volt2power(volt, wave_length, self._resistors[range - 1])
+        return self._volt2power(volt, wave_length, self._resistors[range - 1])
 
-    def get_avg_power(self, wave_length: int, samples: int=10) -> Tuple[float, float]:
+    def get_avg_power(self, wave_length: float, samples: int=10) -> Tuple[float, float]:
         """Returns the mean and the standard deviation of the optical power
             after sampling it for "samples" times.
 
@@ -157,7 +165,7 @@ class PowerMeter():
         return np.mean(avg_value), np.std(avg_value)
 
     @property
-    def range(self):
+    def range(self) -> int:
         return int(self._com._getresponse_1l('RANGE?'))
 
     @range.setter
@@ -166,14 +174,11 @@ class PowerMeter():
         self._com.write(cmd)
 
     @property
-    def serial_number(self):
-        return self._com._getresponse_1l('*idn?')
+    def identity(self) -> str:
+        return self._identity
 
-    @serial_number.setter
-    def serial_number(self, value):
-        print('Serial number can not be changed.')
 
-    def help(self):
+    def help(self) -> str:
         return self._com.help()
 
 

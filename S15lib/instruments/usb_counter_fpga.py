@@ -100,7 +100,6 @@ class TimeStampTDC1(object):
         :return: a three-element array
         :rtype: {int}
         """
-        # self.mode = 'singles'
         return [int(x)
                 for x
                 in self._com._getresponse_1l('singles;counts?', self._int_time + 0.05).split()]
@@ -153,12 +152,11 @@ class TimeStampTDC1(object):
         self._com.write('REFCLK {}\r\n'.format(value).encode())
 
     """ Functions for the timestamp mode"""
-
     def _timestamp_acq(self, t_acq, out_file_buffer):
         """ Write the binary output to a buffer"""
         if self._mode != 3:
             self.mode = 'timestamp'
-        # for short acquisition times (<65 s) we can reply on the FPGA timer
+        # for short acquisition times (<65 s) we can rely on the FPGA timer
         if t_acq > 65:
             self._timestamp_acq_LT(t_acq, out_file_buffer)
         else:
@@ -228,7 +226,6 @@ class TimeStampTDC1(object):
             if prev_ts != -1 and time_stamp < prev_ts:
                 periode_count += 1
             prev_ts = time_stamp
-            # prev_pattern = pattern
             if (pattern & 0x10) == 0:
                 ts_list.append(time_stamp + periode_duration * periode_count)
                 event_channel_list.append(pattern_to_channel(pattern & 0xf))
@@ -269,7 +266,6 @@ class TimeStampTDC1(object):
                     'channel2': s2, 
                     'total_time': time_total}, t_bins, g2
         else:
-            print('use python readevents')
             bins = 500
             bin_width = 2
             t, channel = self.get_timestamps(t_acq)

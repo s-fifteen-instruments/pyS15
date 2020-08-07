@@ -138,7 +138,6 @@ class SerialConnection(serial.Serial):
             Buffer_length = self.in_waiting
             memory = memory + self.read(Buffer_length)
         Rlength = len(memory)
-        print(str(Rlength) + " Bytes Recorded")
         return memory
 
     def help(self):

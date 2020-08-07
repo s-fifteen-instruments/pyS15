@@ -95,7 +95,9 @@ class SerialConnection(serial.Serial):
         :rtype: {string}
         """
         self._cleanup()
+        # self._reset_buffers()
         self.write((cmd + '\r\n').encode())
+        time.sleep(0.01)
         return [k.decode().strip() for k in self.readlines()]
 
     def _getresponse_1l(self, cmd, timeout=1):

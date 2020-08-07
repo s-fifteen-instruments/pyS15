@@ -10,8 +10,6 @@ import numpy as np
 from typing import Tuple
 
 
-# Used to search the serial devices for power meters
-
 """
 Responsivity (A/W) table for Hamamatsu S5107.
 """
@@ -29,9 +27,9 @@ eff_err = [0.002682, 0.003588, 0.00154264, 0.00155408, 0.00109505,
            0.00259518, 0.00247304, 0.0063342]
 
 """
-Responsivity (A/W) table for Thorlabs FDG50, which is a Ge photo diode.
+Responsivity (A/W) table for Thorlabs FDG50, which is a germanium photo diode.
 This table was provided by Thorlabs and represents typical values.
-These values can vary slightly depending on reverse bias voltage, temperature, and production lot.
+These values can vary slightly as they depend on reverse bias voltage, temperature, and production lot.
 """
 wl_FDG50 = [800., 810., 820., 830., 840., 850., 860., 870., 880.,
             890., 900., 910., 920., 930., 940., 950., 960., 970.,

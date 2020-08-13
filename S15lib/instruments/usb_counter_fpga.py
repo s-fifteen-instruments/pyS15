@@ -295,7 +295,7 @@ if __name__ == '__main__':
     fpga.maxbins = 500
     fpga.range = [48, 54]
     fpga.acc_range = [100, 300]
-    output = fpga.counts(5)
+    output = fpga.get_counts(5)
     print(output)
     rate1 = output['channel1'] / output['total_time']
     rate2 = output['channel2'] / output['total_time']

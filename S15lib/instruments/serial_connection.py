@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 General serial device class.
 
@@ -11,7 +9,7 @@ import time
 import sys
 import glob
 
-from serial import SerialException
+# from serial import SerialException
 
 
 def search_for_serial_devices(device):
@@ -56,7 +54,7 @@ class SerialConnection(serial.Serial):
         """
         try:
             super(SerialConnection, self).__init__(device_path, timeout=1)
-        except SerialException:
+        except serial.SerialException:
             print('Connection failed')
         self._reset_buffers()
         self._cleanup()

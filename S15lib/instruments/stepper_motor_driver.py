@@ -19,6 +19,7 @@ class StepperMotorDriver(object):
 
     def init_motor(self, channel: int):
         self._com.write(f'setvolt {channel} 1.5; interpol {channel} 2; setspeed {channel} 170; zero {channel}; on {channel}\r\n'.encode())
+        self._com.write(f'setvolt {channel} 1.5; interpol {channel} 2; setspeed {channel} 170; zero {channel}; on {channel}\r\n'.encode())
 
     def identity(self) -> str:
         # self._com.write(b'*IDN?\r\n')
@@ -32,17 +33,21 @@ class StepperMotorDriver(object):
         Locks the magnet in the stepper motor
         """
         self._com.write('on {0}\r\n'.format(channel).encode('ascii'))
+        self._com.write('on {0}\r\n'.format(channel).encode('ascii'))
 
     def off(self, channel: int):
         """
         Unlocks the magnet in the stepper motor
         """
         self._com.write('off {0}\r\n'.format(channel).encode('ascii'))
+        self._com.write('off {0}\r\n'.format(channel).encode('ascii'))
+
 
     def go(self, channel: int, position: int):
         """
         Go to absolute position
         """
+        self._com.write('go {0} {1}\r\n'.format(channel, position).encode('ascii'))
         self._com.write('go {0} {1}\r\n'.format(channel, position).encode('ascii'))
 
     # def set_voltage(self, channel, voltage):
@@ -59,6 +64,7 @@ class StepperMotorDriver(object):
         """
         Sets current position as zero
         """
+        self._com.write('zero {}\r\n'.format(channel).encode('ascii'))
         self._com.write('zero {}\r\n'.format(channel).encode('ascii'))
 
     def go_wait(self, channel: int, position: int):

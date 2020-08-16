@@ -55,3 +55,5 @@ class SinglePhotonDetector(object):
     @temperature.setter
     def temperature(self, value: float):
         self._com.write('settemp {value}')
+
+

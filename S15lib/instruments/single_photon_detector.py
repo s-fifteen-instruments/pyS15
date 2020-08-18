@@ -34,6 +34,14 @@ class SinglePhotonDetector(object):
         self._com.write(f'hvolt {value}\r\n'.encode())
 
     @property
+    def threshvolt(self) -> float:
+        return float(self._com._getresponse_1l('threshvolt?'))
+
+    @threshvolt.setter
+    def threshvolt(self, value: float):
+        self._com.write(f'threshvolt {value}\r\n'.encode())
+
+    @property
     def time(self) -> float:
         return float(self._com._getresponse_1l('time?'))
 

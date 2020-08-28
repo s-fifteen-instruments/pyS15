@@ -17,17 +17,18 @@ from datetime import datetime
 
 def show_source_properties(dev_path: str = None, logging: bool = True):
     print(dev_path)
-    plt.figure()
-    plt.ion()
     if dev_path is None:
         dev = TimeStampTDC1()
     else:
         dev = TimeStampTDC1(dev_path)
     t_acq = 1
-    dev.mode = 'singles'
-    dev.time= 1
-    print('Singles counts', dev.get_counts())
+    # dev.mode = 'singles'
+    # dev.time= 1
+    # print('Singles counts', dev.get_counts())
     file_time_str = datetime.now().isoformat()
+    plt.figure()
+    hl, = plt.plot([], [], '.-')
+
     # time.sleep(1)
     while True:
         try:
@@ -63,15 +64,18 @@ def show_source_properties(dev_path: str = None, logging: bool = True):
                     log_txt = f'{now},{pair_rate:.0f},{efficiency:.3f},{rate_ch1:.0f},{rate_ch2:.0f},{acc_rate_per_bin:.0f}\n'
                     f.write(log_txt)
 
-            plt.plot(dt, pairs, 'o-')
+            hl.set_xdata(dt)
+            hl.set_ydata(pairs)
+            # plt.plot(dt, pairs, 'o-')
             plt.xlim(-10, 100)
+            plt.ylim(0, np.max(pairs) + 10)
             plt.draw()
-            plt.pause(0.0001)
+            plt.pause(0.01)
             # time.sleep(59)
         except Error:
             print('error')
 
 
 if __name__ == '__main__':
-    show_source_properties('/dev/tty.usbmodemTDC1_00141')
+    show_source_properties('/dev/tty.usbmodemTDC1_00131', False)
 

@@ -42,6 +42,44 @@ class SinglePhotonDetector(object):
         self._com.write(f'threshvolt {value}\r\n'.encode())
 
     @property
+    def constp(self) -> float:
+        return float(self._com._getresponse_1l('constp?'))
+
+    @constp.setter
+    def constp(self, value: float):
+        self._com.write(f'constp {value}\r\n'.encode())
+
+    @property
+    def consti(self) -> float:
+        return float(self._com._getresponse_1l('consti?'))
+
+    @consti.setter
+    def consti(self, value: float):
+        self._com.write(f'consti {value}\r\n'.encode())
+
+    @property
+    def loop(self) -> int:
+        return int(self._com._getresponse_1l('loop?'))
+
+    @loop.setter
+    def loop(self, value: int):
+        self._com.write(f'loop {value}\r\n'.encode())
+
+    @property
+    def pvolt(self) -> float:
+        return float(self._com._getresponse_1l('pvolt?'))
+
+    @pvolt.setter
+    def pvolt(self, value: float):
+        self._com.write(f'pvolt {value}\r\n'.encode())
+
+    def temp_stabilization_on(self):
+        self.loop = 1
+
+    def temp_stabilization_off(self):
+        self.loop = 0
+
+    @property
     def time(self) -> float:
         return float(self._com._getresponse_1l('time?'))
 
@@ -60,8 +98,14 @@ class SinglePhotonDetector(object):
     def temperature(self) -> float:
         return float(self._com._getresponse_1l('temp?'))
 
+    @property
+    def settemperature(self) -> float:
+        return float(self._com._getresponse_1l('settemp?'))
+
+    @settemperature.setter
+    def settemperature(self, value: float):
+        self.temperature = value
+
     @temperature.setter
     def temperature(self, value: float):
-        self._com.write('settemp {value}')
-
-
+        self._com.write(f'settemp {value}\r\n'.encode())

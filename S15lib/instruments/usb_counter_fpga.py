@@ -266,8 +266,6 @@ class TimeStampTDC1(object):
                     'channel2': s2, 
                     'total_time': time_total}, t_bins, g2
         else:
-            bins = 500
-            bin_width = 2
             t, channel = self.get_timestamps(t_acq)
             # print(channel)
             t_ch1 = t[channel == ch_start]

@@ -8,7 +8,7 @@ from . import serial_connection
 
 
 class LCRDriver(object):
-    """Module for communicating with the power meter"""
+    """Module for communicating with the liquid crystal variable phase retarder"""
 
     DEVICE_IDENTIFIER = 'LCD cell driver'
 
@@ -19,6 +19,7 @@ class LCRDriver(object):
                 self.DEVICE_IDENTIFIER))[0]
             print('Connected to', device_path)
         self._com = serial_connection.SerialConnection(device_path)
+        self._com.write(b';')
         self._com._getresponse_1l('*idn?')
 
     def reset(self):
@@ -29,17 +30,11 @@ class LCRDriver(object):
         '''
         return self._com.write(b'*RST')
 
-    def all_channels_on(self, voltage):
-        if voltage < 10:
-            self._com.write(b'ON\r\n')
-            self._com.write(b'DARK\r\n')
-            self._com.write(b'FREQ 2000\r\n')
-            self._com.write((f'AMPLITUDE 1 {voltage}\r\n').encode())
-            self._com.write((f'AMPLITUDE 2 {voltage}\r\n').encode())
-            self._com.write((f'AMPLITUDE 3 {voltage}\r\n').encode())
-            self._com.write((f'AMPLITUDE 4 {voltage}\r\n').encode())
-        else:
-            print('voltage invalid'.format(position))
+    def all_channels_on(self):
+        self._com.write(b'ON\r\n')
+        self._com.write(b'DARK\r\n')
+        self._com.write(b'FREQ 2000\r\n')
+
 
     def set_voltage(self, channel, voltage):
         if voltage < 10 and voltage >= 0:

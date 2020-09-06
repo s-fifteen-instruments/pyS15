@@ -54,6 +54,7 @@ class SerialConnection(serial.Serial):
         """
         try:
             super(SerialConnection, self).__init__(device_path, timeout=1)
+            self.write(b';')
         except serial.SerialException:
             print('Connection failed')
         self._reset_buffers()

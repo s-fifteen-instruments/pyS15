@@ -22,9 +22,9 @@ class SPDCDriver(object):
             print('Connected to', device_path)
         self._com = serial_connection.SerialConnection(device_path)
         time.sleep(0.05)
-        self.identity()
-        time.sleep(0.0.5)
-        self.identity()
+        self.identity
+        time.sleep(0.05)
+        self.identity
 
     def reset(self):
         '''Resets the device.
@@ -111,11 +111,11 @@ class SPDCDriver(object):
                 temperature {float} -- set point for the heater temperature
         '''
         assert type(self._com) is serial_connection.SerialConnection
-        cmd_setPID = b'HCONSTP 0.13;HCONSTI 0.008\n'
-        self._com.write(cmd_setPID)
-        now_temp = self.heater_temp
-        cmd = ('HSETTEMP {}\n'.format(now_temp)).encode()
-        self.heater_loop_on()
+        # cmd_setPID = b'HCONSTP 0.13;HCONSTI 0.008\n'
+        # self._com.write(cmd_setPID)
+        # now_temp = self.heater_temp
+        # cmd = ('HSETTEMP {}\n'.format(now_temp)).encode()
+        # self.heater_loop_on()
         if now_temp < temperature:
             for t in range(int(now_temp) + 1, temperature + 1):
                 cmd = ('HSETTEMP {}\n'.format(t)).encode()
@@ -142,8 +142,8 @@ class SPDCDriver(object):
         assert temperature > 20 and temperature < 50
         assert type(self._com) is serial_connection.SerialConnection
         assert type(temperature) is float or type(temperature) is int
-        cmd_setPID = b'PCONSTP 0.5;PCONSTI 0.035\r\n'
-        self._com.write(cmd_setPID)
+        # cmd_setPID = b'PCONSTP 0.1;PCONSTI 0.03\r\n'
+        # self._com.write(cmd_setPID)
         cmd = ('PSETTEMP {}\r\n'.format(temperature)).encode()
         self._com.write(cmd)
         self.peltier_loop_on()  # switch feedback loop on
@@ -179,7 +179,7 @@ class SPDCDriver(object):
     def pconsti(self) -> float:
         return float(self._com._getresponse_1l('pconsti?'))
 
-    @pconsti.property
+    @pconsti.setter
     def pconsti(self, value) -> float:
         cmd = f'pconsti {value}\r\n'.encode()
         return self._com.write(cmd)

@@ -77,5 +77,5 @@ def show_source_properties(dev_path: str = None, logging: bool = True):
 
 
 if __name__ == '__main__':
-    show_source_properties('/dev/tty.usbmodemTDC1_00131', False)
+    show_source_properties(logging=False)
 

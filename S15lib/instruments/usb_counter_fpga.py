@@ -123,7 +123,7 @@ class TimeStampTDC1(object):
             self._mode = 1
             self._com.write(b'pairs\r\n')
         if value.lower() == 'timestamp':
-            self._mode = 3
+            self._mode = 2
             self._com.write(b'timestamp\r\n')
         time.sleep(0.1)
 
@@ -154,7 +154,7 @@ class TimeStampTDC1(object):
     """ Functions for the timestamp mode"""
     def _timestamp_acq(self, t_acq, out_file_buffer):
         """ Write the binary output to a buffer"""
-        if self._mode != 3:
+        if self._mode != 2:
             self.mode = 'timestamp'
         # for short acquisition times (<65 s) we can rely on the FPGA timer
         if t_acq > 65:

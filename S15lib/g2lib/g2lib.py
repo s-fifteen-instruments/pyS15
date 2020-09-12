@@ -30,7 +30,7 @@ except ImportError:
         for it_b in range(l_t1):
             b = t1[it_b]
             n = 0
-            idx = idx2 # used as a marker for times later than b
+            idx = idx2
             while True:
                 if idx + n >= l_t2:
                     break
@@ -95,7 +95,7 @@ def g2_extr(filename: str, bins: int=100, bin_width: float=2, min_range: int=0,
     hist = delta_loop(t1, t2 - min_range + c_stop_delay, bins=bins,
                       bin_width=bin_width)
     try:
-        t_max = t[-1]
+        t_max = t[-1] - t[0]
     except IndexError:
         t_max = 0
     dt = np.arange(0, bins * bin_width, bin_width)

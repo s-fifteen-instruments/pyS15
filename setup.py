@@ -5,7 +5,7 @@ setuptools.setup(
     version='0.1',
     description='S-Fifteen python library',
     url='https://s-fifteen.com/',
-    author='https://s-fifteen.com/',
+    author='Mathias Seidler;',
     author_email='',
     license='MIT',
     packages=setuptools.find_packages(),

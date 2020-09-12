@@ -68,16 +68,7 @@ class TimeStampTDC1(object):
         self._com.readline()
         self.mode = mode
         self.level = level
-
-        # default set of parameters. the order is important
-        self._binwidth = 2
-        self._maxbins = 500
-        self._max_range = self._binwidth * self._maxbins
-        self._t_min, self._t_max = [40, 50]
-        self._acc_t_min, self._acc_t_max = [100, 300]
-        self._g2bins_setter()
-        self._acc_correction()
-        self._int_time = integration_time
+        self.int_time = integration_time
 
     @property
     def int_time(self):
@@ -103,13 +94,12 @@ class TimeStampTDC1(object):
             self._com.write('time {:d};time?\r\n'.format(int(value)).encode())
             self._int_time = int(self._com.readline().decode().strip())
 
-    def get_singles(self):
+    def get_counts(self):
         """
         Return the actual number of count read from the device buffer.
         :return: a three-element array
         :rtype: {int}
         """
-        # self.mode = 'singles'
         return [int(x)
                 for x
                 in self._com._getresponse_1l('singles;counts?', self._int_time + 0.05).split()]
@@ -133,7 +123,7 @@ class TimeStampTDC1(object):
             self._mode = 1
             self._com.write(b'pairs\r\n')
         if value.lower() == 'timestamp':
-            self._mode = 3
+            self._mode = 2
             self._com.write(b'timestamp\r\n')
         time.sleep(0.1)
 
@@ -162,12 +152,11 @@ class TimeStampTDC1(object):
         self._com.write('REFCLK {}\r\n'.format(value).encode())
 
     """ Functions for the timestamp mode"""
-
     def _timestamp_acq(self, t_acq, out_file_buffer):
         """ Write the binary output to a buffer"""
-        if self._mode != 3:
+        if self._mode != 2:
             self.mode = 'timestamp'
-        # for short acquisition times (<65 s) we can reply on the FPGA timer
+        # for short acquisition times (<65 s) we can rely on the FPGA timer
         if t_acq > 65:
             self._timestamp_acq_LT(t_acq, out_file_buffer)
         else:
@@ -202,71 +191,6 @@ class TimeStampTDC1(object):
         with open(out_file, 'wb') as of:
             self._timestamp_acq(t_acq, of)
 
-    @property
-    def maxbins(self):
-        """ Set the number of bins for the g2"""
-        return self._maxbins
-
-    @maxbins.setter
-    def maxbins(self, value):
-        self._maxbins = int(value)
-        self._max_range = self._maxbins * self._binwidth
-        self._g2bins_setter()
-
-    @property
-    def g2bins(self):
-        return self._g2bins
-
-    def _g2bins_setter(self):
-        self._g2bins = np.linspace(0, self._max_range - self._binwidth,
-                                   self._maxbins)
-        self._mask_acc = [(self._g2bins > self._acc_t_min) &
-                          (self._g2bins < self._acc_t_max)]
-        self._mask_coinc = [(self._g2bins > self._t_min) &
-                            (self._g2bins < self._t_max)]
-
-    @property
-    def binwidth(self):
-        """ set the bin size for the g2"""
-        return self._binwidth
-
-    @binwidth.setter
-    def binwidth(self, value):
-        self._binwidth = int(value)
-        self._g2bins_setter()
-
-    def _acc_correction(self):
-        try:
-            self._acc_corr = ((self._t_max - self._t_min) /
-                              (self._acc_t_max - self._acc_t_min))
-        except ZeroDivisionError:
-            self._acc_corr = 1
-
-    @property
-    def coincidence_range(self):
-        return [self._t_min, self._t_max]
-
-    @coincidence_range.setter
-    def coincidence_range(self, value):
-        if len(value) != 2:
-            print('Range should be an array [t_min, t_max]')
-            return -1
-        self._t_min, self._t_max = value
-        self._g2bins_setter()
-        self._acc_correction()
-
-    @property
-    def acc_range(self):
-        return [self._acc_t_min, self._acc_t_max]
-
-    @acc_range.setter
-    def acc_range(self, value):
-        if len(value) != 2:
-            print('Range should be an array [t_min, t_max]')
-            return -1
-        self._acc_t_min, self._acc_t_max = value
-        self._g2bins_setter()
-        self._acc_correction()
 
     def get_timestamps(self, t_acq: float=1, level: str= 'NIM') -> Tuple[list, list]:
         '''Acquires timestamps and returns 2 lists. The first one containing the time and the second
@@ -302,7 +226,6 @@ class TimeStampTDC1(object):
             if prev_ts != -1 and time_stamp < prev_ts:
                 periode_count += 1
             prev_ts = time_stamp
-            # prev_pattern = pattern
             if (pattern & 0x10) == 0:
                 ts_list.append(time_stamp + periode_duration * periode_count)
                 event_channel_list.append(pattern_to_channel(pattern & 0xf))
@@ -311,7 +234,7 @@ class TimeStampTDC1(object):
         event_channel_list = np.array(event_channel_list)
         return ts_list, event_channel_list
 
-    def count_g2(self, t_acq):
+    def count_g2(self, t_acq: float, bin_width: int=2, bins: int=500, ch_start:int=1, ch_stop:int=2, ch_stop_delay:float=0):
         """Returns pairs and singles counts from usbcounter timestamp data.
 
         Computes g2 between channels 1 and 2 of timestamp
@@ -319,8 +242,7 @@ class TimeStampTDC1(object):
 
         :param t_acq: acquisition time in seconds
         :type t_acq: float
-        :returns: Ch1 counts, Ch2 counts, Pairs, estimated accidentals,
-                  actual acq time
+        :returns: ch_start counts, ch_stop counts, actual acquistion time
         :rtype: {int, int, int, float, float}
         """
 
@@ -330,25 +252,26 @@ class TimeStampTDC1(object):
                 self._timestamp_acq(t_acq, f_raw)
                 f_raw.seek(0)
                 g2, t_bins, s1, s2, time_total = g2lib.g2_extr(f_raw.name,
-                                                               bins=self._maxbins,
-                                                               bin_width=self._binwidth)
+                                                               bins=bins,
+                                                               bin_width=bin_width,
+                                                               channel_start=ch_start,
+                                                               channel_stop=ch_stop,
+                                                               c_stop_delay=ch_stop_delay)
             # calculates the pairs from the processed g2
-            pairs = np.sum(g2 * self._mask_coinc)
+            # pairs = np.sum(g2 * self._mask_coinc)
 
             # estimates accidentals for the integration time-window
-            acc = np.sum(g2 * self._mask_acc) * self._acc_corr
-            return {'channel1': s1, 'channel2': s2, 'pairs': pairs,
-                    'accidentals': acc, 'total_time': time_total}, t_bins, g2
+            # acc = np.sum(g2 * self._mask_acc) * self._acc_corr
+            return {'channel1': s1, 
+                    'channel2': s2, 
+                    'total_time': time_total}, t_bins, g2
         else:
-            print('use python readevents')
-            bins = 500
-            bin_width = 2
             t, channel = self.get_timestamps(t_acq)
             # print(channel)
-            t_ch1 = t[channel == 1]
-            t_ch2 = t[channel == 2]
+            t_ch1 = t[channel == ch_start]
+            t_ch2 = t[channel == ch_stop]
             histo = g2lib.delta_loop(
-                t_ch1, t_ch2, bins=bins, bin_width=bin_width)
+                t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width=bin_width)
             total_time = t[-1]
             return {'channel1': len(t_ch1),
                     'channel2': len(t_ch2),
@@ -370,7 +293,7 @@ if __name__ == '__main__':
     fpga.maxbins = 500
     fpga.range = [48, 54]
     fpga.acc_range = [100, 300]
-    output = fpga.counts(5)
+    output = fpga.get_counts(5)
     print(output)
     rate1 = output['channel1'] / output['total_time']
     rate2 = output['channel2'] / output['total_time']

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 General serial device class.
 
@@ -11,7 +9,7 @@ import time
 import sys
 import glob
 
-from serial import SerialException
+# from serial import SerialException
 
 
 def search_for_serial_devices(device):
@@ -56,7 +54,8 @@ class SerialConnection(serial.Serial):
         """
         try:
             super(SerialConnection, self).__init__(device_path, timeout=1)
-        except SerialException:
+            self.write(b';')
+        except serial.SerialException:
             print('Connection failed')
         self._reset_buffers()
         self._cleanup()
@@ -95,7 +94,9 @@ class SerialConnection(serial.Serial):
         :rtype: {string}
         """
         self._cleanup()
+        # self._reset_buffers()
         self.write((cmd + '\r\n').encode())
+        time.sleep(0.01)
         return [k.decode().strip() for k in self.readlines()]
 
     def _getresponse_1l(self, cmd, timeout=1):
@@ -136,7 +137,6 @@ class SerialConnection(serial.Serial):
             Buffer_length = self.in_waiting
             memory = memory + self.read(Buffer_length)
         Rlength = len(memory)
-        print(str(Rlength) + " Bytes Recorded")
         return memory
 
     def help(self):

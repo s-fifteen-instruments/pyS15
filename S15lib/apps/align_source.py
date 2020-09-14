@@ -32,7 +32,7 @@ def show_source_properties(dev_path: str = None, logging: bool = True):
     # time.sleep(1)
     while True:
         try:
-            info, dt, pairs = dev.count_g2(t_acq)
+            info, dt, pairs = dev.count_g2(t_acq, ch_stop_delay = 10)
             acq_time = int(info['total_time']) * 1e-9
             os.system('clear')
             print('Acquisition time {:.3f} s'.format(acq_time))
@@ -77,5 +77,5 @@ def show_source_properties(dev_path: str = None, logging: bool = True):
 
 
 if __name__ == '__main__':
-    show_source_properties(logging=False)
+    show_source_properties(dev_path = '/dev/tty.usbmodemTDC1_00141', logging=False)
 

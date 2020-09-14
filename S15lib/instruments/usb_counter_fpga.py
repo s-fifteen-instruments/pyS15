@@ -205,12 +205,6 @@ class TimeStampTDC1(object):
         # buffer contains the timestamp information in binary.
         # We need to convert them into time and identify the event channel.
         # each timestamp is 32 bits long.
-        ts_list = []
-        event_channel_list = []
-        ts_length = 32 / 8  # bits
-        periode_duration = 2**28 * 2  # in nano seconds
-        periode_counter = 0
-
         bytes_hex = buffer[::-1].hex()
         ts_word_list = [int(bytes_hex[i:i + 8], 16)
                         for i in range(0, len(bytes_hex), 8)][::-1]
@@ -232,6 +226,7 @@ class TimeStampTDC1(object):
 
         ts_list = np.array(ts_list) * 2
         event_channel_list = np.array(event_channel_list)
+
         return ts_list, event_channel_list
 
     def count_g2(self, t_acq: float, bin_width: int=2, bins: int=500, ch_start:int=1, ch_stop:int=2, ch_stop_delay:float=0):

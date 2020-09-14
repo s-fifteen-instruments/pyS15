@@ -110,16 +110,15 @@ def peak_finder(t1_series: List[float], t2_series: List[float], t_resolution: fl
             sample_nr = int(i / dt) % samples
             new_signal[sample_nr] += 1
         return new_signal
-    t1_series = resample_and_fold_t(t1_series, t_resolution, buffer_length)
-    t2_series = resample_and_fold_t(t2_series, t_resolution, buffer_length)
+    n = 2**buffer_length
+    t1_series = resample_and_fold_t(t1_series, t_resolution, n)
+    t2_series = resample_and_fold_t(t2_series, t_resolution, n)
     t1_fft = np.fft.fft(t1_series)
     t2_fft = np.fft.fft(t2_series)
     convolution = np.fft.ifft(np.multiply(np.conj(t1_fft), t2_fft))
-    t_array = np.arange(0, buffer_length * t_resolution, t_resolution)
+    t_array = np.arange(0, n * t_resolution, t_resolution)
     idx_max = np.argmax(convolution)
     return t_array[idx_max], convolution, t_array
-
-
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
+from typing import List
 
 try:
     from .delta import delta_loop
@@ -100,6 +101,25 @@ def g2_extr(filename: str, bins: int=100, bin_width: float=2, min_range: int=0,
         t_max = 0
     dt = np.arange(0, bins * bin_width, bin_width)
     return hist, dt + min_range, len(t1), len(t2), t_max
+
+
+def peak_finder(t1_series: List[float], t2_series: List[float], t_resolution: float, buffer_length: int):
+    def resample_and_fold_t(time_series, dt, samples):
+        new_signal = np.zeros(samples)
+        for i in time_series:
+            sample_nr = int(i / dt) % samples
+            new_signal[sample_nr] += 1
+        return new_signal
+    t1_series = resample_and_fold_t(t1_series, t_resolution, buffer_length)
+    t2_series = resample_and_fold_t(t2_series, t_resolution, buffer_length)
+    t1_fft = np.fft.fft(t1_series)
+    t2_fft = np.fft.fft(t2_series)
+    convolution = np.fft.ifft(np.multiply(np.conj(t1_fft), t2_fft))
+    t_array = np.arange(0, buffer_length * t_resolution, t_resolution)
+    idx_max = np.argmax(convolution)
+    return t_array[idx_max], convolution, t_array
+
+
 
 
 if __name__ == '__main__':

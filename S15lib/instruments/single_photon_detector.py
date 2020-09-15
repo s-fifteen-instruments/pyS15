@@ -98,6 +98,10 @@ class SinglePhotonDetector(object):
     def temperature(self) -> float:
         return float(self._com._getresponse_1l('temp?'))
 
+    @temperature.setter
+    def temperature(self, value: float):
+        self._com.write(f'settemp {value}\r\n'.encode())
+
     @property
     def settemperature(self) -> float:
         return float(self._com._getresponse_1l('settemp?'))
@@ -106,6 +110,12 @@ class SinglePhotonDetector(object):
     def settemperature(self, value: float):
         self.temperature = value
 
-    @temperature.setter
-    def temperature(self, value: float):
-        self._com.write(f'settemp {value}\r\n'.encode())
+    @property
+    def delay(self) -> int:
+        return float(self._com._getresponse_1l('delay?'))
+
+    @delay.setter
+    def delay(self, value: int):
+        self._com.write(f'delay {value}\r\n'.encode())
+
+

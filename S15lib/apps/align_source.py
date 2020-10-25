@@ -30,9 +30,10 @@ def show_source_properties(dev_path: str = None, logging: bool = True):
     hl, = plt.plot([], [], '.-')
 
     # time.sleep(1)
+    error_counter = 0
     while True:
         try:
-            info, dt, pairs = dev.count_g2(t_acq, ch_stop_delay = 10)
+            info, dt, pairs = dev.count_g2(t_acq, ch_stop_delay = -10)
             acq_time = int(info['total_time']) * 1e-9
             os.system('clear')
             print('Acquisition time {:.3f} s'.format(acq_time))
@@ -72,8 +73,14 @@ def show_source_properties(dev_path: str = None, logging: bool = True):
             plt.draw()
             plt.pause(0.01)
             # time.sleep(59)
-        except Error:
-            print('error')
+        except Exception as a:
+            print(type(a))
+            error_counter += 1
+            if error_counter == 10:
+            	print('too many errors in a row')
+            	break
+        finally:
+        	error_counter = 0
 
 
 if __name__ == '__main__':

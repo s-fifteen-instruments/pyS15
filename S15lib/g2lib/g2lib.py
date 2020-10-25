@@ -33,7 +33,7 @@ except ImportError:
             n = 0
             idx = idx2
             while True:
-                if idx + n >= l_t2:
+                if (idx + n) >= l_t2:
                     break
                 c = t2[idx + n]
                 n += 1
@@ -91,8 +91,12 @@ def g2_extr(filename: str, bins: int=100, bin_width: float=2, min_range: int=0,
     if channel_stop not in range(4):
         raise ValueError('Selected stop channel not in range')
     t, p = _data_extractor(filename, highres_tscard)
-    t1 = t[(p & (0b1 << channel_start)) == (0b1 << channel_start)]
-    t2 = t[(p & (0b1 << channel_stop)) == (0b1 << channel_stop)]
+    # t1 = t[(p & (0b1 << channel_start)) == (0b1 << channel_start)]
+    t1 = t[p == (0b1 << channel_start)]
+    # t2 = t[(p & (0b1 << channel_stop)) == (0b1 << channel_stop)]
+    t2 = t[p == (0b1 << channel_stop)]
+
+
     hist = delta_loop(t1, t2 - min_range + c_stop_delay, bins=bins,
                       bin_width=bin_width)
     try:

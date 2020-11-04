@@ -65,6 +65,9 @@ class SPDCDriver(object):
             type(current) is float or type(current) is int)
         cmd = ('lcurrent {}\n'.format(current)).encode()
         self._com.write(cmd)
+        msg = self._com.readlines()
+        if msg != []:
+        	print(msg)
 
     def laser_on(self, current: int):
         if self.laser_current == 0:
@@ -113,11 +116,11 @@ class SPDCDriver(object):
         assert type(self._com) is serial_connection.SerialConnection
         # cmd_setPID = b'HCONSTP 0.13;HCONSTI 0.008\n'
         # self._com.write(cmd_setPID)
-        # now_temp = self.heater_temp
+        now_temp = self.heater_temp
         # cmd = ('HSETTEMP {}\n'.format(now_temp)).encode()
         # self.heater_loop_on()
         if now_temp < temperature:
-            for t in range(int(now_temp) + 1, temperature + 1):
+            for t in range(int(now_temp) + 1, int(temperature) + 1):
                 cmd = ('HSETTEMP {}\n'.format(t)).encode()
                 print(cmd)
                 self._com.write(cmd)
@@ -189,7 +192,7 @@ class SPDCDriver(object):
         return float(self._com._getresponse_1l('hconstp?'))
 
     @hconstp.setter
-    def hconstp(self, value) -> float:
+    def hconstp(self, value: float) -> float:
         cmd = f'hconstp {value}\r\n'.encode()
         return self._com.write(cmd)
 
@@ -198,9 +201,19 @@ class SPDCDriver(object):
         return float(self._com._getresponse_1l('hconsti?'))
 
     @hconsti.setter
-    def hconsti(self, value) -> float:
+    def hconsti(self, value: float) -> float:
         cmd = f'hconsti {value}\r\n'.encode()
         return self._com.write(cmd)
+
+    @property
+    def laser_current_limit(self) -> float:
+        return float(self._com._getresponse_1l('llimit?'))
+
+    @laser_current_limit.setter
+    def laser_current_limit(self, value: float) -> float:
+        cmd = f'llimit {value}\r\n'.encode()
+        return self._com.write(cmd)
+
 
 
 if __name__ == '__main__':

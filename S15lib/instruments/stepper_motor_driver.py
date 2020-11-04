@@ -54,7 +54,6 @@ class StepperMotorDriver(object):
     #     self._com.write('setvolt {0} {1};'.format(channel, voltage).encode('ascii'))
 
     def get_position(self, channel: int) -> int:
-        # self._com.write('pos? {};'.format(channel).encode('ascii'))
         pos1 = int(self._com._getresponse_1l('pos?'))
         pos2 = int(self._com._getresponse_1l('pos?'))
         if pos1 == pos2:
@@ -76,4 +75,4 @@ class StepperMotorDriver(object):
         """
         self.go(channel, position)
         while self.get_position(channel) != position:
-            time.sleep(.005)
+            time.sleep(.1)

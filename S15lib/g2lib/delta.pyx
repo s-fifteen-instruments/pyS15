@@ -26,7 +26,7 @@ def _delta_loop(double [:] t1 not None,
         n = 0
         idx = idx2
         while True:
-            if idx + n >= l_t2:
+            if (idx + n) >= l_t2:
                 break
             c = t2[idx + n]
             n += 1

@@ -15,13 +15,12 @@ from datetime import datetime
 
 
 
-def show_source_properties(dev_path: str = None, logging: bool = True):
+def show_source_properties(dev_path: str = None, logging: bool = True, ch_stop_delay: float = 5, t_acq: float = 1):
     print(dev_path)
     if dev_path is None:
         dev = TimeStampTDC1()
     else:
         dev = TimeStampTDC1(dev_path)
-    t_acq = 1
     # dev.mode = 'singles'
     # dev.time= 1
     # print('Singles counts', dev.get_counts())
@@ -33,11 +32,11 @@ def show_source_properties(dev_path: str = None, logging: bool = True):
     error_counter = 0
     while True:
         try:
-            info, dt, pairs = dev.count_g2(t_acq, ch_stop_delay = -10)
+            info, dt, pairs = dev.count_g2(t_acq, ch_stop_delay = ch_stop_delay)
             acq_time = int(info['total_time']) * 1e-9
             os.system('clear')
             print('Acquisition time {:.3f} s'.format(acq_time))
-            pair_mask = (dt >= 5) & (dt <= 20)
+            pair_mask = (dt > 0) & (dt <= 20)
             acc_mask = (dt > 100) & (dt < 150)
             acc_rate_per_bin = np.sum(
                 pairs[acc_mask]) / (len(pairs[acc_mask]) * acq_time)

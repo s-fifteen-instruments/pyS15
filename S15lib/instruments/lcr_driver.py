@@ -19,8 +19,6 @@ class LCRDriver(object):
                 self.DEVICE_IDENTIFIER))[0]
             print('Connected to', device_path)
         self._com = serial_connection.SerialConnection(device_path)
-        self._com.write(b';')
-        self._com._getresponse_1l('*idn?')
 
     def reset(self):
         '''Resets the device.
@@ -35,14 +33,13 @@ class LCRDriver(object):
         self._com.write(b'DARK\r\n')
         self._com.write(b'FREQ 2000\r\n')
 
-
-    def set_voltage(self, channel, voltage):
+    def set_voltage(self, channel: int, voltage: float):
         if voltage < 10 and voltage >= 0:
             self._com.write((f'AMPLITUDE {channel} {voltage}\r\n').encode())
         else:
             raise Exception('Voltage to high')
 
-    def read_voltage(self, channel):
+    def read_voltage(self, channel: int):
         cmd = 'AMP? ' + str(channel)
         return self._com._getresponse(cmd)
 

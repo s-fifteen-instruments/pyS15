@@ -12,7 +12,7 @@ import glob
 # from serial import SerialException
 
 
-def search_for_serial_devices(device):
+def search_for_serial_devices(device: str):
     '''Searches for serial devices defined in the input paremater device.
     If the device identification string containes the string given in the input paramter 'device', the device path is 
     appended to a list. This list is then returned as search result.
@@ -47,7 +47,7 @@ class SerialConnection(serial.Serial):
     inherited from the generic serial one.
     """
 
-    def __init__(self, device_path=None):
+    def __init__(self, device_path: str = None):
         """
         Initializes the USB device.
         It requires the full path to the serial device as arguments
@@ -65,7 +65,7 @@ class SerialConnection(serial.Serial):
         self.reset_input_buffer()
         self.reset_output_buffer()
 
-    def _cleanup(self, timeout=1):
+    def _cleanup(self, timeout: float = 1):
         """ cleanup of read buffer of the device.
 
         :param timeout: optional timeout, defaults to 1
@@ -79,7 +79,7 @@ class SerialConnection(serial.Serial):
                 break
             self.read_all()
 
-    def _getresponse(self, cmd):
+    def _getresponse(self, cmd: str):
         """
         Send commands and read the response of the device.
 
@@ -99,7 +99,7 @@ class SerialConnection(serial.Serial):
         time.sleep(0.01)
         return [k.decode().strip() for k in self.readlines()]
 
-    def _getresponse_1l(self, cmd, timeout=1):
+    def _getresponse_1l(self, cmd: str, timeout: float = 1):
         """
         Send commands and reads a single line as response from the device.
 

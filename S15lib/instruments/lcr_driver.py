@@ -44,6 +44,38 @@ class LCRDriver(object):
         return self._com._getresponse(cmd)
 
     @property
+    def V1(self):
+        return self._com._getresponse_1l('AMP? 1')
+
+    @V1.setter
+    def V1(self, V1):
+        self._com.write((f'AMPLITUDE 1 {V1}\r\n').encode())
+
+    @property
+    def V2(self):
+        return self._com._getresponse_1l('AMP? 2')
+
+    @V2.setter
+    def V2(self, value):
+        self._com.write((f'AMPLITUDE 2 {value}\r\n').encode())
+
+    @property
+    def V3(self):
+        return self._com._getresponse_1l('AMP? 3')
+
+    @V3.setter
+    def V3(self, value):
+        self._com.write((f'AMPLITUDE 3 {value}\r\n').encode())
+
+    @property
+    def V4(self):
+        return self._com._getresponse_1l('AMP? 4')
+
+    @V4.setter
+    def V4(self, value):
+        self._com.write((f'AMPLITUDE 4 {value}\r\n').encode())
+
+    @property
     def identity(self):
         return self._com._getresponse_1l('*idn?')
 

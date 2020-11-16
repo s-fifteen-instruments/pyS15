@@ -192,7 +192,7 @@ class TimeStampTDC1(object):
         with open(out_file, 'wb') as of:
             self._timestamp_acq(t_acq, of)
 
-    def get_timestamps(self, t_acq: float = 1, level: str = 'NIM') -> Tuple[list, list]:
+    def get_timestamps(self, t_acq: float = 1, level: str = 'NIM') -> Tuple[list, str]:
         '''Acquires timestamps and returns 2 lists. The first one containing the time and the second
         the event channel. 
 
@@ -222,10 +222,11 @@ class TimeStampTDC1(object):
             prev_ts = time_stamp
             if (pattern & 0x10) == 0:
                 ts_list.append(time_stamp + periode_duration * periode_count)
-                event_channel_list.append(pattern_to_channel(pattern & 0xf))
+                # event_channel_list.append(pattern_to_channel(pattern & 0xf))
+                event_channel_list.append('{0:04b}'.format(pattern & 0xf))
 
         ts_list = np.array(ts_list) * 2
-        event_channel_list = np.array(event_channel_list)
+        event_channel_list = event_channel_list
 
         return ts_list, event_channel_list
 
@@ -266,8 +267,8 @@ class TimeStampTDC1(object):
         else:
             t, channel = self.get_timestamps(t_acq)
             # print(channel)
-            t_ch1 = t[channel == ch_start]
-            t_ch2 = t[channel == ch_stop]
+            t_ch1 = t[int(channel, 2)  == ch_start]
+            t_ch2 = t[int(channel, 2) == ch_stop]
             histo = g2lib.delta_loop(
                 t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width=bin_width)
             total_time = t[-1]

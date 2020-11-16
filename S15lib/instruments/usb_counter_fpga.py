@@ -152,6 +152,7 @@ class TimeStampTDC1(object):
         self._com.write('REFCLK {}\r\n'.format(value).encode())
 
     """ Functions for the timestamp mode"""
+
     def _timestamp_acq(self, t_acq, out_file_buffer):
         """ Write the binary output to a buffer"""
         if self._mode != 2:
@@ -191,8 +192,7 @@ class TimeStampTDC1(object):
         with open(out_file, 'wb') as of:
             self._timestamp_acq(t_acq, of)
 
-
-    def get_timestamps(self, t_acq: float=1, level: str= 'NIM') -> Tuple[list, list]:
+    def get_timestamps(self, t_acq: float = 1, level: str = 'NIM') -> Tuple[list, list]:
         '''Acquires timestamps and returns 2 lists. The first one containing the time and the second
         the event channel. 
 
@@ -229,15 +229,18 @@ class TimeStampTDC1(object):
 
         return ts_list, event_channel_list
 
-    def count_g2(self, t_acq: float, bin_width: int=2, bins: int=500, ch_start:int=1, ch_stop:int=2, ch_stop_delay:float=0):
-        """Returns pairs and singles counts from usbcounter timestamp data.
+    def count_g2(self, t_acq: float, bin_width: int = 2, bins: int = 500,
+                 ch_start: int = 1, ch_stop: int = 2,
+                 ch_stop_delay: float = 0):
+        """
+        Returns pairs and singles counts from usbcounter timestamp data.
 
         Computes g2 between channels 1 and 2 of timestamp
         and sum the coincidences within specified window
 
         :param t_acq: acquisition time in seconds
         :type t_acq: float
-        :returns: ch_start counts, ch_stop counts, actual acquistion time
+        :returns: ch_start counts, ch_stop counts, actual acquistion time, time bin array, histogram
         :rtype: {int, int, int, float, float}
         """
 
@@ -257,8 +260,8 @@ class TimeStampTDC1(object):
 
             # estimates accidentals for the integration time-window
             # acc = np.sum(g2 * self._mask_acc) * self._acc_corr
-            return {'channel1': s1, 
-                    'channel2': s2, 
+            return {'channel1': s1,
+                    'channel2': s2,
                     'total_time': time_total}, t_bins, g2
         else:
             t, channel = self.get_timestamps(t_acq)

@@ -9,7 +9,8 @@ import sys
 print(sys.version)
 
 
-def show_source_properties(dev_path: str = None, logging: bool = True, ch_stop_delay: float = 5, t_acq: float = 1):
+def show_source_properties(dev_path: str = None, logging: bool = True, 
+                           ch_stop_delay: float = 5, t_acq: float = 1):
     print(dev_path)
     if dev_path is None:
         dev = TimeStampTDC1()

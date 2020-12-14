@@ -10,7 +10,7 @@ Python scripts.
 import glob
 import numpy as np
 import subprocess
-from typing import Tuple
+from typing import Tuple, List
 
 import time
 
@@ -94,15 +94,22 @@ class TimeStampTDC1(object):
             self._com.write('time {:d};time?\r\n'.format(int(value)).encode())
             self._int_time = int(self._com.readline().decode().strip())
 
-    def get_counts(self):
+    def get_counts(self, duration_seconds: int = None) -> Tuple:
+        """[summary]
+
+        Args:
+            duration_seconds (int, optional): [description]. Defaults to None.
+
+        Returns:
+            List: [description]
         """
-        Return the actual number of count read from the device buffer.
-        :return: a three-element array
-        :rtype: {int}
-        """
-        return [int(x)
+        if duration_seconds is None:
+            duration_seconds = self.int_time
+        else:
+            self.int_time = duration_seconds
+        return tuple([int(x)
                 for x
-                in self._com._getresponse_1l('singles;counts?', self._int_time + 0.05).split()]
+                in self._com._getresponse_1l('singles;counts?', duration_seconds + 0.05).split()])
 
     @property
     def mode(self):
@@ -133,22 +140,22 @@ class TimeStampTDC1(object):
         return self._com._getresponse_1l('LEVEL?')
 
     @level.setter
-    def level(self, value):
+    def level(self, value: str):
         if value.lower() == 'nim':
             self._com.write(b'NIM\r\n')
         elif value.lower() == 'ttl':
             self._com.write(b'TTL\r\n')
         else:
-            print('Acceptable input is either \'TTL\' or \'NIM\'')
+            print('Accepted input is a string and either \'TTL\' or \'NIM\'')
         time.sleep(0.1)
 
     @property
-    def clock(self):
+    def clock(self) -> str:
         """ Choice of clock"""
         return self._com._getresponse_1l('REFCLK?')
 
     @clock.setter
-    def clock(self, value):
+    def clock(self, value: str):
         self._com.write('REFCLK {}\r\n'.format(value).encode())
 
     """ Functions for the timestamp mode"""
@@ -192,7 +199,7 @@ class TimeStampTDC1(object):
         with open(out_file, 'wb') as of:
             self._timestamp_acq(t_acq, of)
 
-    def get_timestamps(self, t_acq: float = 1, level: str = 'NIM') -> Tuple[list, str]:
+    def get_timestamps(self, t_acq: float = 1, level: str = 'NIM') -> Tuple[List[float], List[str]]:
         '''Acquires timestamps and returns 2 lists. The first one containing the time and the second
         the event channel. 
 

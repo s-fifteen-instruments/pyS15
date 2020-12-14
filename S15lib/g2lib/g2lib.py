@@ -8,26 +8,24 @@ try:
     cflag = True
 except ImportError:
     # print('delta.so module not found, using native option')
+    def delta_loop(t1: List[float], t2: List[float], bins: int = 500, bin_width_ns: float = 2) -> List[int]:
+        """Returns time difference histogram from two given lists (t1, t2).
 
-    def delta_loop(t1, t2, bins: int = 500, bin_width: float = 2):
-        """
-        Time difference between vectors t1 and t2
+        Args:
+            t1 (List[float]): Start times.
+            t2 (List[float]): Stop times.
+            bins (int, optional): Number of histogram bins. Defaults to 500 bins.
+            bin_width_ns (float, optional): Bin width in nano seconds. Defaults to 2 ns.
 
-        :param t1: event timestamp for channel 1
-        :type t1: array of int
-        :param t2: event timestamp for channel 2
-        :type t2: array of int
-        :param max_range: maximum time diference in nsec, defaults to 2000
-        :type max_range: int, optional
-        :returns: vector with Deltas between t1 and t2
-        :rtype: {int}
+        Returns:
+            List[int]: Time difference histogram.
         """
         histogram = np.zeros(bins)
         idx = 0
         idx2 = 0
         l_t1 = len(t1)
         l_t2 = len(t2)
-        max_range = bins * bin_width
+        max_range = bins * bin_width_ns
         for it_b in range(l_t1):
             b = t1[it_b]
             n = 0
@@ -44,7 +42,7 @@ except ImportError:
                     k = c - b
                     if k >= max_range:
                         break
-                    histogram[int(k // bin_width)] += 1
+                    histogram[int(k // bin_width_ns)] += 1
         return histogram
 
 

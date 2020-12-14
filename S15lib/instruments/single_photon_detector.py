@@ -32,6 +32,7 @@ class SinglePhotonDetector(object):
     @hvolt.setter
     def hvolt(self, value: float):
         self._com.write(f'hvolt {value}\r\n'.encode())
+        time.sleep(0.1)
 
     @property
     def threshvolt(self) -> float:
@@ -91,8 +92,11 @@ class SinglePhotonDetector(object):
         '''
         self._com.write(f'time {value}\r\n'.encode())
 
-    def counts(self) -> int:
-        return int(self._com._getresponse_1l('counts?', timeout=1.1))
+    def counts(self, counting_time_sec: float = 1) -> int:
+        '''Returns counts detected on the detector within the given counting time (default = 1 second)
+        '''
+        self.time = counting_time_sec * 1000
+        return int(self._com._getresponse_1l('counts?', timeout=counting_time_sec+0.1))
 
     @property
     def temperature(self) -> float:

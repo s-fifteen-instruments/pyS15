@@ -273,15 +273,15 @@ class TimeStampTDC1(object):
                     'total_time': time_total}, t_bins, g2
         else:
             t, channel = self.get_timestamps(t_acq)
-            # print(channel)
-            t_ch1 = t[int(channel, 2)  == ch_start]
-            t_ch2 = t[int(channel, 2) == ch_stop]
+            channel = np.array([pattern_to_channel(int(i, 2)) for i in channel])
+            t_ch1 = t[channel  == ch_start]
+            t_ch2 = t[channel == ch_stop]
             histo = g2lib.delta_loop(
-                t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width=bin_width)
+                t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width_ns=bin_width)
             total_time = t[-1]
             return {'channel1': len(t_ch1),
                     'channel2': len(t_ch2),
-                    'total_time': total_time}, np.arange(0, bins * bin_width, bin_width), histo
+                    'total_time': total_time, 'time_bins': np.arange(0, bins * bin_width, bin_width), 'histogram': histo}
 
 
 if __name__ == '__main__':

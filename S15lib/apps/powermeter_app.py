@@ -68,7 +68,7 @@ class MainWindow(QMainWindow):
         self._thread_running_flag = False
 
         # start Gui design
-        self.setWindowTitle("Powermeter S-Fivteen")
+        self.setWindowTitle("Powermeter S-Fifteen Instruments")
 
         menubar = QMenuBar()
         fileMenu = menubar.addMenu('File')

@@ -42,7 +42,7 @@ class TimeStampTDC1(object):
     DEVICE_IDENTIFIER = 'TDC1'
 
     def __init__(self, device_path=None,
-                 integration_time=1000,
+                 integration_time=1,
                  mode='singles',
                  level='NIM'):
         """
@@ -150,6 +150,18 @@ class TimeStampTDC1(object):
         time.sleep(0.1)
 
     @property
+    def threshold(self):
+        """ Set the kind of pulses to count"""
+        return self.level
+
+    @threshold.setter
+    def threshold(self, value: float):
+        if value < 0: 
+            self._com.write('NEG {}\r\n'.format(value).encode())
+        else: 
+            self._com.write('POS {}\r\n'.format(value).encode())
+
+    @property
     def clock(self) -> str:
         """ Choice of clock"""
         return self._com._getresponse_1l('REFCLK?')
@@ -158,56 +170,58 @@ class TimeStampTDC1(object):
     def clock(self, value: str):
         self._com.write('REFCLK {}\r\n'.format(value).encode())
 
-    """ Functions for the timestamp mode"""
+    # def _timestamp_acq(self, t_acq, out_file_buffer):
+    #     """ Write the binary output to a buffer"""
+    #     if self._mode != 2:
+    #         self.mode = 'timestamp'
+    #     # for short acquisition times (<65 s) we can rely on the FPGA timer
+    #     if t_acq > 65:
+    #         self._timestamp_acq_LT(t_acq, out_file_buffer)
+    #     else:
+    #         self._timestamp_acq_ST(t_acq, out_file_buffer)
 
-    def _timestamp_acq(self, t_acq, out_file_buffer):
-        """ Write the binary output to a buffer"""
-        if self._mode != 2:
-            self.mode = 'timestamp'
-        # for short acquisition times (<65 s) we can rely on the FPGA timer
-        if t_acq > 65:
-            self._timestamp_acq_LT(t_acq, out_file_buffer)
-        else:
-            self._timestamp_acq_ST(t_acq, out_file_buffer)
+    # def _timestamp_acq_LT(self, t_acq, out_file_buffer):
+    #     """ Write the binary output to a buffer for total measurement
+    #     times longer than 65 seconds"""
+    #     p1 = subprocess.Popen([self._prog,
+    #                            '-U', self._device_path,
+    #                            '-a', '1',
+    #                            '-g', '{}'.format(int(0)),
+    #                            '-X'],
+    #                           stdout=out_file_buffer,
+    #                           stderr=subprocess.PIPE)
+    #     time.sleep(t_acq)
+    #     p1.kill()
 
-    def _timestamp_acq_LT(self, t_acq, out_file_buffer):
-        """ Write the binary output to a buffer for total measurement
-        times longer than 65 seconds"""
-        p1 = subprocess.Popen([self._prog,
-                               '-U', self._device_path,
-                               '-a', '1',
-                               '-g', '{}'.format(int(0)),
-                               '-X'],
-                              stdout=out_file_buffer,
-                              stderr=subprocess.PIPE)
-        time.sleep(t_acq)
-        p1.kill()
+    # def _timestamp_acq_ST(self, t_acq, out_file_buffer):
+    #     """ Write the binary output to a buffer for total measurement
+    #     times longer than 65 seconds"""
+    #     subprocess.check_call([self._prog,
+    #                            '-U', self._device_path,
+    #                            '-a', '1',
+    #                            '-g', '{}'.format(int(t_acq * 1000)),
+    #                            '-X'],
+    #                           stdout=out_file_buffer,
+    #                           stderr=subprocess.PIPE)
 
-    def _timestamp_acq_ST(self, t_acq, out_file_buffer):
-        """ Write the binary output to a buffer for total measurement
-        times longer than 65 seconds"""
-        subprocess.check_call([self._prog,
-                               '-U', self._device_path,
-                               '-a', '1',
-                               '-g', '{}'.format(int(t_acq * 1000)),
-                               '-X'],
-                              stdout=out_file_buffer,
-                              stderr=subprocess.PIPE)
+    # def timestamp_acq(self, t_acq, out_file):
+    #     """ Write the binary output to a file"""
+    #     with open(out_file, 'wb') as of:
+    #         self._timestamp_acq(t_acq, of)
 
-    def timestamp_acq(self, t_acq, out_file):
-        """ Write the binary output to a file"""
-        with open(out_file, 'wb') as of:
-            self._timestamp_acq(t_acq, of)
-
-    def get_timestamps(self, t_acq: float = 1, level: str = 'NIM') -> Tuple[List[float], List[str]]:
+    def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
         '''Acquires timestamps and returns 2 lists. The first one containing the time and the second
         the event channel. 
 
         Keyword Arguments:
             t_acq {float} -- Duration of the the timestamp acquisition in seconds (default: {1})
         '''
+        # level = float(self.level.split()[0])
+        # self._com.write(b'*RST;INPKT;')
+        # self.threshold = level
         buffer = self._com._stream_response_into_buffer(
-            '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
+            'INPKT;time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
+            # '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
 
         # buffer contains the timestamp information in binary.
         # We need to convert them into time and identify the event channel.
@@ -282,7 +296,8 @@ class TimeStampTDC1(object):
             return {'channel1': len(t_ch1),
                     'channel2': len(t_ch2),
                     'total_time': total_time, 'time_bins': np.arange(0, bins * bin_width, bin_width), 'histogram': histo}
-
+    def help(self):
+        return self._com.help()
 
 if __name__ == '__main__':
     fpga = TimeStampTDC1()

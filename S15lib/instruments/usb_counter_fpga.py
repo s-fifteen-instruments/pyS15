@@ -12,6 +12,7 @@ import numpy as np
 import subprocess
 from typing import Tuple, List
 
+import serial
 import time
 
 from ..g2lib import g2lib
@@ -56,19 +57,14 @@ class TimeStampTDC1(object):
                 self.DEVICE_IDENTIFIER))[0]
             print('Connected to', device_path)
         self._device_path = device_path
-        self._com = serial_connection.SerialConnection(device_path)
-        self._prog = READEVENTS_PROG
-        if exists(self._prog):
-            self._use_native_timestamps_acq = False
-        else:
-            self._use_native_timestamps_acq = True
-        self._com.write(b'*rst\r\n')
+        # self._com = serial_connection.SerialConnection(device_path)
+        self._com = serial.Serial(device_path, timeout=1)
+        self._com.write(b'\r\n')
         self._com.readlines()
-        self._com.write(b'mode?\r\n')
-        self._com.readline()
         self.mode = mode
         self.level = level
         self.int_time = integration_time
+        time.sleep(0.2)
 
     @property
     def int_time(self):
@@ -82,8 +78,8 @@ class TimeStampTDC1(object):
         :returns: integration time in seconds
         :rtype: int
         """
-        self._int_time = int(self._com._getresponse_1l('TIME?'))
-        return self._int_time / 1000
+        self._com.write(b'time?\r\n')
+        return int(self._com.readline().strip())
 
     @int_time.setter
     def int_time(self, value: float):
@@ -91,8 +87,8 @@ class TimeStampTDC1(object):
         if value < 1:
             print('Invalid integration time.')
         else:
-            self._com.write('time {:d};time?\r\n'.format(int(value)).encode())
-            self._int_time = int(self._com.readline().decode().strip())
+            self._com.write('time {:d};'.format(int(value)).encode())
+            self._com.readlines()
 
     def get_counts(self, duration_seconds: int = None) -> Tuple:
         """[summary]
@@ -107,47 +103,62 @@ class TimeStampTDC1(object):
             duration_seconds = self.int_time
         else:
             self.int_time = duration_seconds
-        return tuple([int(x)
-                for x
-                in self._com._getresponse_1l('singles;counts?', duration_seconds + 0.05).split()])
+        self._com.timeout = duration_seconds
+
+        self._com.write(b'singles;counts?\r\n')       
+        t_start = time.time()
+        while True:
+            if self._com.inWaiting() > 0:
+                break
+            if time.time() > (t_start + duration_seconds + 0.1):
+                print(time.time() - t_start)
+                raise serial.SerialTimeoutException('Command timeout')
+        counts = self._com.readline().decode().strip()
+        self._com.timeout = 1
+        return tuple([int(i) for i in counts.split()])
 
     @property
     def mode(self):
-        self._mode = int(self._com._getresponse_1l('MODE?'))
-        if self._mode == 0:
+        # mode = int(self._com._getresponse_1l('MODE?'))
+        self._com.write(b'mode?\r\n')
+        mode = int(self._com.readline().strip())
+        if mode == 0:
             return 'singles'
-        if self._mode == 1:
+        if mode == 1:
             return 'pairs'
-        if self._mode == 2:
+        if mode == 2:
             return 'timestamp'
 
     @mode.setter
     def mode(self, value):
         if value.lower() == 'singles':
-            self._mode = 0
-            self._com.write(b'singles\r\n')
+            self.write_only('singles')
         if value.lower() == 'pairs':
-            self._mode = 1
-            self._com.write(b'pairs\r\n')
+            self.write_only('pairs')
         if value.lower() == 'timestamp':
-            self._mode = 2
-            self._com.write(b'timestamp\r\n')
+            self.write_only('timestamp')
+
+    def write_only(self, cmd):
+        self._com.write((cmd + '\r\n').encode())
+        self._com.readlines()
         time.sleep(0.1)
 
     @property
     def level(self):
         """ Set the kind of pulses to count"""
-        return self._com._getresponse_1l('LEVEL?')
+        self._com.write(b'level?\r\n')
+        return self._com.readline().strip()
+        # return self._com._getresponse_1l('LEVEL?')
 
     @level.setter
     def level(self, value: str):
         if value.lower() == 'nim':
-            self._com.write(b'NIM\r\n')
+            self.write_only('NIM')
         elif value.lower() == 'ttl':
-            self._com.write(b'TTL\r\n')
+            self.write_only('TTL')
         else:
             print('Accepted input is a string and either \'TTL\' or \'NIM\'')
-        time.sleep(0.1)
+        # time.sleep(0.1)
 
     @property
     def threshold(self):
@@ -156,58 +167,37 @@ class TimeStampTDC1(object):
 
     @threshold.setter
     def threshold(self, value: float):
-        if value < 0: 
-            self._com.write('NEG {}\r\n'.format(value).encode())
-        else: 
-            self._com.write('POS {}\r\n'.format(value).encode())
+        if value < 0:
+            self.write_only('NEG {}'.format(value))
+        else:
+            self.write_only('POS {}'.format(value))
 
     @property
     def clock(self) -> str:
         """ Choice of clock"""
-        return self._com._getresponse_1l('REFCLK?')
+        self._com.write('REFCLK?\r\n')
+        return self._com.readline().strip()
 
     @clock.setter
     def clock(self, value: str):
-        self._com.write('REFCLK {}\r\n'.format(value).encode())
+        self.write_only('REFCLK {}'.format(value).encode())
 
-    # def _timestamp_acq(self, t_acq, out_file_buffer):
-    #     """ Write the binary output to a buffer"""
-    #     if self._mode != 2:
-    #         self.mode = 'timestamp'
-    #     # for short acquisition times (<65 s) we can rely on the FPGA timer
-    #     if t_acq > 65:
-    #         self._timestamp_acq_LT(t_acq, out_file_buffer)
-    #     else:
-    #         self._timestamp_acq_ST(t_acq, out_file_buffer)
+    def _stream_response_into_buffer(self, cmd: str, acq_time: float):
+        # this function bypass the termination character (since there is none for timestamp mode),
+        # streams data from device for the integration time.
 
-    # def _timestamp_acq_LT(self, t_acq, out_file_buffer):
-    #     """ Write the binary output to a buffer for total measurement
-    #     times longer than 65 seconds"""
-    #     p1 = subprocess.Popen([self._prog,
-    #                            '-U', self._device_path,
-    #                            '-a', '1',
-    #                            '-g', '{}'.format(int(0)),
-    #                            '-X'],
-    #                           stdout=out_file_buffer,
-    #                           stderr=subprocess.PIPE)
-    #     time.sleep(t_acq)
-    #     p1.kill()
+        # self._com._reset_buffers()
+        # self._com._cleanup()
 
-    # def _timestamp_acq_ST(self, t_acq, out_file_buffer):
-    #     """ Write the binary output to a buffer for total measurement
-    #     times longer than 65 seconds"""
-    #     subprocess.check_call([self._prog,
-    #                            '-U', self._device_path,
-    #                            '-a', '1',
-    #                            '-g', '{}'.format(int(t_acq * 1000)),
-    #                            '-X'],
-    #                           stdout=out_file_buffer,
-    #                           stderr=subprocess.PIPE)
-
-    # def timestamp_acq(self, t_acq, out_file):
-    #     """ Write the binary output to a file"""
-    #     with open(out_file, 'wb') as of:
-    #         self._timestamp_acq(t_acq, of)
+        # Stream data for duration of integration time plus some delay set in usbcount_class.
+        ts_list = []
+        time0 = time.time()
+        self._com.write((cmd + '\r\n').encode())
+        while ((time.time() - time0) <= acq_time):
+            ts_list.append(self._com.read((1 << 20)*4))
+        self._com.write(b'abort\r\n')
+        self._com.readlines()
+        return b''.join(ts_list)
 
     def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
         '''Acquires timestamps and returns 2 lists. The first one containing the time and the second
@@ -216,16 +206,16 @@ class TimeStampTDC1(object):
         Keyword Arguments:
             t_acq {float} -- Duration of the the timestamp acquisition in seconds (default: {1})
         '''
-        # level = float(self.level.split()[0])
-        # self._com.write(b'*RST;INPKT;')
-        # self.threshold = level
-        buffer = self._com._stream_response_into_buffer(
-            'INPKT;time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
-            # '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
+        self.mode = 'singles'
+        level = float(self.level.split()[0])
+        self._com.readlines()
+        buffer = self._stream_response_into_buffer(
+            f'INPKT;POS {level};time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
+        # '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
 
         # buffer contains the timestamp information in binary.
-        # We need to convert them into time and identify the event channel.
-        # each timestamp is 32 bits long.
+        # Now convert them into time and identify the event channel.
+        # Each timestamp is 32 bits long.
         bytes_hex = buffer[::-1].hex()
         ts_word_list = [int(bytes_hex[i:i + 8], 16)
                         for i in range(0, len(bytes_hex), 8)][::-1]
@@ -266,57 +256,16 @@ class TimeStampTDC1(object):
         :rtype: {int, int, int, float, float}
         """
 
-        # open a temporary file to store the processed g2
-        if self._use_native_timestamps_acq is False:
-            with NamedTemporaryFile() as f_raw:
-                self._timestamp_acq(t_acq, f_raw)
-                f_raw.seek(0)
-                g2, t_bins, s1, s2, time_total = g2lib.g2_extr(f_raw.name,
-                                                               bins=bins,
-                                                               bin_width=bin_width,
-                                                               channel_start=ch_start,
-                                                               channel_stop=ch_stop,
-                                                               c_stop_delay=ch_stop_delay)
-            # calculates the pairs from the processed g2
-            # pairs = np.sum(g2 * self._mask_coinc)
+        t, channel = self.get_timestamps(t_acq)
+        channel = np.array([pattern_to_channel(int(i, 2)) for i in channel])
+        t_ch1 = t[channel == ch_start]
+        t_ch2 = t[channel == ch_stop]
+        histo = g2lib.delta_loop(
+            t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width_ns=bin_width)
+        total_time = t[-1]
+        return {'channel1': len(t_ch1),
+                'channel2': len(t_ch2),
+                'total_time': total_time, 'time_bins': np.arange(0, bins * bin_width, bin_width), 'histogram': histo}
 
-            # estimates accidentals for the integration time-window
-            # acc = np.sum(g2 * self._mask_acc) * self._acc_corr
-            return {'channel1': s1,
-                    'channel2': s2,
-                    'total_time': time_total}, t_bins, g2
-        else:
-            t, channel = self.get_timestamps(t_acq)
-            channel = np.array([pattern_to_channel(int(i, 2)) for i in channel])
-            t_ch1 = t[channel  == ch_start]
-            t_ch2 = t[channel == ch_stop]
-            histo = g2lib.delta_loop(
-                t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width_ns=bin_width)
-            total_time = t[-1]
-            return {'channel1': len(t_ch1),
-                    'channel2': len(t_ch2),
-                    'total_time': total_time, 'time_bins': np.arange(0, bins * bin_width, bin_width), 'histogram': histo}
     def help(self):
         return self._com.help()
-
-if __name__ == '__main__':
-    fpga = TimeStampTDC1()
-
-    # record events for 1s and store it in test.raw
-    fpga.timestamp_acq(1, 'test.raw')
-
-    # generates the conincidence histogram from data stored in test.raw
-    histogram, dt, s1, s2, time_total = g2lib.g2_extr('test.raw', 1000, 2000)
-    print(s1, s2, time_total)
-
-    # Counts singles, pairs, coincidences, and estimates accidentals
-    fpga.binwidth = 16
-    fpga.maxbins = 500
-    fpga.range = [48, 54]
-    fpga.acc_range = [100, 300]
-    output = fpga.get_counts(5)
-    print(output)
-    rate1 = output['channel1'] / output['total_time']
-    rate2 = output['channel2'] / output['total_time']
-    print('rate ch1: {0:.3e} counts/s\n'
-          'rate ch2: {1:.3e} counts/s'.format(rate1, rate2))

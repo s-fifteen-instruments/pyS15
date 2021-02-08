@@ -54,7 +54,8 @@ class SerialConnection(serial.Serial):
         """
         try:
             super(SerialConnection, self).__init__(device_path, timeout=1)
-            self.write(b';')
+            self.write(b'\r\n')
+            self.readlines()
         except serial.SerialException:
             print('Connection failed')
         self._reset_buffers()
@@ -94,7 +95,7 @@ class SerialConnection(serial.Serial):
         :rtype: {string}
         """
         self._cleanup()
-        # self._reset_buffers()
+        self._reset_buffers()
         self.write((cmd + '\r\n').encode())
         time.sleep(0.01)
         return [k.decode().strip() for k in self.readlines()]
@@ -116,28 +117,17 @@ class SerialConnection(serial.Serial):
         :rtype: {string}
         """
         self._cleanup()
+        self.timeout = timeout
         self.write((cmd + '\r\n').encode())
         t_start = time.time()
         while True:
             if self.inWaiting() > 0:
                 break
-            if time.time() > t_start + timeout:
+            if time.time() > (t_start + timeout):
+                print(time.time() - t_start)
                 raise serial.SerialTimeoutException('Command timeout')
         return self.readline().decode().strip()
 
-    def _stream_response_into_buffer(self, cmd: str, acq_time: float):
-        # this function bypass the termination character (since there is none for timestamp mode), 
-        # streams data from device for the integration time.
-        self._reset_buffers()
-        self.write((cmd + '\r\n').encode())
-        memory = b''
-        time0 = time.time()
-        # Stream data for duration of integration time plus some delay set in usbcount_class.
-        while ((time.time() - time0) <= acq_time):
-            Buffer_length = self.in_waiting
-            memory = memory + self.read(Buffer_length)
-        Rlength = len(memory)
-        return memory
 
     def help(self):
         """

@@ -162,11 +162,16 @@ class TimeStampTDC1(object):
 
     @property
     def threshold(self):
-        """ Set the kind of pulses to count"""
+        """Returns the threshold level"""
         return self.level
 
     @threshold.setter
     def threshold(self, value: float):
+        """Sets the the threshold the input pulse needs to exceed to trigger an event.
+
+        Args:
+            value (float): threshold value in volts can be negative or positive
+        """    
         if value < 0:
             self.write_only('NEG {}'.format(value))
         else:
@@ -180,16 +185,27 @@ class TimeStampTDC1(object):
 
     @clock.setter
     def clock(self, value: str):
+        """Set the clock source internel or external
+
+        Args:
+            value (str): 0 autoselect clock, 1 force external clock, 2 force internal clock reference
+        """    
         self.write_only('REFCLK {}'.format(value).encode())
 
-    def _stream_response_into_buffer(self, cmd: str, acq_time: float):
+    def _stream_response_into_buffer(self, cmd: str, acq_time: float) -> bytes:
+        """Streams data from the timestamp unit into a buffer.
+
+        Args:
+            cmd (str): Executes the given command to start the stream.
+            acq_time (float): Reads data for acq_time seconds.
+
+        Returns:
+            bytes: Returns the raw data.
+        """        
         # this function bypass the termination character (since there is none for timestamp mode),
         # streams data from device for the integration time.
 
-        # self._com._reset_buffers()
-        # self._com._cleanup()
-
-        # Stream data for duration of integration time plus some delay set in usbcount_class.
+        # Stream data for acq_time seconds into a buffer
         ts_list = []
         time0 = time.time()
         self._com.write((cmd + '\r\n').encode())
@@ -200,17 +216,24 @@ class TimeStampTDC1(object):
         return b''.join(ts_list)
 
     def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
-        '''Acquires timestamps and returns 2 lists. The first one containing the time and the second
+        """Acquires timestamps and returns 2 lists. The first one containing the time and the second
         the event channel. 
 
-        Keyword Arguments:
-            t_acq {float} -- Duration of the the timestamp acquisition in seconds (default: {1})
-        '''
+        Args:
+            t_acq (float, optional): Duration of the the timestamp acquisition in seconds. Defaults to 1.
+
+        Returns:
+            Tuple[List[float], List[str]]: Returns the event times in ns and the corresponding event channel.
+                                           The channel are returned as string where a 1 indicates the trigger channel.
+                                           For example an event in channel 2 would correspond to "0010".
+                                           Two coinciding events in channel 3 and 4 correspond to "1100"
+        """        
         self.mode = 'singles'
         level = float(self.level.split()[0])
-        self._com.readlines()
+        level_str = 'NEG' if level < 0 else "POS"
+        self._com.readlines() # empties buffer
         buffer = self._stream_response_into_buffer(
-            f'INPKT;POS {level};time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
+            f'INPKT;{level_str} {level};time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
         # '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
 
         # buffer contains the timestamp information in binary.
@@ -233,7 +256,6 @@ class TimeStampTDC1(object):
             prev_ts = time_stamp
             if (pattern & 0x10) == 0:
                 ts_list.append(time_stamp + periode_duration * periode_count)
-                # event_channel_list.append(pattern_to_channel(pattern & 0xf))
                 event_channel_list.append('{0:04b}'.format(pattern & 0xf))
 
         ts_list = np.array(ts_list) * 2
@@ -268,4 +290,8 @@ class TimeStampTDC1(object):
                 'total_time': total_time, 'time_bins': np.arange(0, bins * bin_width, bin_width), 'histogram': histo}
 
     def help(self):
-        return self._com.help()
+        """
+        Prints device help text
+        """
+        self._com.write(b'help\r\n')
+        [print(k) for k in self._com.readlines()]

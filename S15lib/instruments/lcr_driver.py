@@ -35,7 +35,7 @@ class LCRDriver(object):
 
     def set_voltage(self, channel: int, voltage: float):
         if voltage < 10 and voltage >= 0:
-            self._com.write((f'AMPLITUDE {channel} {voltage}\r\n').encode())
+            self._com.write(('AMPLITUDE {} {}\r\n'.format(channel, voltage)).encode())
         else:
             raise Exception('Voltage to high')
 
@@ -49,7 +49,7 @@ class LCRDriver(object):
 
     @V1.setter
     def V1(self, V1):
-        self._com.write((f'AMPLITUDE 1 {V1}\r\n').encode())
+        self._com.write(('AMPLITUDE 1 {}\r\n'.format(V1)).encode())
 
     @property
     def V2(self):
@@ -57,7 +57,7 @@ class LCRDriver(object):
 
     @V2.setter
     def V2(self, value):
-        self._com.write((f'AMPLITUDE 2 {value}\r\n').encode())
+        self._com.write(('AMPLITUDE 2 {}\r\n'.format(value)).encode())
 
     @property
     def V3(self):
@@ -65,7 +65,7 @@ class LCRDriver(object):
 
     @V3.setter
     def V3(self, value):
-        self._com.write((f'AMPLITUDE 3 {value}\r\n').encode())
+        self._com.write(('AMPLITUDE 3 {}\r\n'.format(value)).encode())
 
     @property
     def V4(self):
@@ -73,7 +73,7 @@ class LCRDriver(object):
 
     @V4.setter
     def V4(self, value):
-        self._com.write((f'AMPLITUDE 4 {value}\r\n').encode())
+        self._com.write(('AMPLITUDE 4 {}\r\n'.format(value)).encode())
 
     @property
     def identity(self):

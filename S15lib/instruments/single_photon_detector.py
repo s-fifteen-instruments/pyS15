@@ -31,7 +31,7 @@ class SinglePhotonDetector(object):
 
     @hvolt.setter
     def hvolt(self, value: float):
-        self._com.write(f'hvolt {value}\r\n'.encode())
+        self._com.write('hvolt {}\r\n'.format(value).encode())
         time.sleep(0.1)
 
     @property
@@ -40,7 +40,7 @@ class SinglePhotonDetector(object):
 
     @threshvolt.setter
     def threshvolt(self, value: float):
-        self._com.write(f'threshvolt {value}\r\n'.encode())
+        self._com.write('threshvolt {}\r\n'.format(value).encode())
 
     @property
     def constp(self) -> float:
@@ -48,7 +48,7 @@ class SinglePhotonDetector(object):
 
     @constp.setter
     def constp(self, value: float):
-        self._com.write(f'constp {value}\r\n'.encode())
+        self._com.write('constp {}\r\n'.format(value).encode())
 
     @property
     def consti(self) -> float:
@@ -56,7 +56,7 @@ class SinglePhotonDetector(object):
 
     @consti.setter
     def consti(self, value: float):
-        self._com.write(f'consti {value}\r\n'.encode())
+        self._com.write('consti {}\r\n'.format(value).encode())
 
     @property
     def loop(self) -> int:
@@ -64,7 +64,7 @@ class SinglePhotonDetector(object):
 
     @loop.setter
     def loop(self, value: int):
-        self._com.write(f'loop {value}\r\n'.encode())
+        self._com.write('loop {}\r\n'.format(value).encode())
 
     @property
     def pvolt(self) -> float:
@@ -72,7 +72,7 @@ class SinglePhotonDetector(object):
 
     @pvolt.setter
     def pvolt(self, value: float):
-        self._com.write(f'pvolt {value}\r\n'.encode())
+        self._com.write('pvolt {}\r\n'.format(value).encode())
 
     def temp_stabilization_on(self):
         self.loop = 1
@@ -90,7 +90,7 @@ class SinglePhotonDetector(object):
 
         value (float): duration in ms
         '''
-        self._com.write(f'time {value}\r\n'.encode())
+        self._com.write('time {}\r\n'.format(value).encode())
 
     def counts(self, counting_time_sec: float = 1) -> int:
         '''Returns counts detected on the detector within the given counting time (default = 1 second)
@@ -104,7 +104,7 @@ class SinglePhotonDetector(object):
 
     @temperature.setter
     def temperature(self, value: float):
-        self._com.write(f'settemp {value}\r\n'.encode())
+        self._com.write('settemp {}\r\n'.format(value).encode())
 
     @property
     def settemperature(self) -> float:
@@ -120,6 +120,6 @@ class SinglePhotonDetector(object):
 
     @delay.setter
     def delay(self, value: int):
-        self._com.write(f'delay {value}\r\n'.encode())
+        self._com.write('delay {}\r\n'.format(value).encode())
 
 

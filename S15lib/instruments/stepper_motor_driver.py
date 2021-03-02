@@ -18,8 +18,8 @@ class StepperMotorDriver(object):
         # setvolt 0 1.5; interpol 0 2; setspeed 0 170; zero 0; on 0
 
     def init_motor(self, channel: int):
-        self._com.write(f'setvolt {channel} 1.5; interpol {channel} 2; setspeed {channel} 170; zero {channel}; on {channel}\r\n'.encode())
-        self._com.write(f'setvolt {channel} 1.5; interpol {channel} 2; setspeed {channel} 170; zero {channel}; on {channel}\r\n'.encode())
+        self._com.write('setvolt {} 1.5; interpol {} 2; setspeed {} 170; zero {}; on {}\r\n'.format(channel, channel, channel, channel, channel).encode())
+        self._com.write('setvolt {} 1.5; interpol {} 2; setspeed {} 170; zero {}; on {}\r\n'.format(channel, channel, channel, channel, channel).encode())
 
     def identity(self) -> str:
         # self._com.write(b'*IDN?\r\n')

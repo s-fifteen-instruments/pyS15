@@ -175,7 +175,7 @@ class SPDCDriver(object):
 
     @pconstp.setter
     def pconstp(self, value) -> float:
-        cmd = f'pconstp {value}\r\n'.encode()
+        cmd = 'pconstp {}\r\n'.format(value).encode()
         return self._com.write(cmd)
 
     @property
@@ -184,7 +184,7 @@ class SPDCDriver(object):
 
     @pconsti.setter
     def pconsti(self, value) -> float:
-        cmd = f'pconsti {value}\r\n'.encode()
+        cmd = 'pconsti {}\r\n'.format(value).encode()
         return self._com.write(cmd)
 
     @property
@@ -193,7 +193,7 @@ class SPDCDriver(object):
 
     @hconstp.setter
     def hconstp(self, value: float) -> float:
-        cmd = f'hconstp {value}\r\n'.encode()
+        cmd = 'hconstp {value}\r\n'.format(value).encode()
         return self._com.write(cmd)
 
     @property
@@ -202,7 +202,7 @@ class SPDCDriver(object):
 
     @hconsti.setter
     def hconsti(self, value: float) -> float:
-        cmd = f'hconsti {value}\r\n'.encode()
+        cmd = 'hconsti {value}\r\n'.format(value).encode()
         return self._com.write(cmd)
 
     @property
@@ -211,7 +211,7 @@ class SPDCDriver(object):
 
     @laser_current_limit.setter
     def laser_current_limit(self, value: float) -> float:
-        cmd = f'llimit {value}\r\n'.encode()
+        cmd = 'llimit {}\r\n'.format(value).encode()
         return self._com.write(cmd)
 
 

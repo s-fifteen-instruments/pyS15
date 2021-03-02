@@ -233,7 +233,7 @@ class TimeStampTDC1(object):
         level_str = 'NEG' if level < 0 else "POS"
         self._com.readlines() # empties buffer
         buffer = self._stream_response_into_buffer(
-            f'INPKT;{level_str} {level};time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
+            'INPKT;{} {};time {}'.format(level_str, level, t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
         # '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
 
         # buffer contains the timestamp information in binary.

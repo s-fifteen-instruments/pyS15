@@ -235,7 +235,6 @@ class TimeStampTDC1(object):
         # t_acq_for_cmd = t_acq if t_acq < 65 else 0
         cmd_str = 'INPKT;{} {};time {};timestamp;counts?;'.format(
             level_str, level, (t_acq if t_acq < 65 else 0) * 1000)
-        print(cmd_str)
         buffer = self._stream_response_into_buffer(cmd_str, t_acq + 0.1)
         # '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
 

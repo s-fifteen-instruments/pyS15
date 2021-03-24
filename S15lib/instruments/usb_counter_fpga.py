@@ -13,6 +13,7 @@ import subprocess
 from typing import Tuple, List
 
 import serial
+import serial.tools.list_ports
 import time
 
 from ..g2lib import g2lib
@@ -24,7 +25,8 @@ from tempfile import NamedTemporaryFile
 from . import serial_connection
 
 READEVENTS_PROG = expanduser("~") + "/programs/usbcntfpga/apps/readevents4a"
-
+TTL = 'TTL'
+NIM = 'NIM'
 
 def pattern_to_channel(pattern):
     if pattern == 4:
@@ -41,6 +43,8 @@ class TimeStampTDC1(object):
     inherited from the generic serial one.
     """
     DEVICE_IDENTIFIER = 'TDC1'
+    TTL_LEVELS = 'TTL'
+    NIM_LEVELS = 'NIM'
 
     def __init__(self, device_path=None,
                  integration_time=1,
@@ -52,13 +56,13 @@ class TimeStampTDC1(object):
         otherwise it will
         initialize the first counter found in the system
         """
-        if device_path is None:
+        if device_path is None:          
             device_path = (serial_connection.search_for_serial_devices(
                 self.DEVICE_IDENTIFIER))[0]
             print('Connected to', device_path)
         self._device_path = device_path
         # self._com = serial_connection.SerialConnection(device_path)
-        self._com = serial.Serial(device_path, timeout=1)
+        self._com = serial.Serial(device_path, timeout=0.1)
         self._com.write(b'\r\n')
         self._com.readlines()
         self.mode = mode
@@ -145,7 +149,7 @@ class TimeStampTDC1(object):
 
     @property
     def level(self):
-        """ Set the kind of pulses to count"""
+        """ Set type of incoming pulses"""
         self._com.write(b'level?\r\n')
         return self._com.readline().strip()
         # return self._com._getresponse_1l('LEVEL?')

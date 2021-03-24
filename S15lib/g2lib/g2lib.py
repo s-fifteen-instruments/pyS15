@@ -96,7 +96,7 @@ def g2_extr(filename: str, bins: int=100, bin_width: float=2, min_range: int=0,
 
 
     hist = delta_loop(t1, t2 - min_range + c_stop_delay, bins=bins,
-                      bin_width=bin_width)
+                      bin_width_ns=bin_width)
     try:
         t_max = t[-1] - t[0]
     except IndexError:

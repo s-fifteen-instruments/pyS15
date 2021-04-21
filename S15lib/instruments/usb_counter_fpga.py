@@ -230,7 +230,8 @@ class TimeStampTDC1(object):
         """
 
         #implementaiton missing
-        raise Exception('Implemenation missing')
+        raise Exception('Implementation missing')
+        return None
 
     def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
         """Acquires timestamps and returns 2 lists. The first one containing the time and the second

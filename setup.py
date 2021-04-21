@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='S15lib',
-    version='0.2',
+    version='0.3',
     description='S-Fifteen Python Library',
     url='https://s-fifteen.com/',
     author='Mathias Seidler;',

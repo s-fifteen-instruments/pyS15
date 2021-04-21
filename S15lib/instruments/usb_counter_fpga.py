@@ -219,6 +219,19 @@ class TimeStampTDC1(object):
         self._com.readlines()
         return b''.join(ts_list)
 
+    def get_counts_and_coincidences(self, t_acq: float =1) -> Tuple[int, int , int, int, int, int, int, int]:
+        """Counts single events and coinciding events in channel pairs.
+
+        Args:
+            t_acq (float, optional): Time duration to count events in seperated channels and coinciding events in 2 channels. Defaults to 1.
+
+        Returns:
+            Tuple[int, int , int, int, int, int, int, int]: Events ch1, ch2, ch3, ch4; Coincidences: ch1-ch3, ch1-ch4, ch2-ch3, ch2-ch4
+        """
+
+        #implementaiton missing
+        raise Exception('Implemenation missing')
+
     def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
         """Acquires timestamps and returns 2 lists. The first one containing the time and the second
         the event channel. 

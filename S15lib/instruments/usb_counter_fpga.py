@@ -130,7 +130,7 @@ class TimeStampTDC1(object):
             return 'singles'
         if mode == 1:
             return 'pairs'
-        if mode == 2:
+        if mode == 3:
             return 'timestamp'
 
     @mode.setter

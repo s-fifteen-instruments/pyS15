@@ -39,19 +39,45 @@ class SPDCDriver(object):
 
     def heater_loop_off(self):
         self._com.write(b'HLOOP 0\n')
+        self._com.write(b'HVOLT 0;')
 
     def peltier_loop_on(self):
         self._com.write(b'PLOOP 1\n')
 
     def peltier_loop_off(self):
         self._com.write(b'PLOOP 0\n')
+        self._com.write(b'PVOLT 0;')
 
     @property
-    def peltier_loop(self) -> float:
+    def peltier_voltage_limit(self) -> float:
+        return float(self._com._getresponse_1l('pvoltlimit?'))
+
+    @peltier_voltage_limit.setter
+    def peltier_voltage_limit(self, voltage: float):
+        self._com.write(b'pvoltlimit {}'.formt(voltage))
+
+    @property
+    def peltier_loop(self) -> int:
         return int(self._com._getresponse_1l('PLOOP?'))
 
     @property
-    def heater_loop(self):
+    def heater_voltage(self) -> float:
+        return float(self._com._getresponse_1l('hvolt?'))
+
+    @property
+    def peltier_voltage(self) -> float:
+        return float(self._com._getresponse_1l('pvolt?'))
+
+    @property
+    def heater_voltage_limit(self) -> float:
+        return float(self._com._getresponse_1l('hvoltlimit?'))
+
+    @heater_voltage_limit.setter
+    def peltier_voltage_limit(self, voltage: float):
+        self._com.write(b'hvoltlimit {}'.formt(voltage))
+
+    @property
+    def heater_loop(self) -> int:
         return int(self._com._getresponse_1l('HLOOP?'))
 
     @property
@@ -193,7 +219,7 @@ class SPDCDriver(object):
 
     @hconstp.setter
     def hconstp(self, value: float) -> float:
-        cmd = 'hconstp {value}\r\n'.format(value).encode()
+        cmd = 'hconstp {}\r\n'.format(value).encode()
         return self._com.write(cmd)
 
     @property
@@ -202,7 +228,7 @@ class SPDCDriver(object):
 
     @hconsti.setter
     def hconsti(self, value: float) -> float:
-        cmd = 'hconsti {value}\r\n'.format(value).encode()
+        cmd = 'hconsti {}\r\n'.format(value).encode()
         return self._com.write(cmd)
 
     @property

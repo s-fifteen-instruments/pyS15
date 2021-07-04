@@ -228,10 +228,26 @@ class TimeStampTDC1(object):
         Returns:
             Tuple[int, int , int, int, int, int, int, int]: Events ch1, ch2, ch3, ch4; Coincidences: ch1-ch3, ch1-ch4, ch2-ch3, ch2-ch4
         """
+        self.mode = 'pairs'
+        self._com.readlines() # empties buffer
+        
+        if t_acq is None:
+            t_acq = self.int_time
+        else:
+            self.int_time = t_acq
+        self._com.timeout = t_acq
 
-        #implementaiton missing
-        raise Exception('Implementation missing')
-        return None
+        self._com.write(b'pairs;counts?\r\n')
+        t_start = time.time()
+        while True:
+            if self._com.inWaiting() > 0:
+                break
+            if time.time() > (t_start + t_acq + 0.1):
+                print(time.time() - t_start)
+                raise serial.SerialTimeoutException('Command timeout')
+        singlesAndPairs = self._com.readline().decode().strip()
+        self._com.timeout = 1
+        return tuple([int(i) for i in singlesAndPairs.split()])
 
     def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
         """Acquires timestamps and returns 2 lists. The first one containing the time and the second

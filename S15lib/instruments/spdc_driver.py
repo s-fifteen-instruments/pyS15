@@ -140,20 +140,19 @@ class SPDCDriver(object):
                 temperature {float} -- set point for the heater temperature
         '''
         assert type(self._com) is serial_connection.SerialConnection
-        # cmd_setPID = b'HCONSTP 0.13;HCONSTI 0.008\n'
-        # self._com.write(cmd_setPID)
         now_temp = self.heater_temp
-        # cmd = ('HSETTEMP {}\n'.format(now_temp)).encode()
-        # self.heater_loop_on()
         if now_temp < temperature:
+            # Perform precautionary stepping during heating
             for t in range(int(now_temp) + 1, int(temperature) + 1):
                 cmd = ('HSETTEMP {}\n'.format(t)).encode()
-                print(cmd)
                 self._com.write(cmd)
                 time.sleep(6)
+            # Enable floating point setpoint
+            if int(temperature) != temperature:
+                cmd = ('HSETTEMP {:.3f}\n'.format(temperature)).encode()
+                self._com.write(cmd)
         else:
             cmd = ('HSETTEMP {}\n'.format(temperature)).encode()
-            print('lowering temp', cmd)
             self._com.write(cmd)
 
     @property

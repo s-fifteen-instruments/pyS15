@@ -105,6 +105,7 @@ class TimeStampTDC1(object):
         Returns:
             List: [description]
         """
+        self._com.timeout = 0.05   
         if duration_seconds is None:
             duration_seconds = self.int_time
         else:
@@ -112,15 +113,18 @@ class TimeStampTDC1(object):
         self._com.timeout = duration_seconds
 
         self._com.write(b'singles;counts?\r\n')       
-        t_start = time.time()
-        while True:
-            if self._com.inWaiting() > 0:
-                break
-            if time.time() > (t_start + duration_seconds + 0.1):
-                print(time.time() - t_start)
-                raise serial.SerialTimeoutException('Command timeout')
+
+        # t_start = time.time()
+        # while True:
+        #     if self._com.inWaiting() > 0:
+        #         break
+        #     if time.time() > (t_start + duration_seconds + 0.1):
+        #         print(time.time() - t_start)
+        #         raise serial.SerialTimeoutException('Command timeout')
+
+
         counts = self._com.readline().decode().strip()
-        self._com.timeout = 1
+        self._com.timeout = 0.05  
         return tuple([int(i) for i in counts.split()])
 
     @property

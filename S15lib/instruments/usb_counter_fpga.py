@@ -36,6 +36,8 @@ def pattern_to_channel(pattern):
     elif pattern == 1 or pattern == 2 or pattern == 0:
         return pattern
 
+def channel_to_pattern(channel):
+    return int(2**(channel-1))
 
 class TimeStampTDC1(object):
     """
@@ -315,9 +317,21 @@ class TimeStampTDC1(object):
         """
 
         t, channel = self.get_timestamps(t_acq)
-        channel = np.array([pattern_to_channel(int(i, 2)) for i in channel])
-        t_ch1 = t[channel == ch_start]
-        t_ch2 = t[channel == ch_stop]
+
+        """
+            OLDER CODE:
+        """
+        # channel = np.array([pattern_to_channel(int(i, 2)) for i in channel])
+        # t_ch1 = t[channel == ch_start]
+        # t_ch2 = t[channel == ch_stop]
+
+        """
+            NEWER CODE:
+            convert string expression of channel elements to a number, and mask it against desired channels
+            the mask ensures that timestamp events that arrive at the channels within one time resolution is still registered.
+        """
+        t_ch1 = t[[int(ch,2) & channel_to_pattern(ch_start) != 0 for ch in channel]]
+        t_ch2 = t[[int(ch,2) & channel_to_pattern(ch_stop) != 0 for ch in channel]]
         histo = g2lib.delta_loop(
             t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width_ns=bin_width)
         total_time = t[-1]

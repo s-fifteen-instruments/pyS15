@@ -7,6 +7,7 @@ Collection of functions to simplify the integration of the USB counter in
 Python scripts.
 """
 
+import os
 import glob
 import numpy as np
 import subprocess
@@ -15,6 +16,8 @@ from typing import Tuple, List
 import serial
 import serial.tools.list_ports
 import time
+import multiprocessing
+import csv
 
 from ..g2lib import g2lib
 
@@ -38,6 +41,32 @@ def pattern_to_channel(pattern):
 
 def channel_to_pattern(channel):
     return int(2**(channel-1))
+
+# class Threading(object):
+#     """ Threading example class
+#     The run() method will be started and it will run in the background
+#     until the application exits.
+#     ref: http://sebastiandahlgren.se/2014/06/27/running-a-method-as-a-background-thread-in-python/
+#     """
+
+#     def __init__(self, interval=1):
+#         """ Constructor
+#         :type interval: int
+#         :param interval: Check interval, in seconds
+#         """
+#         self.interval = interval
+
+#         thread = threading.Thread(target=self.run, args=())
+#         thread.daemon = True                            # Daemonize thread
+#         thread.start()                                  # Start the execution
+
+#     def run(self):
+#         """ Method that runs forever """
+#         while True:
+#             # Do something
+#             print('Doing something imporant in the background')
+
+#             time.sleep(self.interval)
 
 class TimeStampTDC1(object):
     """
@@ -70,6 +99,8 @@ class TimeStampTDC1(object):
         self.mode = mode
         self.level = level
         self.int_time = integration_time
+        self.accumulate_timestamps = False # flag for timestamp accumulation service 
+        self.accumulated_timestamps_filename = "timestamps.raw" # binary file where timestamps are stored
         time.sleep(0.2)
 
     @property
@@ -114,17 +145,17 @@ class TimeStampTDC1(object):
 
         self._com.write(b'singles;counts?\r\n')       
 
-        # t_start = time.time()
-        # while True:
-        #     if self._com.inWaiting() > 0:
-        #         break
-        #     if time.time() > (t_start + duration_seconds + 0.1):
-        #         print(time.time() - t_start)
-        #         raise serial.SerialTimeoutException('Command timeout')
+        t_start = time.time()
+        while True:
+            if self._com.inWaiting() > 0:
+                break
+            if time.time() > (t_start + duration_seconds + 0.1):
+                print(time.time() - t_start)
+                raise serial.SerialTimeoutException('Command timeout')
 
 
         counts = self._com.readline().decode().strip()
-        self._com.timeout = 0.05  
+        self._com.timeout = 0.05
         return tuple([int(i) for i in counts.split()])
 
     @property
@@ -295,6 +326,7 @@ class TimeStampTDC1(object):
             pattern = ts_word & 0x1f
             if prev_ts != -1 and time_stamp < prev_ts:
                 periode_count += 1
+                # print(periode_count)
             prev_ts = time_stamp
             if (pattern & 0x10) == 0:
                 ts_list.append(time_stamp + periode_duration * periode_count)
@@ -323,16 +355,16 @@ class TimeStampTDC1(object):
         t, channel = self.get_timestamps(t_acq)
 
         """
-            OLDER CODE:
+        OLDER CODE:
         """
         # channel = np.array([pattern_to_channel(int(i, 2)) for i in channel])
         # t_ch1 = t[channel == ch_start]
         # t_ch2 = t[channel == ch_stop]
 
         """
-            NEWER CODE:
-            convert string expression of channel elements to a number, and mask it against desired channels
-            the mask ensures that timestamp events that arrive at the channels within one time resolution is still registered.
+        NEWER CODE:
+        convert string expression of channel elements to a number, and mask it against desired channels
+        the mask ensures that timestamp events that arrive at the channels within one time resolution is still registered.
         """
         t_ch1 = t[[int(ch,2) & channel_to_pattern(ch_start) != 0 for ch in channel]]
         t_ch2 = t[[int(ch,2) & channel_to_pattern(ch_stop) != 0 for ch in channel]]
@@ -349,3 +381,99 @@ class TimeStampTDC1(object):
         """
         self._com.write(b'help\r\n')
         [print(k) for k in self._com.readlines()]
+
+    def _continuous_stream_timestamps_to_file(self, filename: str):
+        """
+        Indefinitely streams timestamps to a file
+        WARNING: ensure there is sufficient disk space: 32 bits x total events required
+        """
+        self.mode = 'singles'
+        level = float(self.level.split()[0])
+        level_str = 'NEG' if level < 0 else "POS"
+        self._com.readlines() # empties buffer
+        # t_acq_for_cmd = t_acq if t_acq < 65 else 0
+        cmd_str = 'INPKT;{} {};time {};timestamp;counts?;'.format(
+            level_str, level, 0)
+        self._com.write((cmd_str + '\r\n').encode())
+
+        while True:
+            buffer = self._com.read((1 << 20)*4)
+            with open(filename,'ab+') as f:
+                f.write(buffer)
+            f.close()
+
+    def start_continuous_stream_timestamps_to_file(self):
+        """
+        Starts the timestamp streaming service to file in the brackground
+        """
+        if os.path.exists(self.accumulated_timestamps_filename):
+          os.remove(self.accumulated_timestamps_filename) # remove previous accumulation file for a fresh start
+        else:
+          pass
+        self.accumulate_timestamps = True
+        self.proc = multiprocessing.Process(target=self._continuous_stream_timestamps_to_file,args=(self.accumulated_timestamps_filename,))
+        self.proc.daemon = True                            # Daemonize thread
+        self.proc.start()                                  # Start the execution
+
+    def stop_continuous_stream_timestamps_to_file(self):
+        """
+        Stops the timestamp streaming service to file in the brackground
+        """
+        self.accumulate_timestamps = False
+        self.proc.terminate()
+        time.sleep(0.5)
+        self.proc.close()
+        self._com.write(('*RST\r\n').encode())
+
+    def read_timestamps_bin(self, binary_stream):
+        """
+        Reads the timestamps accumulated in a binary sequence
+        Returns:
+            Tuple[List[float], List[str]]: Returns the event times in ns and the corresponding event channel.
+                                           The channel are returned as string where a 1 indicates the trigger channel.
+                                           For example an event in channel 2 would correspond to "0010".
+                                           Two coinciding events in channel 3 and 4 correspond to "1100"
+        """
+        bytes_hex = binary_stream[::-1].hex()
+        ts_word_list = [int(bytes_hex[i:i + 8], 16)
+                                for i in range(0, len(bytes_hex), 8)][::-1]
+
+        ts_list = []
+        event_channel_list = []
+        periode_count = 0
+        periode_duration = 1 << 27
+        prev_ts = -1
+        for ts_word in ts_word_list:
+            time_stamp = ts_word >> 5
+            pattern = ts_word & 0x1f
+            if prev_ts != -1 and time_stamp < prev_ts:
+                periode_count += 1
+        #         print(periode_count)
+            prev_ts = time_stamp
+            if (pattern & 0x10) == 0:
+                ts_list.append(time_stamp + periode_duration * periode_count)
+                event_channel_list.append('{0:04b}'.format(pattern & 0xf))
+
+        ts_list = np.array(ts_list) * 2
+        event_channel_list = event_channel_list
+        return ts_list, event_channel_list
+
+    def read_timestamps_from_file(self):
+        """
+        Reads the timestamps accumulated in a binary file
+        """
+        with open(self.accumulated_timestamps_filename,"rb") as f:
+            lines = f.read()
+        f.close()
+        return self.read_timestamps_bin(lines)
+
+    def read_timestamps_from_file_as_dict(self):
+        """
+        Reads the timestamps accumulated in a binary file
+        Returns dictionary where timestamps['channel i'] is the timestamp array in nsec for the ith channel
+        """
+        timestamps = {}
+        times, channels = self.read_timestamps_from_file() # channels may involve coincidence signatures such as '0101'
+        for channel in range(1,5,1): # iterate through channel numbers 1, 2, 3, 4
+            timestamps['channel {}'.format(channel)] = times[[int(ch,2) & channel_to_pattern(channel) != 0 for ch in channels]]
+        return timestamps

@@ -423,7 +423,8 @@ class TimeStampTDC1(object):
         self.proc.terminate()
         time.sleep(0.5)
         self.proc.close()
-        self._com.write(('*RST\r\n').encode())
+        self._com.write(b'abort\r\n')
+        self._com.readlines()
 
     def read_timestamps_bin(self, binary_stream):
         """
@@ -477,3 +478,30 @@ class TimeStampTDC1(object):
         for channel in range(1,5,1): # iterate through channel numbers 1, 2, 3, 4
             timestamps['channel {}'.format(channel)] = times[[int(ch,2) & channel_to_pattern(channel) != 0 for ch in channels]]
         return timestamps
+
+    def real_time_processing(self):
+        """
+        Real-time processes the timestamps that are saved in the background.
+        Grabs a number of lines of timestamps to process (defined as a section): since reading from a file is time-consuming, we grab a couple at a go.
+        """
+        lines_per_section = int(1e6) # reads these number of timestamp events at a time
+        with open("timestamps.raw","rb") as f:
+        times = np.array([])
+        while not eof:
+            lines = f.read(4*lines_per_section) # reads a section-worth = 4 bytes (32-bits) x lines per section
+            t,c = counter.read_timestamps_bin(lines) # returns time-ordered list
+            
+            try:
+                curr_section_first_ts = t[0] # grabs the first timestanp of the section
+            except:
+                time.sleep(0.1) # wait a while for data to come in
+            if curr_section_first_ts < prev_section_last_ts: # compares the first timestamp of the section to the last timestamp of the previous section
+                t = np.array(t) + np.ceil((prev_section_last_ts - curr_section_first_ts)/periode_duration)*periode_duration # make up for rollover
+            prev_section_last_ts = t[-1] # update previous section timestamps
+
+            """
+            INSERT WHATEVER REAL TIME PROCESS HERE
+            """
+            # example:
+            times = np.append(times,t) # builds a list of times if needed: comment out if you don't need to accumulate e.g. when building a g2
+        f.close()

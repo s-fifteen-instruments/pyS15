@@ -486,22 +486,22 @@ class TimeStampTDC1(object):
         """
         lines_per_section = int(1e6) # reads these number of timestamp events at a time
         with open("timestamps.raw","rb") as f:
-        times = np.array([])
-        while not eof:
-            lines = f.read(4*lines_per_section) # reads a section-worth = 4 bytes (32-bits) x lines per section
-            t,c = counter.read_timestamps_bin(lines) # returns time-ordered list
-            
-            try:
-                curr_section_first_ts = t[0] # grabs the first timestanp of the section
-            except:
-                time.sleep(0.1) # wait a while for data to come in
-            if curr_section_first_ts < prev_section_last_ts: # compares the first timestamp of the section to the last timestamp of the previous section
-                t = np.array(t) + np.ceil((prev_section_last_ts - curr_section_first_ts)/periode_duration)*periode_duration # make up for rollover
-            prev_section_last_ts = t[-1] # update previous section timestamps
+            times = np.array([])
+            while not eof:
+                lines = f.read(4*lines_per_section) # reads a section-worth = 4 bytes (32-bits) x lines per section
+                t,c = counter.read_timestamps_bin(lines) # returns time-ordered list
 
-            """
-            INSERT WHATEVER REAL TIME PROCESS HERE
-            """
-            # example:
-            times = np.append(times,t) # builds a list of times if needed: comment out if you don't need to accumulate e.g. when building a g2
+                try:
+                    curr_section_first_ts = t[0] # grabs the first timestanp of the section
+                except:
+                    time.sleep(0.1) # wait a while for data to come in
+                if curr_section_first_ts < prev_section_last_ts: # compares the first timestamp of the section to the last timestamp of the previous section
+                    t = np.array(t) + np.ceil((prev_section_last_ts - curr_section_first_ts)/periode_duration)*periode_duration # make up for rollover
+                prev_section_last_ts = t[-1] # update previous section timestamps
+
+                """
+                INSERT WHATEVER REAL TIME PROCESS HERE
+                """
+                # example:
+                times = np.append(times,t) # builds a list of times if needed: comment out if you don't need to accumulate e.g. when building a g2
         f.close()

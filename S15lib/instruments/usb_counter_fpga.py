@@ -350,6 +350,12 @@ class TimeStampTDC1(object):
         :type t_acq: float
         :returns: ch_start counts, ch_stop counts, actual acquistion time, time bin array, histogram
         :rtype: {int, int, int, float, float}
+        
+        Notes
+        -----
+        Actual acquisition time is obtained from the returned timestamps. This might differ slightly from the
+        acquisition time passed to the timestamp device in the arguments of this function. If there are no counts
+        in a given timespan, no timestamps are obtained. In this case, t_acq is taken to be the actual acquisition time.
         """
 
         t, channel = self.get_timestamps(t_acq)
@@ -370,7 +376,7 @@ class TimeStampTDC1(object):
         t_ch2 = t[[int(ch,2) & channel_to_pattern(ch_stop) != 0 for ch in channel]]
         histo = g2lib.delta_loop(
             t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width_ns=bin_width)
-        total_time = t[-1]
+        total_time = t[-1] if len(t)>0 else t_acq
         return {'channel1': len(t_ch1),
                 'channel2': len(t_ch2),
                 'total_time': total_time, 'time_bins': np.arange(0, bins * bin_width, bin_width), 'histogram': histo}

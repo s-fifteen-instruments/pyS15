@@ -87,7 +87,7 @@ class TimeStampTDC1(object):
         otherwise it will
         initialize the first counter found in the system
         """
-        if device_path is None:          
+        if device_path is None:
             device_path = (serial_connection.search_for_serial_devices(
                 self.DEVICE_IDENTIFIER))[0]
             print('Connected to', device_path)
@@ -99,7 +99,7 @@ class TimeStampTDC1(object):
         self.mode = mode
         self.level = level
         self.int_time = integration_time
-        self.accumulate_timestamps = False # flag for timestamp accumulation service 
+        self.accumulate_timestamps = False # flag for timestamp accumulation service
         self.accumulated_timestamps_filename = "timestamps.raw" # binary file where timestamps are stored
         time.sleep(0.2)
 
@@ -136,14 +136,14 @@ class TimeStampTDC1(object):
         Returns:
             List: [description]
         """
-        self._com.timeout = 0.05   
+        self._com.timeout = 0.05
         if duration_seconds is None:
             duration_seconds = self.int_time
         else:
             self.int_time = duration_seconds
         self._com.timeout = duration_seconds
 
-        self._com.write(b'singles;counts?\r\n')       
+        self._com.write(b'singles;counts?\r\n')
 
         t_start = time.time()
         while True:
@@ -212,7 +212,7 @@ class TimeStampTDC1(object):
 
         Args:
             value (float): threshold value in volts can be negative or positive
-        """    
+        """
         if value < 0:
             self.write_only('NEG {}'.format(value))
         else:
@@ -230,7 +230,7 @@ class TimeStampTDC1(object):
 
         Args:
             value (str): 0 autoselect clock, 1 force external clock, 2 force internal clock reference
-        """    
+        """
         self.write_only('REFCLK {}'.format(value).encode())
 
     def _stream_response_into_buffer(self, cmd: str, acq_time: float) -> bytes:
@@ -242,7 +242,7 @@ class TimeStampTDC1(object):
 
         Returns:
             bytes: Returns the raw data.
-        """        
+        """
         # this function bypass the termination character (since there is none for timestamp mode),
         # streams data from device for the integration time.
 
@@ -267,7 +267,7 @@ class TimeStampTDC1(object):
         """
         self.mode = 'pairs'
         self._com.readlines() # empties buffer
-        
+
         if t_acq is None:
             t_acq = self.int_time
         else:
@@ -288,7 +288,7 @@ class TimeStampTDC1(object):
 
     def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
         """Acquires timestamps and returns 2 lists. The first one containing the time and the second
-        the event channel. 
+        the event channel.
 
         Args:
             t_acq (float, optional): Duration of the the timestamp acquisition in seconds. Defaults to 1.
@@ -298,7 +298,7 @@ class TimeStampTDC1(object):
                                            The channel are returned as string where a 1 indicates the trigger channel.
                                            For example an event in channel 2 would correspond to "0010".
                                            Two coinciding events in channel 3 and 4 correspond to "1100"
-        """        
+        """
         self.mode = 'singles'
         level = float(self.level.split()[0])
         level_str = 'NEG' if level < 0 else "POS"
@@ -350,7 +350,7 @@ class TimeStampTDC1(object):
         :type t_acq: float
         :returns: ch_start counts, ch_stop counts, actual acquistion time, time bin array, histogram
         :rtype: {int, int, int, float, float}
-        
+
         Notes
         -----
         Actual acquisition time is obtained from the returned timestamps. This might differ slightly from the

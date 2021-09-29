@@ -30,7 +30,7 @@ class LCRDriver(object):
 
     def all_channels_on(self):
         """Switches all channels on, to a frequency of 2000 and switches off the LED.
-        """        
+        """
         self._com.write(b'ON\r\n')
         self._com.write(b'DARK\r\n')
         self._com.write(b'FREQ 2000\r\n')

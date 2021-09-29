@@ -14,7 +14,7 @@ import glob
 
 def search_for_serial_devices(device: str):
     '''Searches for serial devices defined in the input paremater device.
-    If the device identification string containes the string given in the input paramter 'device', the device path is 
+    If the device identification string containes the string given in the input paramter 'device', the device path is
     appended to a list. This list is then returned as search result.
     '''
     if sys.platform.startswith('win'):

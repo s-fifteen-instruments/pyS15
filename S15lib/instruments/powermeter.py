@@ -152,7 +152,7 @@ class PowerMeter():
 
         Keyword Arguments:
             samples (number) -- number of samples to average from (default: 10)
-            wave_length (number) -- wave length of the light in nm 
+            wave_length (number) -- wave length of the light in nm
 
         Returns:
             (number, number) -- mean and standard deviation of optical power

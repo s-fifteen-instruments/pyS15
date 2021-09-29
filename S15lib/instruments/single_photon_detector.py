@@ -17,17 +17,17 @@ class SinglePhotonDetector(object):
 
     def identity(self) -> str:
         # self._com.write(b'*IDN?\r\n')
-        return self._com._getresponse_1l('*idn?')
+        return self._com.getresponse('*idn?')
 
     def help(self) -> str:
         print(self._com.help())
 
     def save_settings(self) -> str:
-        return self._com._getresponse_1l('save')
+        return self._com.getresponse('save')
 
     @property
     def hvolt(self) -> float:
-        return float(self._com._getresponse_1l('hvolt?'))
+        return float(self._com.getresponse('hvolt?'))
 
     @hvolt.setter
     def hvolt(self, value: float):
@@ -36,7 +36,7 @@ class SinglePhotonDetector(object):
 
     @property
     def threshvolt(self) -> float:
-        return float(self._com._getresponse_1l('threshvolt?'))
+        return float(self._com.getresponse('threshvolt?'))
 
     @threshvolt.setter
     def threshvolt(self, value: float):
@@ -44,7 +44,7 @@ class SinglePhotonDetector(object):
 
     @property
     def constp(self) -> float:
-        return float(self._com._getresponse_1l('constp?'))
+        return float(self._com.getresponse('constp?'))
 
     @constp.setter
     def constp(self, value: float):
@@ -52,7 +52,7 @@ class SinglePhotonDetector(object):
 
     @property
     def consti(self) -> float:
-        return float(self._com._getresponse_1l('consti?'))
+        return float(self._com.getresponse('consti?'))
 
     @consti.setter
     def consti(self, value: float):
@@ -60,7 +60,7 @@ class SinglePhotonDetector(object):
 
     @property
     def loop(self) -> int:
-        return int(self._com._getresponse_1l('loop?'))
+        return int(self._com.getresponse('loop?'))
 
     @loop.setter
     def loop(self, value: int):
@@ -68,7 +68,7 @@ class SinglePhotonDetector(object):
 
     @property
     def pvolt(self) -> float:
-        return float(self._com._getresponse_1l('pvolt?'))
+        return float(self._com.getresponse('pvolt?'))
 
     @pvolt.setter
     def pvolt(self, value: float):
@@ -82,7 +82,7 @@ class SinglePhotonDetector(object):
 
     @property
     def time(self) -> float:
-        return float(self._com._getresponse_1l('time?'))
+        return float(self._com.getresponse('time?'))
 
     @time.setter
     def time(self, value: float):
@@ -96,11 +96,11 @@ class SinglePhotonDetector(object):
         '''Returns counts detected on the detector within the given counting time (default = 1 second)
         '''
         self.time = counting_time_sec * 1000
-        return int(self._com._getresponse_1l('counts?', timeout=counting_time_sec+0.1))
+        return int(self._com.getresponse('counts?', timeout=counting_time_sec+0.1))
 
     @property
     def temperature(self) -> float:
-        return float(self._com._getresponse_1l('temp?'))
+        return float(self._com.getresponse('temp?'))
 
     @temperature.setter
     def temperature(self, value: float):
@@ -108,7 +108,7 @@ class SinglePhotonDetector(object):
 
     @property
     def settemperature(self) -> float:
-        return float(self._com._getresponse_1l('settemp?'))
+        return float(self._com.getresponse('settemp?'))
 
     @settemperature.setter
     def settemperature(self, value: float):
@@ -116,10 +116,8 @@ class SinglePhotonDetector(object):
 
     @property
     def delay(self) -> int:
-        return float(self._com._getresponse_1l('delay?'))
+        return float(self._com.getresponse('delay?'))
 
     @delay.setter
     def delay(self, value: int):
         self._com.write('delay {}\r\n'.format(value).encode())
-
-

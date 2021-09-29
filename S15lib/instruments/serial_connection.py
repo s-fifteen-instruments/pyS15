@@ -14,7 +14,7 @@ import glob
 
 def search_for_serial_devices(device: str):
     '''Searches for serial devices defined in the input paremater device.
-    If the device identification string containes the string given in the input paramter 'device', the device path is 
+    If the device identification string containes the string given in the input paramter 'device', the device path is
     appended to a list. This list is then returned as search result.
     '''
     if sys.platform.startswith('win'):
@@ -32,7 +32,7 @@ def search_for_serial_devices(device: str):
         try:
             s = serial.Serial(port, timeout=1)
             s.write(b'*idn?\r\n')
-            id_str = (s.readline()).decode()
+            id_str = s.readline()
             s.close()
             if device in id_str:
                 result.append(port)
@@ -80,7 +80,7 @@ class SerialConnection(serial.Serial):
                 break
             self.read_all()
 
-    def _getresponse(self, cmd: str):
+    def getresponses(self, cmd: str):
         """
         Send commands and read the response of the device.
 
@@ -100,7 +100,7 @@ class SerialConnection(serial.Serial):
         time.sleep(0.01)
         return [k.decode().strip() for k in self.readlines()]
 
-    def _getresponse_1l(self, cmd: str, timeout: float = 1):
+    def getresponse(self, cmd: str, timeout: float = 1):
         """
         Send commands and reads a single line as response from the device.
 
@@ -126,14 +126,35 @@ class SerialConnection(serial.Serial):
             if time.time() > (t_start + timeout):
                 print(time.time() - t_start)
                 raise serial.SerialTimeoutException('Command timeout')
-        return self.readline().decode().strip()
+        return self.readline()
 
+    def writeline(self, cmd: str):
+        """
+        Sends command to device.
+
+        Provided as a wrapper to 'Serial.write', which accepts
+        a string command 'cmd' without newline termination.
+
+        :param cmd: command to send
+        :type cmd: string
+        """
+        self.write("{};".format(cmd).encode())
+
+    def readline(self) -> str:
+        """
+        Reads a single line as response from device.
+
+        Provided as a wrapper to 'Serial.readline' to automatically
+        decode binary response as a simple string. Stripping is performed since
+        devices are designed to terminate with '\r\n'.
+        """
+        return super().readline().decode().strip()
 
     def help(self):
         """
         Prints device help text
         """
-        [print(k) for k in self._getresponse('help')]
+        [print(k) for k in self.getresponses('help')]
 
 
 if __name__ == '__main__':

@@ -50,7 +50,7 @@ class SPDCDriver(object):
 
     @property
     def peltier_voltage_limit(self) -> float:
-        return float(self._com._getresponse_1l('plimit?'))
+        return float(self._com.getresponse('plimit?'))
 
     @peltier_voltage_limit.setter
     def peltier_voltage_limit(self, voltage: float):
@@ -58,19 +58,19 @@ class SPDCDriver(object):
 
     @property
     def peltier_loop(self) -> int:
-        return int(self._com._getresponse_1l('PLOOP?'))
+        return int(self._com.getresponse('PLOOP?'))
 
     @property
     def heater_voltage(self) -> float:
-        return float(self._com._getresponse_1l('hvolt?'))
+        return float(self._com.getresponse('hvolt?'))
 
     @property
     def peltier_voltage(self) -> float:
-        return float(self._com._getresponse_1l('pvolt?'))
+        return float(self._com.getresponse('pvolt?'))
 
     @property
     def heater_voltage_limit(self) -> float:
-        return float(self._com._getresponse_1l('hlimit?'))
+        return float(self._com.getresponse('hlimit?'))
 
     @heater_voltage_limit.setter
     def peltier_voltage_limit(self, voltage: float):
@@ -78,12 +78,12 @@ class SPDCDriver(object):
 
     @property
     def heater_loop(self) -> int:
-        return int(self._com._getresponse_1l('HLOOP?'))
+        return int(self._com.getresponse('HLOOP?'))
 
     @property
     def laser_current(self) -> float:
         assert type(self._com) is serial_connection.SerialConnection
-        return float(self._com._getresponse_1l('lcurrent?'))
+        return float(self._com.getresponse('lcurrent?'))
 
     @laser_current.setter
     def laser_current(self, current: int):
@@ -126,7 +126,7 @@ class SPDCDriver(object):
             number -- Temperature at the crystal
         """
         assert type(self._com) is serial_connection.SerialConnection
-        return float(self._com._getresponse_1l('HTEMP?'))
+        return float(self._com.getresponse('HTEMP?'))
 
     @heater_temp.setter
     def heater_temp(self, temperature: float):
@@ -163,7 +163,7 @@ class SPDCDriver(object):
             number -- Current temperature of the peltier temp
         """
         assert type(self._com) is serial_connection.SerialConnection
-        return float(self._com._getresponse_1l('PTEMP?'))
+        return float(self._com.getresponse('PTEMP?'))
 
     @peltier_temp.setter
     def peltier_temp(self, temperature: float):
@@ -178,25 +178,25 @@ class SPDCDriver(object):
 
     @property
     def peltier_temp_setpoint(self) -> float:
-        return float(self._com._getresponse_1l('psettemp?'))
+        return float(self._com.getresponse('psettemp?'))
 
     @property
     def heater_temp_setpoint(self) -> float:
-        return float(self._com._getresponse_1l('hsettemp?'))
+        return float(self._com.getresponse('hsettemp?'))
 
     @property
     def identity(self):
-        return self._com._getresponse_1l('*idn?')
+        return self._com.getresponse('*idn?')
 
     def help(self):
         return self._com.help()
 
     def save_settings(self) -> str:
-        return self._com._getresponse_1l('save')
+        return self._com.getresponse('save')
 
     @property
     def pconstp(self) -> float:
-        return float(self._com._getresponse_1l('pconstp?'))
+        return float(self._com.getresponse('pconstp?'))
 
     @pconstp.setter
     def pconstp(self, value) -> float:
@@ -205,7 +205,7 @@ class SPDCDriver(object):
 
     @property
     def pconsti(self) -> float:
-        return float(self._com._getresponse_1l('pconsti?'))
+        return float(self._com.getresponse('pconsti?'))
 
     @pconsti.setter
     def pconsti(self, value) -> float:
@@ -214,7 +214,7 @@ class SPDCDriver(object):
 
     @property
     def hconstp(self) -> float:
-        return float(self._com._getresponse_1l('hconstp?'))
+        return float(self._com.getresponse('hconstp?'))
 
     @hconstp.setter
     def hconstp(self, value: float) -> float:
@@ -223,7 +223,7 @@ class SPDCDriver(object):
 
     @property
     def hconsti(self) -> float:
-        return float(self._com._getresponse_1l('hconsti?'))
+        return float(self._com.getresponse('hconsti?'))
 
     @hconsti.setter
     def hconsti(self, value: float) -> float:
@@ -232,7 +232,7 @@ class SPDCDriver(object):
 
     @property
     def laser_current_limit(self) -> float:
-        return float(self._com._getresponse_1l('llimit?'))
+        return float(self._com.getresponse('llimit?'))
 
     @laser_current_limit.setter
     def laser_current_limit(self, value: float) -> float:

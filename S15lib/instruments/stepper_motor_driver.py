@@ -23,7 +23,7 @@ class StepperMotorDriver(object):
 
     def identity(self) -> str:
         # self._com.write(b'*IDN?\r\n')
-        return self._getresponse_1l('*idn?')
+        return self.getresponse('*idn?')
 
     def help(self) -> str:
         print(self._com.help())
@@ -54,8 +54,8 @@ class StepperMotorDriver(object):
     #     self._com.write('setvolt {0} {1};'.format(channel, voltage).encode('ascii'))
 
     def get_position(self, channel: int) -> int:
-        pos1 = int(self._com._getresponse_1l('pos?'))
-        pos2 = int(self._com._getresponse_1l('pos?'))
+        pos1 = int(self._com.getresponse('pos?'))
+        pos2 = int(self._com.getresponse('pos?'))
         if pos1 == pos2:
             return pos2
 

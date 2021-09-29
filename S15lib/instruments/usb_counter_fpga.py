@@ -116,7 +116,7 @@ class TimeStampTDC1(object):
         :rtype: int
         """
         self._com.write(b'time?\r\n')
-        return int(self._com.readline().strip())
+        return int(self._com.readline())
 
     @int_time.setter
     def int_time(self, value: float):
@@ -154,7 +154,7 @@ class TimeStampTDC1(object):
                 raise serial.SerialTimeoutException('Command timeout')
 
 
-        counts = self._com.readline().decode().strip()
+        counts = self._com.readline()
         self._com.timeout = 0.05
         return tuple([int(i) for i in counts.split()])
 
@@ -162,7 +162,7 @@ class TimeStampTDC1(object):
     def mode(self):
         # mode = int(self._com._getresponse_1l('MODE?'))
         self._com.write(b'mode?\r\n')
-        mode = int(self._com.readline().strip())
+        mode = int(self._com.readline())
         if mode == 0:
             return 'singles'
         if mode == 1:
@@ -188,7 +188,7 @@ class TimeStampTDC1(object):
     def level(self):
         """ Set type of incoming pulses"""
         self._com.write(b'level?\r\n')
-        return self._com.readline().strip()
+        return self._com.readline()
         # return self._com._getresponse_1l('LEVEL?')
 
     @level.setter
@@ -222,7 +222,7 @@ class TimeStampTDC1(object):
     def clock(self) -> str:
         """ Choice of clock"""
         self._com.write('REFCLK?\r\n')
-        return self._com.readline().strip()
+        return self._com.readline()
 
     @clock.setter
     def clock(self, value: str):
@@ -282,7 +282,7 @@ class TimeStampTDC1(object):
             if time.time() > (t_start + t_acq + 0.1):
                 print(time.time() - t_start)
                 raise serial.SerialTimeoutException('Command timeout')
-        singlesAndPairs = self._com.readline().decode().strip()
+        singlesAndPairs = self._com.readline()
         self._com.timeout = 1
         return tuple([int(i) for i in singlesAndPairs.split()])
 

@@ -29,7 +29,7 @@ def _rwrite(msg):
     Temporary supplementary function. To deprecate once program updated.
     """
     _write(msg)
-    return spdc._com.readline().decode().strip()
+    return spdc._com.readline()
 
 
 #####################

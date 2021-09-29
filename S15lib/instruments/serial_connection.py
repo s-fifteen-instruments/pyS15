@@ -32,7 +32,7 @@ def search_for_serial_devices(device: str):
         try:
             s = serial.Serial(port, timeout=1)
             s.write(b'*idn?\r\n')
-            id_str = (s.readline()).decode()
+            id_str = s.readline()
             s.close()
             if device in id_str:
                 result.append(port)
@@ -126,8 +126,29 @@ class SerialConnection(serial.Serial):
             if time.time() > (t_start + timeout):
                 print(time.time() - t_start)
                 raise serial.SerialTimeoutException('Command timeout')
-        return self.readline().decode().strip()
+        return self.readline()
 
+    def writeline(self, cmd: str):
+        """
+        Sends command to device.
+
+        Provided as a wrapper to 'Serial.write', which accepts
+        a string command 'cmd' without newline termination.
+
+        :param cmd: command to send
+        :type cmd: string
+        """
+        self.write("{};".format(cmd).encode())
+
+    def readline(self) -> str:
+        """
+        Reads a single line as response from device.
+
+        Provided as a wrapper to 'Serial.readline' to automatically
+        decode binary response as a simple string. Stripping is performed since
+        devices are designed to terminate with '\r\n'.
+        """
+        return super().readline().decode().strip()
 
     def help(self):
         """

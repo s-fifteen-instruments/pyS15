@@ -88,7 +88,7 @@ class PowerMeter():
             print('Connected to', device_path)
         self._device_path = device_path
         self._com = serial_connection.SerialConnection(device_path)
-        self._identity = self._com._getresponse_1l('*idn?')
+        self._identity = self._com.getresponse('*idn?')
         # check for diode type in the device identifier
         if 'OPMGE' in self._identity:
         	self._volt2power = volt2power_FDG50
@@ -102,7 +102,7 @@ class PowerMeter():
         Returns:
             str -- Response of the device after.
         '''
-        return self._com._getresponse_1l(b'*RST')
+        return self._com.getresponse(b'*RST')
 
     def get_voltage(self):
         """Returns the voltage accross the resistor.
@@ -111,7 +111,7 @@ class PowerMeter():
             number -- Voltage in V
         """
         assert type(self._com) is serial_connection.SerialConnection
-        return float(self._com._getresponse_1l('VOLT?'))
+        return float(self._com.getresponse('VOLT?'))
 
     def get_power(self, wave_length: int) -> float:
         """Get optical power (Watts).
@@ -164,7 +164,7 @@ class PowerMeter():
 
     @property
     def range(self) -> int:
-        return int(self._com._getresponse_1l('RANGE?'))
+        return int(self._com.getresponse('RANGE?'))
 
     @range.setter
     def range(self, value: int):

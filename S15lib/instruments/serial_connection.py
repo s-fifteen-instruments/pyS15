@@ -80,7 +80,7 @@ class SerialConnection(serial.Serial):
                 break
             self.read_all()
 
-    def _getresponse(self, cmd: str):
+    def getresponses(self, cmd: str):
         """
         Send commands and read the response of the device.
 
@@ -100,7 +100,7 @@ class SerialConnection(serial.Serial):
         time.sleep(0.01)
         return [k.decode().strip() for k in self.readlines()]
 
-    def _getresponse_1l(self, cmd: str, timeout: float = 1):
+    def getresponse(self, cmd: str, timeout: float = 1):
         """
         Send commands and reads a single line as response from the device.
 
@@ -154,7 +154,7 @@ class SerialConnection(serial.Serial):
         """
         Prints device help text
         """
-        [print(k) for k in self._getresponse('help')]
+        [print(k) for k in self.getresponses('help')]
 
 
 if __name__ == '__main__':

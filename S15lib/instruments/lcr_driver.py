@@ -60,7 +60,7 @@ class LCRDriver(object):
             float: Voltage of the selected channel.
         """
         cmd = 'AMP? ' + str(channel)
-        return float(self._com._getresponse(cmd))
+        return float(self._com.getresponses(cmd))
 
     @property
     def V1(self):
@@ -68,8 +68,8 @@ class LCRDriver(object):
 
         Returns:
             float: voltage in volts
-        """        
-        return float(self._com._getresponse_1l('AMP? 1'))
+        """
+        return float(self._com.getresponse('AMP? 1'))
 
     @V1.setter
     def V1(self, V1: float):
@@ -82,7 +82,7 @@ class LCRDriver(object):
 
     @property
     def V2(self):
-        return self._com._getresponse_1l('AMP? 2')
+        return self._com.getresponse('AMP? 2')
 
     @V2.setter
     def V2(self, value):
@@ -90,7 +90,7 @@ class LCRDriver(object):
 
     @property
     def V3(self):
-        return self._com._getresponse_1l('AMP? 3')
+        return self._com.getresponse('AMP? 3')
 
     @V3.setter
     def V3(self, value):
@@ -98,7 +98,7 @@ class LCRDriver(object):
 
     @property
     def V4(self):
-        return self._com._getresponse_1l('AMP? 4')
+        return self._com.getresponse('AMP? 4')
 
     @V4.setter
     def V4(self, value):
@@ -111,7 +111,7 @@ class LCRDriver(object):
         Returns:
             str: Identity string.
         """
-        return self._com._getresponse_1l('*idn?')
+        return self._com.getresponse('*idn?')
 
     def help(self):
         return self._com.help()

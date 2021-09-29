@@ -160,7 +160,7 @@ class TimeStampTDC1(object):
 
     @property
     def mode(self):
-        # mode = int(self._com._getresponse_1l('MODE?'))
+        # mode = int(self._com.getresponse('MODE?'))
         self._com.write(b'mode?\r\n')
         mode = int(self._com.readline())
         if mode == 0:
@@ -189,7 +189,7 @@ class TimeStampTDC1(object):
         """ Set type of incoming pulses"""
         self._com.write(b'level?\r\n')
         return self._com.readline()
-        # return self._com._getresponse_1l('LEVEL?')
+        # return self._com.getresponse('LEVEL?')
 
     @level.setter
     def level(self, value: str):

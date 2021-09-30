@@ -4,6 +4,9 @@ requirements = [
     "pyserial",
     "numpy",
 ]
+requirements_dev = [
+    "pre-commit",
+]
 requirements_apps = [
     "PyQt5",
     "Pyqtgraph",
@@ -20,6 +23,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=requirements,
     extras_require={
+        "dev": requirements_dev,
         "apps": requirements_apps,
     },
     python_requires=">=3.6",

@@ -1,4 +1,2 @@
-numpy
-pyserial
-PyQt5
-Pyqtgraph
+--index-url https://pypi.org/project/
+-e .[apps]

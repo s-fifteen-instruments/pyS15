@@ -1,5 +1,14 @@
 import setuptools
 
+requirements = [
+    "pyserial",
+    "numpy",
+]
+requirements_apps = [
+    "PyQt5",
+    "Pyqtgraph",
+]
+
 setuptools.setup(
     name='S15lib',
     version='0.1.2',
@@ -9,5 +18,8 @@ setuptools.setup(
     author_email='',
     license='MIT',
     packages=setuptools.find_packages(),
-    install_requires=['pyserial', 'numpy'],
+    install_requires=requirements,
+    extras_require={
+        "apps": requirements_apps,
+    },
 )

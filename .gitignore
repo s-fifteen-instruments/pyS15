@@ -9,3 +9,7 @@ S15lib.egg-info/SOURCES.txt
 S15lib.egg-info/top_level.txt
 examples/.ipynb_checkpoints/TDC1_time_to_digital_converter-checkpoint.ipynb
 *__pycache__*
+
+# Virtual environments
+venv/
+.venv/

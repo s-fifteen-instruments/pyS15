@@ -22,4 +22,5 @@ setuptools.setup(
     extras_require={
         "apps": requirements_apps,
     },
+    python_requires=">=3.6",
 )

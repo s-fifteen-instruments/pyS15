@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import numpy as np
 from typing import List
+
+import numpy as np
 
 try:
     from .delta import delta_loop

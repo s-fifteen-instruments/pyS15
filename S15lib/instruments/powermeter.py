@@ -4,11 +4,12 @@ by Mathias Seidler
 """
 
 import glob
-from . import serial_connection
 import time
-import numpy as np
 from typing import Tuple
 
+import numpy as np
+
+from . import serial_connection
 
 """
 Responsivity (A/W) table for Hamamatsu S5107.

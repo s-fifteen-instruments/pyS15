@@ -7,24 +7,21 @@ Collection of functions to simplify the integration of the USB counter in
 Python scripts.
 """
 
-import os
-import glob
-import numpy as np
-import subprocess
-from typing import Tuple, List
-
-import serial
-import serial.tools.list_ports
-import time
-import multiprocessing
 import csv
-
-from ..g2lib import g2lib
-
-
+import glob
+import multiprocessing
+import os
+import subprocess
+import time
 from os.path import exists, expanduser
 from tempfile import NamedTemporaryFile
+from typing import List, Tuple
 
+import numpy as np
+import serial
+import serial.tools.list_ports
+
+from ..g2lib import g2lib
 from . import serial_connection
 
 READEVENTS_PROG = expanduser("~") + "/programs/usbcntfpga/apps/readevents4a"

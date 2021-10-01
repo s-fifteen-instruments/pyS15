@@ -1,11 +1,14 @@
-from datetime import datetime
 import os
+import sys
 import time
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
+
 from S15lib.g2lib import g2lib
 from S15lib.instruments import TimeStampTDC1
-import sys
+
 print(sys.version)
 
 

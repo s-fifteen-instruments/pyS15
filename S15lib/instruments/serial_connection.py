@@ -4,10 +4,11 @@ General serial device class.
 Encloses some of the common read write actions into convenient methods.
 
 """
-import serial
-import time
-import sys
 import glob
+import sys
+import time
+
+import serial
 
 # from serial import SerialException
 

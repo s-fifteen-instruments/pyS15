@@ -3,8 +3,9 @@
 # Example script to operate EPPS
 #   Initial script - Justin 29.09.2021
 
-from S15lib.instruments import SPDCDriver
 import time
+
+from S15lib.instruments import SPDCDriver
 
 DEVICE_FILE = "COM7"  # CHANGEME, for Windows (e.g. "/dev/ttyACM0" for Linux)
 spdc = SPDCDriver(DEVICE_FILE)  # connect to EPPS board

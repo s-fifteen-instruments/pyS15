@@ -4,9 +4,11 @@ by Mathias Seidler
 """
 
 
-from . import serial_connection
 import time
+
 import numpy as np
+
+from . import serial_connection
 
 
 class SPDCDriver(object):

@@ -1,14 +1,15 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QGridLayout, QWidget, QAction, qApp, QMenuBar
-from PyQt5.QtCore import QTimer, QThread, pyqtSignal
-from PyQt5 import QtGui
-import pyqtgraph as pg
-import PyQt5
-
-from datetime import datetime
 import time
-from S15lib.instruments import powermeter
-from S15lib.instruments import serial_connection
+from datetime import datetime
+
+import PyQt5
+import pyqtgraph as pg
+from PyQt5 import QtGui
+from PyQt5.QtCore import QThread, QTimer, pyqtSignal
+from PyQt5.QtWidgets import (QAction, QApplication, QGridLayout, QLabel,
+                             QMainWindow, QMenuBar, QWidget, qApp)
+
+from S15lib.instruments import powermeter, serial_connection
 
 PLT_SAMPLES = 500
 

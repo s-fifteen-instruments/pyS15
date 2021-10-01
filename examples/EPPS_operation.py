@@ -20,12 +20,14 @@ PSETTEMP = 29
 ##  SUPPLEMENTARY  ##
 #####################
 
+
 def _write(msg):
-    """ Writes command to device. """
-    spdc._com.write((str(msg)+";").encode())
-    
+    """Writes command to device."""
+    spdc._com.write((str(msg) + ";").encode())
+
+
 def _rwrite(msg):
-    """ Writes command to device and reads back.
+    """Writes command to device and reads back.
 
     Temporary supplementary function. To deprecate once program updated.
     """
@@ -37,13 +39,15 @@ def _rwrite(msg):
 ##  SUPPLEMENTARY  ##
 #####################
 
+
 def status():
-    """ Displays all current board settings. """
+    """Displays all current board settings."""
+
     def _print(description, value, unit="", **kw):
         print("{:22s} {: >8s} {}".format(description, str(value), unit), **kw)
-    
+
     print(spdc.identity, end="\n\n")
-    
+
     # Laser status
     _print("Power:", _rwrite("POWER?"))
     _print("Laser current:", spdc.laser_current, "mA")
@@ -60,7 +64,7 @@ def status():
     _print("Heater [P]ID:", spdc.hconstp, "V/K")
     _print("Heater P[I]D:", spdc.hconsti, "V/(Ks)")
     _print("Heater PI[D]:", _rwrite("HCONSTD?"), "Vs/K", end="\n\n")
-    
+
     # Peltier status
     _print("Peltier loop status:", spdc.peltier_loop)
     _print("Peltier temp:", spdc.peltier_temp, "°C")
@@ -71,14 +75,14 @@ def status():
     _print("Peltier P[I]D:", spdc.pconsti, "V/(Ks)")
     _print("Peltier PI[D]:", _rwrite("PCONSTD?"), "Vs/K")
 
+
 def monitor():
-    """ Monitor heater and peltier temperatures. """
+    """Monitor heater and peltier temperatures."""
     try:
         print("Monitoring heater & peltier temperature...")
         print("(Ctrl-C to stop monitoring)")
         while True:
-            print("{: >8.3f} {: >8.3f}".format(
-                spdc.heater_temp, spdc.peltier_temp))
+            print("{: >8.3f} {: >8.3f}".format(spdc.heater_temp, spdc.peltier_temp))
             time.sleep(1)
     except KeyboardInterrupt:
         pass
@@ -88,8 +92,9 @@ def monitor():
 ##  POWER ROUTINES  ##
 ######################
 
+
 def initialize():
-    """ Resets board constants and saves. """
+    """Resets board constants and saves."""
     # Laser settings
     _rwrite("POWER 0")
     spdc.laser_current = 0  # for ramp sequence
@@ -128,8 +133,9 @@ def initialize():
         finally:
             _write("HRATE 0.05")  # failsafe
 
+
 def setup():
-    """ Initial power up routine.
+    """Initial power up routine.
 
     Additionally ramps up and monitors the heater temperature.
     """
@@ -149,31 +155,37 @@ def setup():
         while True:
             heater_temp = spdc.heater_temp
             print(heater_temp, "°C")
-            if heater_temp > HSETTEMP: break
+            if heater_temp > HSETTEMP:
+                break
             time.sleep(1)
     except KeyboardInterrupt:
         pass
 
-    print("Device started up with:" \
-          + "\n  - Laser current: {} mA".format(spdc.laser_current) \
-          + "\n  - Heater temp: {} °C".format(spdc.heater_temp) \
-          + "\n  - Peltier temp: {} °C".format(spdc.peltier_temp))
-    
+    print(
+        "Device started up with:"
+        + "\n  - Laser current: {} mA".format(spdc.laser_current)
+        + "\n  - Heater temp: {} °C".format(spdc.heater_temp)
+        + "\n  - Peltier temp: {} °C".format(spdc.peltier_temp)
+    )
+
+
 def laser_off():
-    """ Switch off laser.
+    """Switch off laser.
 
     Heater and peltier PID loops are kept running.
     """
     spdc.laser_off()
     _write("POWER 1")
 
+
 def laser_on():
-    """ Switch on laser. """
+    """Switch on laser."""
     _write("POWER 3")
     spdc.laser_on(LCURRENT)
 
+
 def teardown():
-    """ Shutdown routine prior to transportation.
+    """Shutdown routine prior to transportation.
 
     Additionally ramps down and monitors the heater temperature.
     """
@@ -187,17 +199,20 @@ def teardown():
         while True:
             heater_temp = spdc.heater_temp
             print(heater_temp, "°C")
-            if heater_temp < 25: break
+            if heater_temp < 25:
+                break
             time.sleep(1)
     except KeyboardInterrupt:
         pass
-    
+
     spdc.heater_loop_off()  # HLOOP 0; HVOLT 0;
     spdc.peltier_loop_off()  # PLOOP 0; PVOLT 0;
     _write("POWER 0")
     spdc.save_settings()
 
-    print("Device powered down with:" \
-          + "\n  - Laser current: {} mA".format(spdc.laser_current) \
-          + "\n  - Heater temp: {} °C".format(spdc.heater_temp) \
-          + "\n  - Peltier temp: {} °C".format(spdc.peltier_temp))
+    print(
+        "Device powered down with:"
+        + "\n  - Laser current: {} mA".format(spdc.laser_current)
+        + "\n  - Heater temp: {} °C".format(spdc.heater_temp)
+        + "\n  - Peltier temp: {} °C".format(spdc.peltier_temp)
+    )

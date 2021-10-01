@@ -14,25 +14,25 @@ import serial
 
 
 def search_for_serial_devices(device: str):
-    '''Searches for serial devices defined in the input paremater device.
+    """Searches for serial devices defined in the input paremater device.
     If the device identification string containes the string given in the input paramter 'device', the device path is
     appended to a list. This list is then returned as search result.
-    '''
-    if sys.platform.startswith('win'):
-        ports = ['COM%s' % (i + 1) for i in range(256)]
-    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+    """
+    if sys.platform.startswith("win"):
+        ports = ["COM%s" % (i + 1) for i in range(256)]
+    elif sys.platform.startswith("linux") or sys.platform.startswith("cygwin"):
         # this excludes your current terminal "/dev/tty"
-        ports = glob.glob('/dev/tty[A-Za-z]*')
-    elif sys.platform.startswith('darwin'):
-        ports = glob.glob('/dev/tty.*')
+        ports = glob.glob("/dev/tty[A-Za-z]*")
+    elif sys.platform.startswith("darwin"):
+        ports = glob.glob("/dev/tty.*")
     else:
-        raise EnvironmentError('Unsupported platform')
+        raise EnvironmentError("Unsupported platform")
 
     result = []
     for port in ports:
         try:
             s = serial.Serial(port, timeout=1)
-            s.write(b'*idn?\r\n')
+            s.write(b"*idn?\r\n")
             id_str = s.readline()
             s.close()
             if device in id_str:
@@ -55,20 +55,20 @@ class SerialConnection(serial.Serial):
         """
         try:
             super(SerialConnection, self).__init__(device_path, timeout=1)
-            self.write(b'\r\n')
+            self.write(b"\r\n")
             self.readlines()
         except serial.SerialException:
-            print('Connection failed')
+            print("Connection failed")
         self._reset_buffers()
         self._cleanup()
 
     def _reset_buffers(self):
-        """ Resets input and output buffers"""
+        """Resets input and output buffers"""
         self.reset_input_buffer()
         self.reset_output_buffer()
 
     def _cleanup(self, timeout: float = 1):
-        """ cleanup of read buffer of the device.
+        """cleanup of read buffer of the device.
 
         :param timeout: optional timeout, defaults to 1
         :type timeout: float, optional
@@ -97,7 +97,7 @@ class SerialConnection(serial.Serial):
         """
         self._cleanup()
         self._reset_buffers()
-        self.write((cmd + '\r\n').encode())
+        self.write((cmd + "\r\n").encode())
         time.sleep(0.01)
         return [k.decode().strip() for k in self.readlines()]
 
@@ -119,14 +119,14 @@ class SerialConnection(serial.Serial):
         """
         self._cleanup()
         self.timeout = timeout
-        self.write((cmd + '\r\n').encode())
+        self.write((cmd + "\r\n").encode())
         t_start = time.time()
         while True:
             if self.inWaiting() > 0:
                 break
             if time.time() > (t_start + timeout):
                 print(time.time() - t_start)
-                raise serial.SerialTimeoutException('Command timeout')
+                raise serial.SerialTimeoutException("Command timeout")
         return self.readline()
 
     def writeline(self, cmd: str):
@@ -155,8 +155,8 @@ class SerialConnection(serial.Serial):
         """
         Prints device help text
         """
-        [print(k) for k in self.getresponses('help')]
+        [print(k) for k in self.getresponses("help")]
 
 
-if __name__ == '__main__':
-    print(search_for_serial_devices('optical power meter'))
+if __name__ == "__main__":
+    print(search_for_serial_devices("optical power meter"))

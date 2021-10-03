@@ -257,9 +257,7 @@ class TimeStampTDC1(object):
         self._com.readlines()
         return b"".join(ts_list)
 
-    def get_counts_and_coincidences(
-        self, t_acq: float = 1
-    ) -> Tuple[int, ...]:
+    def get_counts_and_coincidences(self, t_acq: float = 1) -> Tuple[int, ...]:
         """Counts single events and coinciding events in channel pairs.
 
         Args:

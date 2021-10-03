@@ -3,7 +3,6 @@ Created on Mon Feb 9 2020
 by Mathias Seidler
 """
 
-import glob
 import time
 from typing import Tuple
 
@@ -80,7 +79,8 @@ eff_err = [
 """
 Responsivity (A/W) table for Thorlabs FDG50, which is a germanium photo diode.
 This table was provided by Thorlabs and represents typical values.
-These values can vary slightly as they depend on reverse bias voltage, temperature, and production lot.
+These values can vary slightly as they depend on reverse bias voltage, temperature,
+and production lot.
 """
 wl_FDG50 = [
     800.0,
@@ -361,7 +361,8 @@ class PowerMeter:
             (number) -- optical power in Watt
 
         Raises:
-            Exception -- Raises an exception when the optical power is higher than the device can measure (A higher resistor may be necessary).
+            Exception -- Raises an exception when the optical power is higher than
+                         the device can measure (A higher resistor may be necessary).
         """
         assert wave_length > 350 and wave_length < 1801
         volt = 0

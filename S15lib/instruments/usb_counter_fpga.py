@@ -7,14 +7,10 @@ Collection of functions to simplify the integration of the USB counter in
 Python scripts.
 """
 
-import csv
-import glob
 import multiprocessing
 import os
-import subprocess
 import time
-from os.path import exists, expanduser
-from tempfile import NamedTemporaryFile
+from os.path import expanduser
 from typing import List, Tuple
 
 import numpy as np
@@ -46,7 +42,7 @@ def channel_to_pattern(channel):
 #     """ Threading example class
 #     The run() method will be started and it will run in the background
 #     until the application exits.
-#     ref: http://sebastiandahlgren.se/2014/06/27/running-a-method-as-a-background-thread-in-python/
+#     ref: http://sebastiandahlgren.se/2014/06/27/running-a-method-as-a-background-thread-in-python/ # noqa
 #     """
 
 #     def __init__(self, interval=1):
@@ -232,7 +228,8 @@ class TimeStampTDC1(object):
         """Set the clock source internel or external
 
         Args:
-            value (str): 0 autoselect clock, 1 force external clock, 2 force internal clock reference
+            value (str): 0 autoselect clock, 1 force external clock,
+                         2 force internal clock reference
         """
         self.write_only("REFCLK {}".format(value).encode())
 
@@ -246,7 +243,8 @@ class TimeStampTDC1(object):
         Returns:
             bytes: Returns the raw data.
         """
-        # this function bypass the termination character (since there is none for timestamp mode),
+        # this function bypass the termination character
+        # (since there is none for timestamp mode),
         # streams data from device for the integration time.
 
         # Stream data for acq_time seconds into a buffer
@@ -265,10 +263,12 @@ class TimeStampTDC1(object):
         """Counts single events and coinciding events in channel pairs.
 
         Args:
-            t_acq (float, optional): Time duration to count events in seperated channels and coinciding events in 2 channels. Defaults to 1.
+            t_acq (float, optional): Time duration to count events in seperated
+                channels and coinciding events in 2 channels. Defaults to 1.
 
         Returns:
-            Tuple[int, int , int, int, int, int, int, int]: Events ch1, ch2, ch3, ch4; Coincidences: ch1-ch3, ch1-ch4, ch2-ch3, ch2-ch4
+            Tuple[int, int , int, int, int, int, int, int]: Events ch1, ch2, ch3, ch4;
+                Coincidences: ch1-ch3, ch1-ch4, ch2-ch3, ch2-ch4
         """
         self.mode = "pairs"
         self._com.readlines()  # empties buffer
@@ -292,17 +292,20 @@ class TimeStampTDC1(object):
         return tuple([int(i) for i in singlesAndPairs.split()])
 
     def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
-        """Acquires timestamps and returns 2 lists. The first one containing the time and the second
-        the event channel.
+        """Acquires timestamps and returns 2 lists. The first one containing
+        the time and the second the event channel.
 
         Args:
-            t_acq (float, optional): Duration of the the timestamp acquisition in seconds. Defaults to 1.
+            t_acq (float, optional):
+                Duration of the the timestamp acquisition in seconds. Defaults to 1.
 
         Returns:
-            Tuple[List[float], List[str]]: Returns the event times in ns and the corresponding event channel.
-                                           The channel are returned as string where a 1 indicates the trigger channel.
-                                           For example an event in channel 2 would correspond to "0010".
-                                           Two coinciding events in channel 3 and 4 correspond to "1100"
+            Tuple[List[float], List[str]]:
+                Returns the event times in ns and the corresponding event channel.
+                The channel are returned as string where a 1 indicates the
+                trigger channel.
+                For example an event in channel 2 would correspond to "0010".
+                Two coinciding events in channel 3 and 4 correspond to "1100"
         """
         self.mode = "singles"
         level = float(self.level.split()[0])
@@ -313,7 +316,7 @@ class TimeStampTDC1(object):
             level_str, level, (t_acq if t_acq < 65 else 0) * 1000
         )
         buffer = self._stream_response_into_buffer(cmd_str, t_acq + 0.1)
-        # '*RST;INPKT;' + level + ';time ' + str(t_acq * 1000) + ';timestamp;counts?', t_acq + 0.1)
+        # '*RST;INPKT;'+level+';time '+str(t_acq * 1000)+';timestamp;counts?',t_acq+0.1) # noqa
 
         # buffer contains the timestamp information in binary.
         # Now convert them into time and identify the event channel.
@@ -361,14 +364,17 @@ class TimeStampTDC1(object):
 
         :param t_acq: acquisition time in seconds
         :type t_acq: float
-        :returns: ch_start counts, ch_stop counts, actual acquistion time, time bin array, histogram
+        :returns: ch_start counts, ch_stop counts, actual acquistion time,
+                  time bin array, histogram
         :rtype: {int, int, int, float, float}
 
         Notes
         -----
-        Actual acquisition time is obtained from the returned timestamps. This might differ slightly from the
-        acquisition time passed to the timestamp device in the arguments of this function. If there are no counts
-        in a given timespan, no timestamps are obtained. In this case, t_acq is taken to be the actual acquisition time.
+        Actual acquisition time is obtained from the returned timestamps.
+        This might differ slightly from the acquisition time passed to the timestamp
+        device in the arguments of this function. If there are no counts in a given
+        timespan, no timestamps are obtained. In this case, t_acq is taken to be the
+        actual acquisition time.
         """
 
         t, channel = self.get_timestamps(t_acq)
@@ -382,8 +388,9 @@ class TimeStampTDC1(object):
 
         """
         NEWER CODE:
-        convert string expression of channel elements to a number, and mask it against desired channels
-        the mask ensures that timestamp events that arrive at the channels within one time resolution is still registered.
+        convert string expression of channel elements to a number, and mask it against
+        desired channels the mask ensures that timestamp events that arrive at the
+        channels within one time resolution is still registered.
         """
         t_ch1 = t[[int(ch, 2) & channel_to_pattern(ch_start) != 0 for ch in channel]]
         t_ch2 = t[[int(ch, 2) & channel_to_pattern(ch_stop) != 0 for ch in channel]]
@@ -458,10 +465,12 @@ class TimeStampTDC1(object):
         """
         Reads the timestamps accumulated in a binary sequence
         Returns:
-            Tuple[List[float], List[str]]: Returns the event times in ns and the corresponding event channel.
-                                           The channel are returned as string where a 1 indicates the trigger channel.
-                                           For example an event in channel 2 would correspond to "0010".
-                                           Two coinciding events in channel 3 and 4 correspond to "1100"
+            Tuple[List[float], List[str]]:
+                Returns the event times in ns and the corresponding event channel.
+                The channel are returned as string where a 1 indicates the
+                trigger channel.
+                For example an event in channel 2 would correspond to "0010".
+                Two coinciding events in channel 3 and 4 correspond to "1100"
         """
         bytes_hex = binary_stream[::-1].hex()
         ts_word_list = [
@@ -500,7 +509,8 @@ class TimeStampTDC1(object):
     def read_timestamps_from_file_as_dict(self):
         """
         Reads the timestamps accumulated in a binary file
-        Returns dictionary where timestamps['channel i'] is the timestamp array in nsec for the ith channel
+        Returns dictionary where timestamps['channel i'] is the timestamp array
+        in nsec for the ith channel
         """
         timestamps = {}
         (
@@ -518,41 +528,7 @@ class TimeStampTDC1(object):
     def real_time_processing(self):
         """
         Real-time processes the timestamps that are saved in the background.
-        Grabs a number of lines of timestamps to process (defined as a section): since reading from a file is time-consuming, we grab a couple at a go.
+        Grabs a number of lines of timestamps to process (defined as a section):
+        since reading from a file is time-consuming, we grab a couple at a go.
         """
-        lines_per_section = int(1e6)  # reads these number of timestamp events at a time
-        with open("timestamps.raw", "rb") as f:
-            times = np.array([])
-            while not eof:
-                lines = f.read(
-                    4 * lines_per_section
-                )  # reads a section-worth = 4 bytes (32-bits) x lines per section
-                t, c = counter.read_timestamps_bin(lines)  # returns time-ordered list
-
-                try:
-                    curr_section_first_ts = t[
-                        0
-                    ]  # grabs the first timestanp of the section
-                except:
-                    time.sleep(0.1)  # wait a while for data to come in
-                if (
-                    curr_section_first_ts < prev_section_last_ts
-                ):  # compares the first timestamp of the section to the last timestamp of the previous section
-                    t = (
-                        np.array(t)
-                        + np.ceil(
-                            (prev_section_last_ts - curr_section_first_ts)
-                            / periode_duration
-                        )
-                        * periode_duration
-                    )  # make up for rollover
-                prev_section_last_ts = t[-1]  # update previous section timestamps
-
-                """
-                INSERT WHATEVER REAL TIME PROCESS HERE
-                """
-                # example:
-                times = np.append(
-                    times, t
-                )  # builds a list of times if needed: comment out if you don't need to accumulate e.g. when building a g2
-        f.close()
+        raise NotImplementedError()

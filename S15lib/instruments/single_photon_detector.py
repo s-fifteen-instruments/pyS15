@@ -94,7 +94,8 @@ class SinglePhotonDetector(object):
         self._com.write("time {}\r\n".format(value).encode())
 
     def counts(self, counting_time_sec: float = 1) -> int:
-        """Returns counts detected on the detector within the given counting time (default = 1 second)"""
+        """Returns counts detected on the detector within the given counting time.
+        Default of 1 second."""
         self.time = counting_time_sec * 1000
         return int(self._com.getresponse("counts?", timeout=counting_time_sec + 0.1))
 

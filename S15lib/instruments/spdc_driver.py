@@ -6,8 +6,6 @@ by Mathias Seidler
 
 import time
 
-import numpy as np
-
 from . import serial_connection
 
 

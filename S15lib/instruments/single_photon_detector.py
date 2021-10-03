@@ -21,7 +21,7 @@ class SinglePhotonDetector(object):
         return self._com.getresponse("*idn?")
 
     def help(self) -> str:
-        print(self._com.help())
+        return self._com.help()
 
     def save_settings(self) -> str:
         return self._com.getresponse("save")
@@ -116,7 +116,7 @@ class SinglePhotonDetector(object):
         self.temperature = value
 
     @property
-    def delay(self) -> int:
+    def delay(self) -> float:
         return float(self._com.getresponse("delay?"))
 
     @delay.setter

@@ -349,7 +349,7 @@ class PowerMeter:
         assert type(self._com) is serial_connection.SerialConnection
         return float(self._com.getresponse("VOLT?"))
 
-    def get_power(self, wave_length: int) -> float:
+    def get_power(self, wave_length: float) -> float:
         """Get optical power (Watts).
 
         It automatically selects the correct range.

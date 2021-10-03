@@ -109,8 +109,8 @@ def show_source_properties(
 
 
 if __name__ == "__main__":
-    acq_time = input("Enter gate time in s: ")
-    if acq_time == "":
+    acq_time_str = input("Enter gate time in s: ")
+    if acq_time_str == "":
         print("no user input. default to 0.1 seconds gate time")
         acq_time = 0.1
     else:

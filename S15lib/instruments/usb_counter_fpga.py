@@ -259,7 +259,7 @@ class TimeStampTDC1(object):
 
     def get_counts_and_coincidences(
         self, t_acq: float = 1
-    ) -> Tuple[int, int, int, int, int, int, int, int]:
+    ) -> Tuple[int, ...]:
         """Counts single events and coinciding events in channel pairs.
 
         Args:
@@ -291,7 +291,7 @@ class TimeStampTDC1(object):
         self._com.timeout = 1
         return tuple([int(i) for i in singlesAndPairs.split()])
 
-    def get_timestamps(self, t_acq: float = 1) -> Tuple[List[float], List[str]]:
+    def get_timestamps(self, t_acq: float = 1) -> Tuple[np.ndarray[int], List[str]]:
         """Acquires timestamps and returns 2 lists. The first one containing
         the time and the second the event channel.
 
@@ -300,7 +300,7 @@ class TimeStampTDC1(object):
                 Duration of the the timestamp acquisition in seconds. Defaults to 1.
 
         Returns:
-            Tuple[List[float], List[str]]:
+            Tuple[List[int], List[str]]:
                 Returns the event times in ns and the corresponding event channel.
                 The channel are returned as string where a 1 indicates the
                 trigger channel.

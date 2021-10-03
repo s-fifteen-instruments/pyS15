@@ -55,7 +55,7 @@ class SPDCDriver(object):
 
     @peltier_voltage_limit.setter
     def peltier_voltage_limit(self, voltage: float):
-        self._com.write(b"pvoltlimit {}".formt(voltage))
+        self._com.write("pvoltlimit {}".format(voltage).encode())
 
     @property
     def peltier_loop(self) -> int:
@@ -74,8 +74,8 @@ class SPDCDriver(object):
         return float(self._com.getresponse("hvoltlimit?"))
 
     @heater_voltage_limit.setter
-    def peltier_voltage_limit(self, voltage: float):
-        self._com.write(b"hvoltlimit {}".formt(voltage))
+    def heater_voltage_limit(self, voltage: float):
+        self._com.write("hvoltlimit {}".format(voltage).encode())
 
     @property
     def heater_loop(self) -> int:

@@ -33,10 +33,10 @@ class StepperMotorDriver(object):
 
     def identity(self) -> str:
         # self._com.write(b'*IDN?\r\n')
-        return self.getresponse("*idn?")
+        return self._com.getresponse("*idn?")
 
     def help(self) -> str:
-        print(self._com.help())
+        return self._com.help()
 
     def on(self, channel: int):
         """
@@ -67,6 +67,7 @@ class StepperMotorDriver(object):
         pos2 = int(self._com.getresponse("pos?"))
         if pos1 == pos2:
             return pos2
+        return self.get_position(channel)
 
     def zero(self, channel: int):
         """

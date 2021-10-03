@@ -24,3 +24,5 @@ repos:
     hooks:
       - id: mypy
         language_version: python3
+        args: ["--ignore-missing-imports"]
+        # https://stackoverflow.com/a/68665742

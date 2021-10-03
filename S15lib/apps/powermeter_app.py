@@ -7,14 +7,12 @@ import pyqtgraph as pg
 from PyQt5 import QtGui
 from PyQt5.QtCore import QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
-    QAction,
     QApplication,
     QGridLayout,
     QLabel,
     QMainWindow,
     QMenuBar,
     QWidget,
-    qApp,
 )
 
 from S15lib.instruments import powermeter, serial_connection
@@ -111,7 +109,8 @@ class MainWindow(QMainWindow):
 
         # Start plot
         self.button = QtGui.QPushButton("Live start")
-        # self.button.setStyleSheet("font-size: 15px;height:25px;width: 60self.comboBox.setEnabled(False)px;")
+        # self.button.setStyleSheet("font-size: 15px;height:25px;width: "
+        #                           + "60self.comboBox.setEnabled(False)px;")
         self.button.clicked.connect(self.on_button_clicked)
 
         # wavelength selection
@@ -215,7 +214,7 @@ class MainWindow(QMainWindow):
             self, "Save to log file", start
         )[0]
         self.label_logfile.setText(self._logfile_name)
-        if self.timer.isActive() == False:
+        if not self.timer.isActive():
             self.startLoggin_button.setEnabled(True)
 
     def on_clicked_start_log(self):

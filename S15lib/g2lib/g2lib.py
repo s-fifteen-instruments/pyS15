@@ -13,9 +13,10 @@ except ImportError:
     def delta_loop(
         t1: List[float], t2: List[float], bins: int = 500, bin_width_ns: float = 2
     ) -> List[int]:
-        """Returns time difference histogram from two given lists (t1, t2) containing timestamps.
-           List t1 contains the start times and t2 the stop times.
-           Correlated t2 events should arrive after t1 events, since this function does not look for correlated events before t1 events.
+        """Returns time difference histogram from two given lists (t1, t2) containing
+           timestamps. List t1 contains the start times and t2 the stop times.
+           Correlated t2 events should arrive after t1 events, since this function
+           does not look for correlated events before t1 events.
 
         Args:
             t1 (List[float]): Start times.
@@ -60,7 +61,8 @@ def _data_extractor(filename: str, highres_tscard: bool = False):
         highres_tscard (bool, optional): Flag for the 4ps time resolution card
 
     Returns:
-        (numpy.ndarray(float), numpy.ndarray(uint32)): Two vectors: timestamps, corresponding pattern
+        (numpy.ndarray(float), numpy.ndarray(uint32)):
+          Two vectors: timestamps, corresponding pattern
     """
 
     with open(filename, "rb") as f:
@@ -87,19 +89,27 @@ def g2_extr(
 
     Args:
         filename (str): timestamp file containing raw data
-        bins (int, optional): Number of bins for the coincidence histogram. Defaults to 100.
-        bin_width (float, optional): Bin width of coincidence histogram in nanoseconds. Defaults to 2.
-        min_range (int, optional): Lower range of correlation in nanoseconds. Defaults to 0.
+        bins (int, optional):
+            Number of bins for the coincidence histogram. Defaults to 100.
+        bin_width (float, optional):
+            Bin width of coincidence histogram in nanoseconds. Defaults to 2.
+        min_range (int, optional):
+            Lower range of correlation in nanoseconds. Defaults to 0.
         channel_start (int, optional): Channel of start events. Defaults to 0.
         channel_stop (int, optional): Channel of stop events. Defaults to 1.
-        c_stop_delay (int, optional): Adds time (in nanoseconds) to the stop channel time stamps. Defaults to 0.
-        highres_tscard (bool, optional): Setting for timestamp cards with higher time resolution. Defaults to False.
+        c_stop_delay (int, optional):
+            Adds time (in nanoseconds) to the stop channel time stamps. Defaults to 0.
+        highres_tscard (bool, optional):
+            Setting for timestamp cards with higher time resolution. Defaults to False.
 
     Raises:
-        ValueError: When channel is not between 0 - 3. (0: channel 1, 1: channel 2, 2: channel 3, 3: channel 4)
+        ValueError: When channel is not between 0 - 3.
+            (0: channel 1, 1: channel 2, 2: channel 3, 3: channel 4)
 
     Returns:
-        [int], [float], int, int, int: histogram, time differences, events in channel_start, events in channel_stop, time at last event
+        [int], [float], int, int, int:
+            histogram, time differences, events in channel_start,
+            events in channel_stop, time at last event
     """
 
     if channel_start not in range(4):
@@ -148,9 +158,8 @@ def peak_finder(
 
 
 if __name__ == "__main__":
-    import timeit
-
     filename = "./test.raw"
     _data_extractor(filename)
+    # import timeit
     # g2_time = timeit.timeit('g2_extr(filename)', number=100, globals=globals())
     # print(g2_time / 100)

@@ -17,7 +17,7 @@ PSETTEMP = 29
 
 
 #####################
-##  SUPPLEMENTARY  ##
+#   SUPPLEMENTARY   #
 #####################
 
 
@@ -36,7 +36,7 @@ def _rwrite(msg):
 
 
 #####################
-##  SUPPLEMENTARY  ##
+#   SUPPLEMENTARY   #
 #####################
 
 
@@ -89,7 +89,7 @@ def monitor():
 
 
 ######################
-##  POWER ROUTINES  ##
+#   POWER ROUTINES   #
 ######################
 
 

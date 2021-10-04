@@ -11,7 +11,7 @@ import multiprocessing
 import os
 import time
 from os.path import expanduser
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 import serial
@@ -289,7 +289,7 @@ class TimeStampTDC1(object):
         self._com.timeout = 1
         return tuple([int(i) for i in singlesAndPairs.split()])
 
-    def get_timestamps(self, t_acq: float = 1) -> Tuple[np.ndarray[int], List[str]]:
+    def get_timestamps(self, t_acq: float = 1):
         """Acquires timestamps and returns 2 lists. The first one containing
         the time and the second the event channel.
 

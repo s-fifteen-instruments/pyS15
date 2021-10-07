@@ -1,43 +1,68 @@
-# s-fifteen python library
-S15lib is a python package to control [s-fifteen instruments](https://s-fifteen.com/).
+# S-Fifteen Python library
 
-### 1 Requirements
-- [Python](https://www.python.org) installed.  We support Python >3.6.
-- [pip](https://pypi.org/project/pip/) installed (Already installed if you are using Python 2 >=2.7.9 or Python 3 >=3.4)
+S15lib is a Python package for controlling [S-Fifteen instruments](https://s-fifteen.com/).
 
-### 2 Install S15lib
+## Installation
+
+[Python](https://www.python.org) 3.6+ is required.
 Install the package directly with
- 
-    pip install git+https://github.com/s-fifteen-instruments/pyS15.git
 
-Alternatively you can clone or download the package from https://github.com/s-fifteen-instruments/pyS15.git.
-Open a command-line terminal, go into the repository folder and type
-  
-    pip install -e .
-    
+```
+pip install git+https://github.com/s-fifteen-instruments/pyS15.git
+```
 
-    
-### 3 Use a device in your python script
-Here an example to use the s-fivteen power meter:
+Alternatively, clone or [download](https://github.com/s-fifteen-instruments/pyS15/archive/refs/heads/master.zip)
+the repository and execute the following
+command from within the project directory.
 
-    from S15lib.instruments import PowerMeter
-    pm_dev = PowerMeter('/dev/serial/by-id/....')
-    wave_length = 780 # impending light on the power meter has a wavelength of 780 nm
-    optical_power = pm_dev.get_power(wave_length)
-    print(optical_power)
-    op, op_std = pm_dev.get_avg_power(10, wave_length) # samples the optical power 10 times and returns mean and standard deviation
-    print(op, op_std)
-    
- ### 4 Use a device app
- The apps folder contains graphical user interfaces (GUI) for s-fifteen devices.
- Those with plotting features __require PyQt5 and pyqtgraph__ (install them with:  pip install PyQt5, pyqtgraph).
- 
- The GUIs can be started by 
- 
-     from S15lib.apps import powermeter_app
-     powermeter_app.main()
-  
- or by downloading them from https://github.com/s-fifteen-instruments/pyS15/tree/master/S15lib/apps and then starting them with
- 
-    python an_app.py
- 
+```
+pip install -e .
+```
+
+The library can be uninstalled with,
+
+```
+pip uninstall S15lib
+```
+
+## Usage
+
+### Via Python interpreter
+
+Here is a minimal script to interface with the S-Fifteen power meter:
+
+```
+>>> from S15lib.instruments import PowerMeter
+>>> pm = PowerMeter('/dev/serial/by-id/...')
+>>> pm.get_power(780)  # optical power in mW, with 780nm incident wavelength
+0.003378571428571428
+```
+
+More examples are available in the [`examples/`](examples) directory.
+
+### Via device application
+
+The [`apps/`](S15lib/apps) directory contains apps and graphical user interfaces (GUIs) for
+selected S-Fifteen devices, some of which require additional (graphing) dependencies that
+can installed with
+
+```
+pip install -e .[apps]
+```
+
+The apps can then be started either in the interpreter,
+
+```
+>>> from S15lib.apps import powermeter_app
+>>> powermeter_app.main()
+```
+
+or by downloading the apps from the [`apps/`](S15lib/apps) and starting them with,
+
+```
+python powermeter_app.py
+```
+
+## Development
+
+See the [developer guide](docs/developer.md).

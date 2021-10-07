@@ -1,15 +1,14 @@
-
-.DS_Store
-S15lib/__pycache__/__init__.cpython-38.pyc
-*.pyc
-S15lib.egg-info/dependency_links.txt
-S15lib.egg-info/PKG-INFO
-S15lib.egg-info/requires.txt
-S15lib.egg-info/SOURCES.txt
-S15lib.egg-info/top_level.txt
-examples/.ipynb_checkpoints/TDC1_time_to_digital_converter-checkpoint.ipynb
-*__pycache__*
-
 # Virtual environments
 venv/
 .venv/
+
+# Caches
+__pycache__
+.mypy_cache
+.ipynb_checkpoints
+
+# OS metadata
+.DS_Store
+
+# Package byproducts
+S15lib.egg-info

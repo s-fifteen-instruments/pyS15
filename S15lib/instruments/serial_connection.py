@@ -80,9 +80,9 @@ class SerialConnection(serial.Serial):
                 read/write on unopened port.
         """
         super().__init__(device_path, timeout=timeout)
-        self._cleanup()
+        self.cleanup()
 
-    def _cleanup(self):
+    def cleanup(self):
         """Cleans up the device to prepare for IO.
 
         Resets the input and output buffers if data is present, and repeatedly
@@ -131,7 +131,7 @@ class SerialConnection(serial.Serial):
         are chained together.
 
         Timeout can be defined independently from the general timeout device.
-        This is useful for measurement with integration time longer than
+        This is useful for measurements with integration time longer than
         communication timeout. The timeout for the response uses the following
         values in order of precedence:
             1. timeout, if specified
@@ -145,8 +145,13 @@ class SerialConnection(serial.Serial):
             Multi-line reply of the device, stripped of leading/trailing whitespace.
         Raises:
             serial.SerialException: Attempted to access a closed port.
+        Note:
+            This behaviour seems to identical to a combination of `cleanup()`,
+            `writeline(cmd)` and `readlines()`, with the exception of the
+            additional read timeout override. To consider refactoring to
+            `readlines()` + read timeout adjustment instead.
         """
-        self._cleanup()
+        self.cleanup()
         self.writeline(cmd)
 
         # Wait until characters are available, or until timeout reached
@@ -177,7 +182,7 @@ class SerialConnection(serial.Serial):
         are chained together.
 
         Timeout can be defined independently from the general timeout device.
-        This is useful for measurement with integration time longer than
+        This is useful for measurements with integration time longer than
         communication timeout. The timeout for the response uses the following
         values in order of precedence:
             1. timeout, if specified
@@ -192,7 +197,7 @@ class SerialConnection(serial.Serial):
         Raises:
             serial.SerialException: Attempted to access a closed port.
         """
-        self._cleanup()
+        self.cleanup()
         self.writeline(cmd)
 
         # Wait until characters are available, or until timeout reached

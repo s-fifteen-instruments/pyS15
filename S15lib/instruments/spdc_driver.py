@@ -1,4 +1,5 @@
 import time
+
 import numpy as np  # for type checking with numpy types
 
 from .serial_connection import SerialConnection
@@ -27,6 +28,12 @@ class SPDCDriver(object):
     def heater_loop(self, value: int):
         """Sets heater/crystal temperature loop (HLOOP) on/off.
 
+        Heater voltage is automatically set to zero, which is not part of the
+        device command set. Implemented because there is almost zero use case
+        for a voltage hold after PID is switched off, except for debugging.
+        Recommended to combine with `heater_voltage = 0` in scripts for visual
+        consistency.
+
         Args:
             value: 0 to switch off, otherwise non-0 to switch on.
         Raises:
@@ -51,6 +58,12 @@ class SPDCDriver(object):
     def peltier_loop(self, value: int):
         """Sets peltier/laser temperature loop (PLOOP) on/off.
 
+        Peltier voltage is automatically set to zero, which is not part of the
+        device command set. Implemented because there is almost zero use case
+        for a voltage hold after PID is switched off, except for debugging.
+        Recommended to combine with `peltier_voltage = 0` in scripts for visual
+        consistency.
+
         Args:
             value: 0 to switch off, otherwise non-0 to switch on.
         Raises:
@@ -68,28 +81,84 @@ class SPDCDriver(object):
             self._com.writeline("PLOOP 1")
 
     @property
-    def peltier_voltage_limit(self) -> float:
-        return float(self._com.getresponse("plimit?"))
-
-    @peltier_voltage_limit.setter
-    def peltier_voltage_limit(self, voltage: float):
-        self._com.writeline(f"plimit {voltage}")
-
-    @property
     def heater_voltage(self) -> float:
-        return float(self._com.getresponse("hvolt?"))
+        return float(self._com.getresponse("HVOLT?"))
+
+    @heater_voltage.setter
+    def heater_voltage(self, voltage: float):
+        """Sets voltage across crystal heater.
+
+        This value must be less than or equal to HLIMIT to take effect, otherwise the
+        command will fail silently.
+
+        Raises:
+            TypeError: voltage is not a non-negative number
+        """
+        if not isinstance(voltage, (int, float, np.number)) or voltage < 0:
+            raise TypeError("Heater voltage can only take non-negative values.")
+        self._com.writeline(f"HVOLT {voltage:.3f}")
 
     @property
     def peltier_voltage(self) -> float:
-        return float(self._com.getresponse("pvolt?"))
+        return float(self._com.getresponse("PVOLT?"))
+
+    @peltier_voltage.setter
+    def peltier_voltage(self, voltage: float):
+        """Sets voltage across laser peltier.
+
+        This value must be within [-PLIMIT, PLIMIT] to take effect, otherwise the
+        command will fail silently.
+
+        Raises:
+            TypeError: voltage is not a number
+        """
+        if not isinstance(voltage, (int, float, np.number)):
+            raise TypeError("Peltier voltage can only take real values.")
+        self._com.writeline(f"PVOLT {voltage:.3f}")
 
     @property
     def heater_voltage_limit(self) -> float:
-        return float(self._com.getresponse("hlimit?"))
+        return float(self._com.getresponse("HLIMIT?"))
 
     @heater_voltage_limit.setter
     def heater_voltage_limit(self, voltage: float):
-        self._com.write("hlimit {}".format(voltage).encode())
+        """Sets the crystal heater voltage limit.
+
+        If voltage limit is out of allowable range, the device responds with
+        an error message as feedback, otherwise no feedback is provided.
+
+        Args:
+            voltage: Heater voltage limit, in volts
+        Returns:
+            Error message if error, otherwise empty string
+        Raises:
+            TypeError: voltage is not a non-negative number
+        """
+        if not isinstance(voltage, (int, float, np.number)) or voltage < 0:
+            raise TypeError("Heater voltage limit can only take non-negative values.")
+        return self._com.getresponse(f"HLIMIT {voltage:.3f}")
+
+    @property
+    def peltier_voltage_limit(self) -> float:
+        return float(self._com.getresponse("PLIMIT?"))
+
+    @peltier_voltage_limit.setter
+    def peltier_voltage_limit(self, voltage: float) -> str:
+        """Sets the laser peltier voltage limit.
+
+        If voltage limit is out of allowable range, the device responds with
+        an error message as feedback, otherwise no feedback is provided.
+
+        Args:
+            voltage: Peltier voltage limit, in volts
+        Returns:
+            Error message if error, otherwise empty string
+        Raises:
+            TypeError: voltage is not a non-negative number
+        """
+        if not isinstance(voltage, (int, float, np.number)) or voltage < 0:
+            raise TypeError("Peltier voltage limit can only take non-negative values.")
+        return self._com.getresponse(f"PLIMIT {voltage:.3f}")
 
     @property
     def laser_current(self) -> float:
@@ -186,7 +255,7 @@ class SPDCDriver(object):
         # self._com.write(cmd_setPID)
         cmd = ("PSETTEMP {}\r\n".format(temperature)).encode()
         self._com.write(cmd)
-        self.peltier_loop_on()  # switch feedback loop on
+        self.peltier_loop = 1  # switch feedback loop on
 
     @property
     def peltier_temp_setpoint(self) -> float:

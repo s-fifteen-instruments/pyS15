@@ -1,34 +1,22 @@
-"""
-Created on Mon Feb 9 2020
-by Mathias Seidler
-"""
-
-
 import time
 
-from . import serial_connection
+from .serial_connection import SerialConnection
 
 
 class SPDCDriver(object):
-    """Module for communicating with the power meter"""
+    """Python wrapper to communcate with SPDC board."""
 
     DEVICE_IDENTIFIER = "SPDC driver"
 
     def __init__(self, device_path: str = ""):
-        # if no path is indicated it tries to init the first power_meter device
         if device_path == "":
-            device_path = (
-                serial_connection.search_for_serial_devices(self.DEVICE_IDENTIFIER)
-            )[0]
-            print("Connected to", device_path)
-        self._com = serial_connection.SerialConnection(device_path)
-        time.sleep(0.05)
-        self.identity
-        time.sleep(0.05)
-        self.identity
+            self._com = SerialConnection.connect_by_name(self.DEVICE_IDENTIFIER)
+        else:
+            self._com = SerialConnection(device_path)
 
     def reset(self):
-        """Resets the device.
+        """Resets the device."""
+        self._com.writeline("*RST")
 
         Returns:
             str -- Response of the device after.
@@ -83,12 +71,12 @@ class SPDCDriver(object):
 
     @property
     def laser_current(self) -> float:
-        assert type(self._com) is serial_connection.SerialConnection
+        assert type(self._com) is SerialConnection
         return float(self._com.getresponse("lcurrent?"))
 
     @laser_current.setter
     def laser_current(self, current: int):
-        assert type(self._com) is serial_connection.SerialConnection and (
+        assert type(self._com) is SerialConnection and (
             type(current) is float or type(current) is int
         )
         cmd = ("lcurrent {}\n".format(current)).encode()
@@ -127,7 +115,7 @@ class SPDCDriver(object):
         Returns:
             number -- Temperature at the crystal
         """
-        assert type(self._com) is serial_connection.SerialConnection
+        assert type(self._com) is SerialConnection
         return float(self._com.getresponse("HTEMP?"))
 
     @heater_temp.setter
@@ -141,7 +129,7 @@ class SPDCDriver(object):
         Arguments:
                 temperature {float} -- set point for the heater temperature
         """
-        assert type(self._com) is serial_connection.SerialConnection
+        assert type(self._com) is SerialConnection
         now_temp = self.heater_temp
         if now_temp < temperature:
             # Perform precautionary stepping during heating
@@ -164,13 +152,13 @@ class SPDCDriver(object):
         Returns:
             number -- Current temperature of the peltier temp
         """
-        assert type(self._com) is serial_connection.SerialConnection
+        assert type(self._com) is SerialConnection
         return float(self._com.getresponse("PTEMP?"))
 
     @peltier_temp.setter
     def peltier_temp(self, temperature: float):
         assert temperature > 20 and temperature < 50
-        assert type(self._com) is serial_connection.SerialConnection
+        assert type(self._com) is SerialConnection
         assert type(temperature) is float or type(temperature) is int
         # cmd_setPID = b'PCONSTP 0.1;PCONSTI 0.03\r\n'
         # self._com.write(cmd_setPID)

@@ -233,7 +233,7 @@ class SerialConnection(serial.Serial):
         """
         self.write("{};".format(cmd).encode())
 
-    def get_help(self) -> None:
+    def print_help(self) -> None:
         """Prints out help information stored on device.
 
         Raises:

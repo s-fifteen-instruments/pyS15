@@ -16,9 +16,31 @@ class SPDCDriver(object):
         else:
             self._com = SerialConnection(device_path)
 
-    def reset(self):
+    def help(self) -> None:
+        self._com.print_help()
+
+    @property
+    def identity(self) -> str:
+        return self._com.get_identity()
+
+    def reset(self) -> None:
         """Resets the device."""
         self._com.writeline("*RST")
+
+    def save_settings(self) -> str:
+        """Save device settings into storage.
+
+        Returns:
+            Success message if save is successful.
+        Note:
+            Saving of settings typically take longer than 100ms. One second is a
+            reasonable upper bound.
+        """
+        return self._com.getresponse("SAVE", timeout=1)
+
+    def close(self) -> None:
+        """Close connection to device."""
+        self._com.close()
 
     @property
     def heater_loop(self) -> int:
@@ -264,16 +286,6 @@ class SPDCDriver(object):
     @property
     def heater_temp_setpoint(self) -> float:
         return float(self._com.getresponse("hsettemp?"))
-
-    @property
-    def identity(self):
-        return self._com.get_identity()
-
-    def help(self):
-        self._com.print_help()
-
-    def save_settings(self) -> str:
-        return self._com.getresponse("save")
 
     @property
     def pconstp(self) -> float:

@@ -143,44 +143,134 @@ class SPDCDriver(object):
         return float(self._com.getresponse("HLIMIT?"))
 
     @heater_voltage_limit.setter
-    def heater_voltage_limit(self, voltage: float):
+    def heater_voltage_limit(self, voltage: float) -> None:
         """Sets the crystal heater voltage limit.
 
         If voltage limit is out of allowable range, the device responds with
         an error message as feedback, otherwise no feedback is provided.
+        The input buffer is cleared pre-emptively.
 
         Args:
             voltage: Heater voltage limit, in volts
-        Returns:
-            Error message if error, otherwise empty string
         Raises:
             TypeError: voltage is not a non-negative number
         """
         if not isinstance(voltage, (int, float, np.number)) or voltage < 0:
             raise TypeError("Heater voltage limit can only take non-negative values.")
-        return self._com.getresponse(f"HLIMIT {voltage:.3f}")
+        self._com.getresponse(f"HLIMIT {voltage:.3f}")
 
     @property
     def peltier_voltage_limit(self) -> float:
         return float(self._com.getresponse("PLIMIT?"))
 
     @peltier_voltage_limit.setter
-    def peltier_voltage_limit(self, voltage: float) -> str:
+    def peltier_voltage_limit(self, voltage: float) -> None:
         """Sets the laser peltier voltage limit.
 
         If voltage limit is out of allowable range, the device responds with
         an error message as feedback, otherwise no feedback is provided.
+        The input buffer is cleared pre-emptively.
 
         Args:
             voltage: Peltier voltage limit, in volts
-        Returns:
-            Error message if error, otherwise empty string
         Raises:
             TypeError: voltage is not a non-negative number
         """
         if not isinstance(voltage, (int, float, np.number)) or voltage < 0:
             raise TypeError("Peltier voltage limit can only take non-negative values.")
-        return self._com.getresponse(f"PLIMIT {voltage:.3f}")
+        self._com.getresponse(f"PLIMIT {voltage:.3f}")
+
+    @property
+    def heater_temp(self) -> float:
+        """Measures the instantaneous temperature near the crystal."""
+        return float(self._com.getresponse("HTEMP?"))
+
+    @heater_temp.setter
+    def heater_temp(self, temperature: float):
+        """Alias for @heater_temp_setpoint.setter."""
+        self.heater_temp_setpoint = temperature
+
+    @property
+    def heater_temp_setpoint(self) -> float:
+        return float(self._com.getresponse("HSETTEMP?"))
+
+    @heater_temp_setpoint.setter
+    def heater_temp_setpoint(self, temperature: float) -> None:
+        """Sets the target temperature of the crystal.
+
+        The temperature setpoint must be within [20,100] to take effect, otherwise the
+        command will fail silently - the input buffer is cleared pre-emptively.
+
+        Args:
+            temperature: Setpoint for the crystal temperature
+        """
+        if not isinstance(temperature, (int, float, np.number)) or temperature < 0:
+            raise TypeError("Heater setpoint can only take non-negative values.")
+        self._com.getresponse(f"HSETTEMP {temperature:.3f}")
+
+    @property
+    def peltier_temp(self) -> float:
+        """Measures the instantaneous temperature near the laser."""
+        return float(self._com.getresponse("PTEMP?"))
+
+    @peltier_temp.setter
+    def peltier_temp(self, temperature: float):
+        """Alias for @peltier_temp_setpoint.setter."""
+        self.peltier_temp_setpoint = temperature
+
+    @property
+    def peltier_temp_setpoint(self) -> float:
+        return float(self._com.getresponse("PSETTEMP?"))
+
+    @peltier_temp_setpoint.setter
+    def peltier_temp_setpoint(self, temperature: float) -> None:
+        """Sets the target temperature of the laser.
+
+        The temperature setpoint must be within [20,50] to take effect, otherwise the
+        command will fail silently - the input buffer is cleared pre-emptively.
+
+        Args:
+            temperature: Setpoint for the laser temperature
+        """
+        if not isinstance(temperature, (int, float, np.number)) or temperature < 0:
+            raise TypeError("Peltier setpoint can only take non-negative values.")
+        self._com.getresponse(f"PSETTEMP {temperature:.3f}")
+
+    @property
+    def pconstp(self) -> float:
+        return float(self._com.getresponse("pconstp?"))
+
+    @pconstp.setter
+    def pconstp(self, value) -> float:
+        cmd = "pconstp {}\r\n".format(value).encode()
+        return self._com.write(cmd)
+
+    @property
+    def pconsti(self) -> float:
+        return float(self._com.getresponse("pconsti?"))
+
+    @pconsti.setter
+    def pconsti(self, value) -> float:
+        cmd = "pconsti {}\r\n".format(value).encode()
+        return self._com.write(cmd)
+
+    @property
+    def hconstp(self) -> float:
+        return float(self._com.getresponse("hconstp?"))
+
+    @hconstp.setter
+    def hconstp(self, value: float) -> float:
+        cmd = "hconstp {}\r\n".format(value).encode()
+        return self._com.write(cmd)
+
+    @property
+    def hconsti(self) -> float:
+        return float(self._com.getresponse("hconsti?"))
+
+    @hconsti.setter
+    def hconsti(self, value: float) -> float:
+        cmd = "hconsti {}\r\n".format(value).encode()
+        return self._com.write(cmd)
 
     @property
     def laser_current(self) -> float:
@@ -220,108 +310,6 @@ class SPDCDriver(object):
                 self._com.write(cmd)
                 time.sleep(0.05)
         self._com.write("off\n".encode())
-
-    @property
-    def heater_temp(self) -> float:
-        """Returns the temperature at the crystal.
-
-        Returns:
-            number -- Temperature at the crystal
-        """
-        assert type(self._com) is SerialConnection
-        return float(self._com.getresponse("HTEMP?"))
-
-    @heater_temp.setter
-    def heater_temp(self, temperature: float):
-        """Sets the temperature of the crystal heater
-
-
-        Decorators:
-                heater_temp.setter
-
-        Arguments:
-                temperature {float} -- set point for the heater temperature
-        """
-        assert type(self._com) is SerialConnection
-        now_temp = self.heater_temp
-        if now_temp < temperature:
-            # Perform precautionary stepping during heating
-            for t in range(int(now_temp) + 1, int(temperature) + 1):
-                cmd = ("HSETTEMP {}\n".format(t)).encode()
-                self._com.write(cmd)
-                time.sleep(6)
-            # Enable floating point setpoint
-            if int(temperature) != temperature:
-                cmd = ("HSETTEMP {:.3f}\n".format(temperature)).encode()
-                self._com.write(cmd)
-        else:
-            cmd = ("HSETTEMP {}\n".format(temperature)).encode()
-            self._com.write(cmd)
-
-    @property
-    def peltier_temp(self) -> float:
-        """Measures the temperature close to the peltier, where the laser diode is cooled.
-
-        Returns:
-            number -- Current temperature of the peltier temp
-        """
-        assert type(self._com) is SerialConnection
-        return float(self._com.getresponse("PTEMP?"))
-
-    @peltier_temp.setter
-    def peltier_temp(self, temperature: float):
-        assert temperature > 20 and temperature < 50
-        assert type(self._com) is SerialConnection
-        assert type(temperature) is float or type(temperature) is int
-        # cmd_setPID = b'PCONSTP 0.1;PCONSTI 0.03\r\n'
-        # self._com.write(cmd_setPID)
-        cmd = ("PSETTEMP {}\r\n".format(temperature)).encode()
-        self._com.write(cmd)
-        self.peltier_loop = 1  # switch feedback loop on
-
-    @property
-    def peltier_temp_setpoint(self) -> float:
-        return float(self._com.getresponse("psettemp?"))
-
-    @property
-    def heater_temp_setpoint(self) -> float:
-        return float(self._com.getresponse("hsettemp?"))
-
-    @property
-    def pconstp(self) -> float:
-        return float(self._com.getresponse("pconstp?"))
-
-    @pconstp.setter
-    def pconstp(self, value) -> float:
-        cmd = "pconstp {}\r\n".format(value).encode()
-        return self._com.write(cmd)
-
-    @property
-    def pconsti(self) -> float:
-        return float(self._com.getresponse("pconsti?"))
-
-    @pconsti.setter
-    def pconsti(self, value) -> float:
-        cmd = "pconsti {}\r\n".format(value).encode()
-        return self._com.write(cmd)
-
-    @property
-    def hconstp(self) -> float:
-        return float(self._com.getresponse("hconstp?"))
-
-    @hconstp.setter
-    def hconstp(self, value: float) -> float:
-        cmd = "hconstp {}\r\n".format(value).encode()
-        return self._com.write(cmd)
-
-    @property
-    def hconsti(self) -> float:
-        return float(self._com.getresponse("hconsti?"))
-
-    @hconsti.setter
-    def hconsti(self, value: float) -> float:
-        cmd = "hconsti {}\r\n".format(value).encode()
-        return self._com.write(cmd)
 
     @property
     def laser_current_limit(self) -> float:

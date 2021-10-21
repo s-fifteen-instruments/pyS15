@@ -4,8 +4,6 @@ Extends the Serial class to allow string-based IO methods, as well as add
 other methods for common S-Fifteen instruments device responses.
 """
 
-from __future__ import annotations  # for deferred typing evaluation
-
 import glob
 import sys
 import time
@@ -104,7 +102,7 @@ class SerialConnection(serial.Serial):
                 break
 
     @classmethod
-    def connect_by_name(cls, device: str) -> SerialConnection:
+    def connect_by_name(cls, device: str):
         """Searches for and returns a connection to the specified device.
 
         Args:

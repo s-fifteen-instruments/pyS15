@@ -1,4 +1,5 @@
 import time
+import numpy as np  # for type checking with numpy types
 
 from .serial_connection import SerialConnection
 
@@ -18,24 +19,53 @@ class SPDCDriver(object):
         """Resets the device."""
         self._com.writeline("*RST")
 
-        Returns:
-            str -- Response of the device after.
+    @property
+    def heater_loop(self) -> int:
+        return int(self._com.getresponse("HLOOP?"))
+
+    @heater_loop.setter
+    def heater_loop(self, value: int):
+        """Sets heater/crystal temperature loop (HLOOP) on/off.
+
+        Args:
+            value: 0 to switch off, otherwise non-0 to switch on.
+        Raises:
+            TypeError: value is not an integer.
         """
-        return self._com.write(b"*RST")
+        if not isinstance(value, (int, np.integer)):
+            raise TypeError(
+                "Heater loop can only take integer values - "
+                "off (value=0) or on (value!=0)."
+            )
+        if value == 0:
+            self._com.writeline("HLOOP 0")  # holds HVOLT at current value
+            self._com.writeline("HVOLT 0")
+        else:  # value != 0
+            self._com.writeline("HLOOP 1")
 
-    def heater_loop_on(self):
-        self._com.write(b"HLOOP 1\n")
+    @property
+    def peltier_loop(self) -> int:
+        return int(self._com.getresponse("PLOOP?"))
 
-    def heater_loop_off(self):
-        self._com.write(b"HLOOP 0\n")
-        self._com.write(b"HVOLT 0;")
+    @peltier_loop.setter
+    def peltier_loop(self, value: int):
+        """Sets peltier/laser temperature loop (PLOOP) on/off.
 
-    def peltier_loop_on(self):
-        self._com.write(b"PLOOP 1\n")
-
-    def peltier_loop_off(self):
-        self._com.write(b"PLOOP 0\n")
-        self._com.write(b"PVOLT 0;")
+        Args:
+            value: 0 to switch off, otherwise non-0 to switch on.
+        Raises:
+            TypeError: value is not an integer.
+        """
+        if not isinstance(value, (int, np.integer)):
+            raise TypeError(
+                "Peltier loop can only take integer values - "
+                "off (value=0) or on (value!=0)."
+            )
+        if value == 0:
+            self._com.writeline("PLOOP 0")  # holds PVOLT at current value
+            self._com.writeline("PVOLT 0")
+        else:  # value != 0
+            self._com.writeline("PLOOP 1")
 
     @property
     def peltier_voltage_limit(self) -> float:
@@ -43,11 +73,7 @@ class SPDCDriver(object):
 
     @peltier_voltage_limit.setter
     def peltier_voltage_limit(self, voltage: float):
-        self._com.write("plimit {}".format(voltage).encode())
-
-    @property
-    def peltier_loop(self) -> int:
-        return int(self._com.getresponse("PLOOP?"))
+        self._com.writeline(f"plimit {voltage}")
 
     @property
     def heater_voltage(self) -> float:
@@ -64,10 +90,6 @@ class SPDCDriver(object):
     @heater_voltage_limit.setter
     def heater_voltage_limit(self, voltage: float):
         self._com.write("hlimit {}".format(voltage).encode())
-
-    @property
-    def heater_loop(self) -> int:
-        return int(self._com.getresponse("HLOOP?"))
 
     @property
     def laser_current(self) -> float:
@@ -176,10 +198,10 @@ class SPDCDriver(object):
 
     @property
     def identity(self):
-        return self._com.getresponse("*idn?")
+        return self._com.get_identity()
 
     def help(self):
-        return self._com.help()
+        self._com.print_help()
 
     def save_settings(self) -> str:
         return self._com.getresponse("save")
@@ -228,12 +250,3 @@ class SPDCDriver(object):
     def laser_current_limit(self, value: float) -> float:
         cmd = "llimit {}\r\n".format(value).encode()
         return self._com.write(cmd)
-
-
-if __name__ == "__main__":
-    spdc_driver = SPDCDriver()
-    start = time.time()
-    print(spdc_driver.heater_temp)
-    Dt = time.time() - start
-
-    print("Waktu {}".format(Dt))

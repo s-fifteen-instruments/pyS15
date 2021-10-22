@@ -476,13 +476,13 @@ class SPDCDriver(object):
         self._com.writeline(f"POWER {value}")
 
     def _power_on_heater_peltier(self) -> None:
-        self.power = {0: 1, 1: 1, 2: 3, 3: 3}[self.power]
+        self.power |= 0b01
 
     def _power_off_heater_peltier(self) -> None:
-        self.power = {0: 0, 1: 0, 2: 2, 3: 2}[self.power]
+        self.power &= 0b10
 
     def _power_on_laser(self) -> None:
-        self.power = {0: 2, 1: 3, 2: 2, 3: 3}[self.power]
+        self.power |= 0b10
 
     def _power_off_laser(self) -> None:
-        self.power = {0: 0, 1: 1, 2: 0, 3: 1}[self.power]
+        self.power &= 0b01

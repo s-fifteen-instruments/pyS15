@@ -433,8 +433,7 @@ class SPDCDriver(object):
             )
 
         # Switch on laser only, ignoring heater/peltier
-        if self.power in (0, 2):
-            self.power = self.power + 1
+        self._power_on_laser()
         self._com.writeline("ON")
 
         # Ramp laser current
@@ -453,8 +452,7 @@ class SPDCDriver(object):
 
         # Switch off laser only, ignoring heater/peltier
         self._com.writeline("OFF")
-        if self.power in (1, 3):
-            self.power = self.power - 1
+        self._power_off_laser()
 
     @property
     def power(self) -> int:

@@ -364,19 +364,41 @@ class SPDCDriver(object):
 
     @property
     def laser_current(self) -> float:
-        assert type(self._com) is SerialConnection
-        return float(self._com.getresponse("lcurrent?"))
+        return float(self._com.getresponse("LCURRENT?"))
 
     @laser_current.setter
-    def laser_current(self, current: int):
-        assert type(self._com) is SerialConnection and (
-            type(current) is float or type(current) is int
+    def laser_current(self, current: float) -> None:
+        """Sets the laser current, in mA.
+
+        Note that `SPDCDriver.power` needs to be 1 or 3 for lasing to begin.
+
+        Raises:
+            ValueError: `current` is not a valid number.
+        Note:
+            See `heater_voltage` notes for rationale behind input validation.
+        """
+        lcurrent_low, lcurrent_high = 0, self.laser_current_limit
+        self._raise_if_oob(current, lcurrent_low, lcurrent_high, "Laser current", "mA")
+        self._com.writeline(f"LCURRENT {current:.3f}")
+
+    @property
+    def laser_current_limit(self) -> float:
+        return float(self._com.getresponse("LLIMIT?"))
+
+    @laser_current_limit.setter
+    def laser_current_limit(self, current: float) -> None:
+        """Sets the laser current limit, in mA.
+
+        Raises:
+            ValueError: `current` is not a valid number.
+        Note:
+            See `heater_voltage` notes for rationale behind input validation.
+        """
+        llimit_low, llimit_high = 0, 97  # hardcoded based on firmware
+        self._raise_if_oob(
+            current, llimit_low, llimit_high, "Laser current limit", "mA"
         )
-        cmd = ("lcurrent {}\n".format(current)).encode()
-        self._com.write(cmd)
-        msg = self._com.readlines()
-        if msg != []:
-            print(msg)
+        self._com.writeline(f"LLIMIT {current:.3f}")
 
     def laser_on(self, current: int):
         if self.laser_current == 0:
@@ -400,12 +422,3 @@ class SPDCDriver(object):
                 self._com.write(cmd)
                 time.sleep(0.05)
         self._com.write("off\n".encode())
-
-    @property
-    def laser_current_limit(self) -> float:
-        return float(self._com.getresponse("llimit?"))
-
-    @laser_current_limit.setter
-    def laser_current_limit(self, value: float) -> float:
-        cmd = "llimit {}\r\n".format(value).encode()
-        return self._com.write(cmd)

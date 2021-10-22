@@ -315,40 +315,112 @@ class SPDCDriver(object):
         self._com.writeline(f"PSETTEMP {temperature:.3f}")
 
     @property
-    def pconstp(self) -> float:
-        return float(self._com.getresponse("pconstp?"))
-
-    @pconstp.setter
-    def pconstp(self, value) -> float:
-        cmd = "pconstp {}\r\n".format(value).encode()
-        return self._com.write(cmd)
-
-    @property
-    def pconsti(self) -> float:
-        return float(self._com.getresponse("pconsti?"))
-
-    @pconsti.setter
-    def pconsti(self, value) -> float:
-        cmd = "pconsti {}\r\n".format(value).encode()
-        return self._com.write(cmd)
-
-    @property
     def hconstp(self) -> float:
-        return float(self._com.getresponse("hconstp?"))
+        return float(self._com.getresponse("HCONSTP?"))
 
     @hconstp.setter
-    def hconstp(self, value: float) -> float:
-        cmd = "hconstp {}\r\n".format(value).encode()
-        return self._com.write(cmd)
+    def hconstp(self, constant: float) -> None:
+        """Sets the proportional control constant for crystal heater, in V/K."""
+        hconstp_low, hconstp_high = 0, 10  # hardcoded based on firmware
+        if not (
+            isinstance(constant, (int, float, np.number))
+            and hconstp_low <= constant <= hconstp_high
+        ):
+            raise ValueError(
+                "Heater P constant can only take values between "
+                + f"[{hconstp_low}, {hconstp_high}] V/K"
+            )
+        self._com.writeline(f"HCONSTP {constant:.3f}")
 
     @property
     def hconsti(self) -> float:
-        return float(self._com.getresponse("hconsti?"))
+        return float(self._com.getresponse("HCONSTI?"))
 
     @hconsti.setter
-    def hconsti(self, value: float) -> float:
-        cmd = "hconsti {}\r\n".format(value).encode()
-        return self._com.write(cmd)
+    def hconsti(self, constant: float) -> None:
+        """Sets the integral control constant for crystal heater, in V/(Ks)."""
+        hconsti_low, hconsti_high = 0, 10  # hardcoded based on firmware
+        if not (
+            isinstance(constant, (int, float, np.number))
+            and hconsti_low <= constant <= hconsti_high
+        ):
+            raise ValueError(
+                "Heater I constant can only take values between "
+                + f"[{hconsti_low}, {hconsti_high}] V/(Ks)"
+            )
+        self._com.writeline(f"HCONSTI {constant:.3f}")
+
+    @property
+    def hconstd(self) -> float:
+        return float(self._com.getresponse("HCONSTD?"))
+
+    @hconstd.setter
+    def hconstd(self, constant: float) -> None:
+        """Sets the derivative control constant for crystal heater, in Vs/K."""
+        hconstd_low, hconstd_high = 0, 10  # hardcoded based on firmware
+        if not (
+            isinstance(constant, (int, float, np.number))
+            and hconstd_low <= constant <= hconstd_high
+        ):
+            raise ValueError(
+                "Heater D constant can only take values between "
+                + f"[{hconstd_low}, {hconstd_high}] Vs/K"
+            )
+        self._com.writeline(f"HCONSTD {constant:.3f}")
+
+    @property
+    def pconstp(self) -> float:
+        return float(self._com.getresponse("PCONSTP?"))
+
+    @pconstp.setter
+    def pconstp(self, constant: float) -> None:
+        """Sets the proportional control constant for laser peltier, in V/K."""
+        pconstp_low, pconstp_high = 0, 10  # hardcoded based on firmware
+        if not (
+            isinstance(constant, (int, float, np.number))
+            and pconstp_low <= constant <= pconstp_high
+        ):
+            raise ValueError(
+                "Peltier P constant can only take values between "
+                + f"[{pconstp_low}, {pconstp_high}] V/K"
+            )
+        self._com.writeline(f"PCONSTP {constant:.3f}")
+
+    @property
+    def pconsti(self) -> float:
+        return float(self._com.getresponse("PCONSTI?"))
+
+    @pconsti.setter
+    def pconsti(self, constant: float) -> None:
+        """Sets the integral control constant for laser peltier, in V/(Ks)."""
+        pconsti_low, pconsti_high = 0, 10  # hardcoded based on firmware
+        if not (
+            isinstance(constant, (int, float, np.number))
+            and pconsti_low <= constant <= pconsti_high
+        ):
+            raise ValueError(
+                "Peltier I constant can only take values between "
+                + f"[{pconsti_low}, {pconsti_high}] V/(Ks)"
+            )
+        self._com.writeline(f"PCONSTI {constant:.3f}")
+
+    @property
+    def pconstd(self) -> float:
+        return float(self._com.getresponse("PCONSTD?"))
+
+    @pconstd.setter
+    def pconstd(self, constant: float) -> None:
+        """Sets the derivative control constant for laser peltier, in Vs/K."""
+        pconstd_low, pconstd_high = 0, 10  # hardcoded based on firmware
+        if not (
+            isinstance(constant, (int, float, np.number))
+            and pconstd_low <= constant <= pconstd_high
+        ):
+            raise ValueError(
+                "Peltier D constant can only take values between "
+                + f"[{pconstd_low}, {pconstd_high}] Vs/K"
+            )
+        self._com.writeline(f"PCONSTD {constant:.3f}")
 
     @property
     def laser_current(self) -> float:

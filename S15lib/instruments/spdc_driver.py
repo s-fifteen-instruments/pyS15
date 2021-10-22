@@ -1,3 +1,23 @@
+"""
+TODO:
+    Resolve the following bug in the firmware:
+    >>> spdc.heater_voltage_limit = 3
+    >>> spdc.heater_voltage = 2
+    >>> spdc.heater_voltage_limit = 1
+    >>> spdc.heater_voltage  # expected: 1.0
+    2.0
+
+    This in contrast to laser current:
+    >>> spdc.laser_current_limit = 3
+    >>> spdc.laser_current = 2
+    >>> spdc.laser_current_limit = 1
+    >>> spdc.laser_current  # expected: ~1.0
+    0.952
+
+    Bug occurs for peltier_voltage as well, independent on POWER setting.
+    This bug does not occur with peltier/heater loops on.
+"""
+
 import time
 
 import numpy as np  # for type checking with numpy types
@@ -60,6 +80,8 @@ class SPDCDriver(object):
             value: 0 to switch off, otherwise non-0 to switch on loop.
         Raises:
             ValueError: value is not a valid number.
+        Note:
+            See `heater_voltage` for rationale behind exception used.
         """
         if not isinstance(value, (int, np.integer)):
             raise ValueError(
@@ -90,6 +112,8 @@ class SPDCDriver(object):
             value: 0 to switch off, otherwise non-0 to switch on loop.
         Raises:
             ValueError: value is not an integer.
+        Note:
+            See `heater_voltage` for rationale behind exception used.
         """
         if not isinstance(value, (int, np.integer)):
             raise ValueError(
@@ -107,17 +131,42 @@ class SPDCDriver(object):
         return float(self._com.getresponse("HVOLT?"))
 
     @heater_voltage.setter
-    def heater_voltage(self, voltage: float):
-        """Sets voltage across crystal heater.
+    def heater_voltage(self, voltage: float) -> None:
+        """Sets voltage across crystal heater, in volts.
 
-        This value must be less than or equal to HLIMIT to take effect, otherwise the
-        command will fail silently.
+        The set voltage should be non-negative and less than or equal to
+        `heater_voltage_limit`.
 
         Raises:
-            TypeError: voltage is not a non-negative number
+            ValueError: `voltage` is not a valid number.
+        Note:
+            Outside of the allowable range, the driver itself will return an
+            error message, otherwise there is no return value. This leaves
+            three implementation options for the return value:
+
+              - Allow the setter to forward the wrong command, and raise a
+                ValueError if there is a device response. This incurs an additional
+                read timeout for successful commands with no device response.
+              - Allow the setter to fail silently (ignore response). This shaves
+                off read timeout due to pre-emptive clearing of buffer, but
+                users are left unaware of the failure unless explicitly checked.
+              - Enforce the setter to check for bounding values from the get-go.
+                Requires an additional attribute query, but shaves off the timeout
+                as well. Risks hardcoding outdated values when firmware changes.
+
+            At the moment the last option is preferable due to the mix of explicit
+            failure and input sanitization. Replacing TypeError with ValueError
+            to minimize the possible exceptions raised.
         """
-        if not isinstance(voltage, (int, float, np.number)) or voltage < 0:
-            raise TypeError("Heater voltage can only take non-negative values.")
+        hlimit_low, hlimit_high = 0, self.heater_voltage_limit
+        if not (
+            isinstance(voltage, (int, float, np.number))
+            and hlimit_low <= voltage <= hlimit_high
+        ):
+            raise ValueError(
+                "Heater voltage can only take values between "
+                + f"[{hlimit_low}, {hlimit_high}] V"
+            )
         self._com.writeline(f"HVOLT {voltage:.3f}")
 
     @property
@@ -125,17 +174,26 @@ class SPDCDriver(object):
         return float(self._com.getresponse("PVOLT?"))
 
     @peltier_voltage.setter
-    def peltier_voltage(self, voltage: float):
-        """Sets voltage across laser peltier.
+    def peltier_voltage(self, voltage: float) -> None:
+        """Sets voltage across laser peltier, in volts.
 
-        This value must be within [-PLIMIT, PLIMIT] to take effect, otherwise the
-        command will fail silently.
+        The set voltage should have magnitude less than or equal to
+        `peltier_voltage_limit`.
 
         Raises:
-            TypeError: voltage is not a number
+            ValueError: `voltage` is not a valid number.
+        Note:
+            See `heater_voltage` notes for rationale behind input validation.
         """
-        if not isinstance(voltage, (int, float, np.number)):
-            raise TypeError("Peltier voltage can only take real values.")
+        plimit = self.peltier_voltage_limit
+        if not (
+            isinstance(voltage, (int, float, np.number))
+            and -plimit <= voltage <= plimit
+        ):
+            raise ValueError(
+                "Peltier voltage can only take values between "
+                + f"[{-plimit}, {plimit}] V"
+            )
         self._com.writeline(f"PVOLT {voltage:.3f}")
 
     @property
@@ -144,20 +202,25 @@ class SPDCDriver(object):
 
     @heater_voltage_limit.setter
     def heater_voltage_limit(self, voltage: float) -> None:
-        """Sets the crystal heater voltage limit.
+        """Sets the crystal heater voltage limit, in volts.
 
-        If voltage limit is out of allowable range, the device responds with
-        an error message as feedback, otherwise no feedback is provided.
-        The input buffer is cleared pre-emptively.
+        The voltage limit should be within [0, 10] V.
 
-        Args:
-            voltage: Heater voltage limit, in volts
         Raises:
-            TypeError: voltage is not a non-negative number
+            ValueError: `voltage` is not a valid number.
+        Note:
+            See `heater_voltage` notes for rationale behind input validation.
         """
-        if not isinstance(voltage, (int, float, np.number)) or voltage < 0:
-            raise TypeError("Heater voltage limit can only take non-negative values.")
-        self._com.getresponse(f"HLIMIT {voltage:.3f}")
+        hlimit_low, hlimit_high = 0, 10  # hardcoded based on firmware
+        if not (
+            isinstance(voltage, (int, float, np.number))
+            and hlimit_low <= voltage <= hlimit_high
+        ):
+            raise ValueError(
+                "Heater voltage limit can only take values between "
+                + f"[{hlimit_low}, {hlimit_high}] V"
+            )
+        self._com.writeline(f"HLIMIT {voltage:.3f}")
 
     @property
     def peltier_voltage_limit(self) -> float:
@@ -165,20 +228,23 @@ class SPDCDriver(object):
 
     @peltier_voltage_limit.setter
     def peltier_voltage_limit(self, voltage: float) -> None:
-        """Sets the laser peltier voltage limit.
+        """Sets the laser peltier voltage limit, in volts.
 
-        If voltage limit is out of allowable range, the device responds with
-        an error message as feedback, otherwise no feedback is provided.
-        The input buffer is cleared pre-emptively.
-
-        Args:
-            voltage: Peltier voltage limit, in volts
         Raises:
-            TypeError: voltage is not a non-negative number
+            ValueError: `voltage` is not a valid number.
+        Note:
+            See `heater_voltage` notes for rationale behind input validation.
         """
-        if not isinstance(voltage, (int, float, np.number)) or voltage < 0:
-            raise TypeError("Peltier voltage limit can only take non-negative values.")
-        self._com.getresponse(f"PLIMIT {voltage:.3f}")
+        plimit_low, plimit_high = 0, 2.5  # hardcoded based on firmware
+        if not (
+            isinstance(voltage, (int, float, np.number))
+            and plimit_low <= voltage <= plimit_high
+        ):
+            raise ValueError(
+                "Peltier voltage limit can only take values between "
+                + f"[{plimit_low}, {plimit_high}] V"
+            )
+        self._com.writeline(f"PLIMIT {voltage:.3f}")
 
     @property
     def heater_temp(self) -> float:
@@ -187,7 +253,7 @@ class SPDCDriver(object):
 
     @heater_temp.setter
     def heater_temp(self, temperature: float):
-        """Alias for @heater_temp_setpoint.setter."""
+        """Alias for `heater_temp_setpoint` setter, temperature in Celsius."""
         self.heater_temp_setpoint = temperature
 
     @property
@@ -196,17 +262,23 @@ class SPDCDriver(object):
 
     @heater_temp_setpoint.setter
     def heater_temp_setpoint(self, temperature: float) -> None:
-        """Sets the target temperature of the crystal.
+        """Sets the target temperature of the crystal, in Celsius.
 
-        The temperature setpoint must be within [20,100] to take effect, otherwise the
-        command will fail silently - the input buffer is cleared pre-emptively.
-
-        Args:
-            temperature: Setpoint for the crystal temperature
+        Raises:
+            ValueError: `temperature` is not a valid number.
+        Note:
+            See `heater_voltage` notes for rationale behind input validation.
         """
-        if not isinstance(temperature, (int, float, np.number)) or temperature < 0:
-            raise TypeError("Heater setpoint can only take non-negative values.")
-        self._com.getresponse(f"HSETTEMP {temperature:.3f}")
+        htemp_low, htemp_high = 20, 100  # hardcoded based on firmware
+        if not (
+            isinstance(temperature, (int, float, np.number))
+            and htemp_low <= temperature <= htemp_high
+        ):
+            raise ValueError(
+                "Heater temperature setpoint can only take values between "
+                + f"[{htemp_low}, {htemp_high}] °C"
+            )
+        self._com.writeline(f"HSETTEMP {temperature:.3f}")
 
     @property
     def peltier_temp(self) -> float:
@@ -215,7 +287,7 @@ class SPDCDriver(object):
 
     @peltier_temp.setter
     def peltier_temp(self, temperature: float):
-        """Alias for @peltier_temp_setpoint.setter."""
+        """Alias for `peltier_temp_setpoint` setter, temperature in Celsius."""
         self.peltier_temp_setpoint = temperature
 
     @property
@@ -224,17 +296,23 @@ class SPDCDriver(object):
 
     @peltier_temp_setpoint.setter
     def peltier_temp_setpoint(self, temperature: float) -> None:
-        """Sets the target temperature of the laser.
+        """Sets the target temperature of the laser, in Celsius.
 
-        The temperature setpoint must be within [20,50] to take effect, otherwise the
-        command will fail silently - the input buffer is cleared pre-emptively.
-
-        Args:
-            temperature: Setpoint for the laser temperature
+        Raises:
+            ValueError: `temperature` is not a valid number.
+        Note:
+            See `heater_voltage` notes for rationale behind input validation.
         """
-        if not isinstance(temperature, (int, float, np.number)) or temperature < 0:
-            raise TypeError("Peltier setpoint can only take non-negative values.")
-        self._com.getresponse(f"PSETTEMP {temperature:.3f}")
+        ptemp_low, ptemp_high = 20, 50  # hardcoded based on firmware
+        if not (
+            isinstance(temperature, (int, float, np.number))
+            and ptemp_low <= temperature <= ptemp_high
+        ):
+            raise ValueError(
+                "Peltier temperature setpoint can only take values between "
+                + f"[{ptemp_low}, {ptemp_high}] °C"
+            )
+        self._com.writeline(f"PSETTEMP {temperature:.3f}")
 
     @property
     def pconstp(self) -> float:

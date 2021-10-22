@@ -428,7 +428,7 @@ class SPDCDriver(object):
         self._raise_if_oob(current, lcurrent_low, lcurrent_high, "Laser current", "mA")
         if self.laser_current != 0:
             raise RuntimeError(
-                "Laser is already switched on - use `SPDCDriver.laser_current` to"
+                "Laser is already switched on - use `SPDCDriver.laser_current` to "
                 "change the current"
             )
 

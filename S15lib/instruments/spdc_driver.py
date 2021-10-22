@@ -57,12 +57,12 @@ class SPDCDriver(object):
         consistency.
 
         Args:
-            value: 0 to switch off, otherwise non-0 to switch on.
+            value: 0 to switch off, otherwise non-0 to switch on loop.
         Raises:
-            TypeError: value is not an integer.
+            ValueError: value is not a valid number.
         """
         if not isinstance(value, (int, np.integer)):
-            raise TypeError(
+            raise ValueError(
                 "Heater loop can only take integer values - "
                 "off (value=0) or on (value!=0)."
             )
@@ -87,12 +87,12 @@ class SPDCDriver(object):
         consistency.
 
         Args:
-            value: 0 to switch off, otherwise non-0 to switch on.
+            value: 0 to switch off, otherwise non-0 to switch on loop.
         Raises:
-            TypeError: value is not an integer.
+            ValueError: value is not an integer.
         """
         if not isinstance(value, (int, np.integer)):
-            raise TypeError(
+            raise ValueError(
                 "Peltier loop can only take integer values - "
                 "off (value=0) or on (value!=0)."
             )

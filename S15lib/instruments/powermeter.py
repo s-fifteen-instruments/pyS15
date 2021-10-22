@@ -415,7 +415,7 @@ class PowerMeter:
         return self._identity
 
     def help(self) -> str:
-        return self._com.help()
+        return self._com.get_help()
 
 
 if __name__ == "__main__":

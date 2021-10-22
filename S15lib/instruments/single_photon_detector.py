@@ -21,7 +21,7 @@ class SinglePhotonDetector(object):
         return self._com.getresponse("*idn?")
 
     def help(self) -> str:
-        return self._com.help()
+        return self._com.get_help()
 
     def save_settings(self) -> str:
         return self._com.getresponse("save")

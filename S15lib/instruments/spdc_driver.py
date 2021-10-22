@@ -49,8 +49,8 @@ class SPDCDriver(object):
                 f"{propname} can only take values between [{low}, {high}] {propunits}"
             )
 
-    def help(self) -> None:
-        self._com.print_help()
+    def help(self) -> str:
+        return self._com.get_help()
 
     @property
     def identity(self) -> str:

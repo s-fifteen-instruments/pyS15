@@ -231,14 +231,13 @@ class SerialConnection(serial.Serial):
         """
         self.write("{};".format(cmd).encode())
 
-    def print_help(self) -> None:
-        """Prints out help information stored on device.
+    def get_help(self) -> str:
+        """Returns the help information stored on device.
 
         Raises:
             serial.SerialException: Attempted to access a closed port.
         """
-        for line in self.getresponses("HELP"):
-            print(line)
+        return "\n".join(self.getresponses("HELP"))
 
     def get_identity(self) -> str:
         """Returns identity of device.

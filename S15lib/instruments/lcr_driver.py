@@ -114,5 +114,5 @@ class LCRDriver(object):
         """
         return self._com.getresponse("*idn?")
 
-    def help(self):
-        return self._com.help()
+    def help(self) -> str:
+        return self._com.get_help()

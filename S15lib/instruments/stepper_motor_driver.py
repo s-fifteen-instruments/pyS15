@@ -36,7 +36,7 @@ class StepperMotorDriver(object):
         return self._com.getresponse("*idn?")
 
     def help(self) -> str:
-        return self._com.help()
+        return self._com.get_help()
 
     def on(self, channel: int):
         """

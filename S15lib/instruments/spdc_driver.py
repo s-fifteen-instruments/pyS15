@@ -251,6 +251,33 @@ class SPDCDriver(object):
         self._com.writeline(f"HSETTEMP {temp:.3f}")
 
     @property
+    def heater_temp_rate(self) -> float:
+        return float(self._com.getresponse("HRATE?"))
+
+    @heater_temp_rate.setter
+    def heater_temp_rate(self, rate: float) -> None:
+        """Sets the heater temperature ramp rate, in K/s.
+
+        Two separate and distinct heating profiles are used depending on the
+        value of `rate`. If `rate` is set at 0, the change in heater temp setpoint
+        will be instantaneous. Otherwise, the heater setpoint will ramp up/down
+        linearly, starting from the previous value when `rate` > 0.
+
+        Raises:
+            ValueError: `rate` is not a valid number.
+        Note:
+            Strongly related to `heater_temp_target`, which determines the
+            instantaneous time-varying heater setpoint.
+        """
+        hrate_low, hrate_high = 0.0, 1.0  # hardcoded based on firmware
+        self._raise_if_oob(rate, hrate_low, hrate_high, "Heater temp ramp", "K/s")
+        self._com.writeline(f"HRATE {rate:.3f}")
+
+    @property
+    def heater_temp_target(self) -> float:
+        return float(self._com.getresponse("HTARGET?"))
+
+    @property
     def peltier_temp(self) -> float:
         """Measures the instantaneous temperature near the laser."""
         return float(self._com.getresponse("PTEMP?"))
@@ -388,7 +415,9 @@ class SPDCDriver(object):
         self._com.writeline(f"LLIMIT {current:.3f}")
 
     def laser_on(self, current: float):
-        """Switches on laser using a 1mA/50ms ramp.
+        """Switches on laser.
+
+        The lasing current ramp used is 1mA/50ms.
 
         Raises:
             ValueError: `current` is not a valid number.

@@ -38,7 +38,12 @@ class SPDCDriver(object):
 
     @staticmethod
     def _raise_if_oob(value, low, high, propname, propunits):
-        """Raises ValueError if value is invalid / out of bounds (oob)."""
+        """Raises ValueError if value is invalid / out of bounds (oob).
+
+        Note:
+            See `heater_voltage` notes for rationale behind input validation
+            and exception used.
+        """
         if not (isinstance(value, (int, float, np.number)) and low <= value <= high):
             raise ValueError(
                 f"{propname} can only take values between [{low}, {high}] {propunits}"
@@ -88,8 +93,6 @@ class SPDCDriver(object):
             value: 0 to switch off, otherwise non-0 to switch on loop.
         Raises:
             ValueError: value is not a valid number.
-        Note:
-            See `heater_voltage` for rationale behind exception used.
         """
         if not isinstance(value, (int, np.integer)):
             raise ValueError(
@@ -120,8 +123,6 @@ class SPDCDriver(object):
             value: 0 to switch off, otherwise non-0 to switch on loop.
         Raises:
             ValueError: value is not an integer.
-        Note:
-            See `heater_voltage` for rationale behind exception used.
         """
         if not isinstance(value, (int, np.integer)):
             raise ValueError(
@@ -183,8 +184,6 @@ class SPDCDriver(object):
 
         Raises:
             ValueError: `voltage` is not a valid number.
-        Note:
-            See `heater_voltage` notes for rationale behind input validation.
         """
         plimit = self.peltier_voltage_limit
         self._raise_if_oob(voltage, -plimit, plimit, "Peltier voltage", "V")
@@ -202,8 +201,6 @@ class SPDCDriver(object):
 
         Raises:
             ValueError: `voltage` is not a valid number.
-        Note:
-            See `heater_voltage` notes for rationale behind input validation.
         """
         hlimit_low, hlimit_high = 0, 10  # hardcoded based on firmware
         self._raise_if_oob(
@@ -221,8 +218,6 @@ class SPDCDriver(object):
 
         Raises:
             ValueError: `voltage` is not a valid number.
-        Note:
-            See `heater_voltage` notes for rationale behind input validation.
         """
         plimit_low, plimit_high = 0, 2.5  # hardcoded based on firmware
         self._raise_if_oob(
@@ -250,8 +245,6 @@ class SPDCDriver(object):
 
         Raises:
             ValueError: `temp` is not a valid number.
-        Note:
-            See `heater_voltage` notes for rationale behind input validation.
         """
         htemp_low, htemp_high = 20, 100  # hardcoded based on firmware
         self._raise_if_oob(temp, htemp_low, htemp_high, "Heater temp setpoint", "°C")
@@ -277,8 +270,6 @@ class SPDCDriver(object):
 
         Raises:
             ValueError: `temp` is not a valid number.
-        Note:
-            See `heater_voltage` notes for rationale behind input validation.
         """
         ptemp_low, ptemp_high = 20, 50  # hardcoded based on firmware
         self._raise_if_oob(temp, ptemp_low, ptemp_high, "Peltier temp setpoint", "°C")
@@ -374,8 +365,6 @@ class SPDCDriver(object):
 
         Raises:
             ValueError: `current` is not a valid number.
-        Note:
-            See `heater_voltage` notes for rationale behind input validation.
         """
         lcurrent_low, lcurrent_high = 0, self.laser_current_limit
         self._raise_if_oob(current, lcurrent_low, lcurrent_high, "Laser current", "mA")
@@ -391,8 +380,6 @@ class SPDCDriver(object):
 
         Raises:
             ValueError: `current` is not a valid number.
-        Note:
-            See `heater_voltage` notes for rationale behind input validation.
         """
         llimit_low, llimit_high = 0, 97  # hardcoded based on firmware
         self._raise_if_oob(

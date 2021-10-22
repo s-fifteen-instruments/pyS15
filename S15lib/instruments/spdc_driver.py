@@ -36,6 +36,14 @@ class SPDCDriver(object):
         else:
             self._com = SerialConnection(device_path)
 
+    @staticmethod
+    def _raise_if_oob(value, low, high, propname, propunits):
+        """Raises ValueError if value is invalid / out of bounds (oob)."""
+        if not (isinstance(value, (int, float, np.number)) and low <= value <= high):
+            raise ValueError(
+                f"{propname} can only take values between [{low}, {high}] {propunits}"
+            )
+
     def help(self) -> None:
         self._com.print_help()
 
@@ -159,14 +167,7 @@ class SPDCDriver(object):
             to minimize the possible exceptions raised.
         """
         hlimit_low, hlimit_high = 0, self.heater_voltage_limit
-        if not (
-            isinstance(voltage, (int, float, np.number))
-            and hlimit_low <= voltage <= hlimit_high
-        ):
-            raise ValueError(
-                "Heater voltage can only take values between "
-                + f"[{hlimit_low}, {hlimit_high}] V"
-            )
+        self._raise_if_oob(voltage, hlimit_low, hlimit_high, "Heater voltage", "V")
         self._com.writeline(f"HVOLT {voltage:.3f}")
 
     @property
@@ -186,14 +187,7 @@ class SPDCDriver(object):
             See `heater_voltage` notes for rationale behind input validation.
         """
         plimit = self.peltier_voltage_limit
-        if not (
-            isinstance(voltage, (int, float, np.number))
-            and -plimit <= voltage <= plimit
-        ):
-            raise ValueError(
-                "Peltier voltage can only take values between "
-                + f"[{-plimit}, {plimit}] V"
-            )
+        self._raise_if_oob(voltage, -plimit, plimit, "Peltier voltage", "V")
         self._com.writeline(f"PVOLT {voltage:.3f}")
 
     @property
@@ -212,14 +206,9 @@ class SPDCDriver(object):
             See `heater_voltage` notes for rationale behind input validation.
         """
         hlimit_low, hlimit_high = 0, 10  # hardcoded based on firmware
-        if not (
-            isinstance(voltage, (int, float, np.number))
-            and hlimit_low <= voltage <= hlimit_high
-        ):
-            raise ValueError(
-                "Heater voltage limit can only take values between "
-                + f"[{hlimit_low}, {hlimit_high}] V"
-            )
+        self._raise_if_oob(
+            voltage, hlimit_low, hlimit_high, "Heater voltage limit", "V"
+        )
         self._com.writeline(f"HLIMIT {voltage:.3f}")
 
     @property
@@ -236,14 +225,9 @@ class SPDCDriver(object):
             See `heater_voltage` notes for rationale behind input validation.
         """
         plimit_low, plimit_high = 0, 2.5  # hardcoded based on firmware
-        if not (
-            isinstance(voltage, (int, float, np.number))
-            and plimit_low <= voltage <= plimit_high
-        ):
-            raise ValueError(
-                "Peltier voltage limit can only take values between "
-                + f"[{plimit_low}, {plimit_high}] V"
-            )
+        self._raise_if_oob(
+            voltage, plimit_low, plimit_high, "Peltier voltage limit", "V"
+        )
         self._com.writeline(f"PLIMIT {voltage:.3f}")
 
     @property
@@ -252,33 +236,26 @@ class SPDCDriver(object):
         return float(self._com.getresponse("HTEMP?"))
 
     @heater_temp.setter
-    def heater_temp(self, temperature: float):
-        """Alias for `heater_temp_setpoint` setter, temperature in Celsius."""
-        self.heater_temp_setpoint = temperature
+    def heater_temp(self, temp: float):
+        """Alias for `heater_temp_setpoint` setter, temp in Celsius."""
+        self.heater_temp_setpoint = temp
 
     @property
     def heater_temp_setpoint(self) -> float:
         return float(self._com.getresponse("HSETTEMP?"))
 
     @heater_temp_setpoint.setter
-    def heater_temp_setpoint(self, temperature: float) -> None:
+    def heater_temp_setpoint(self, temp: float) -> None:
         """Sets the target temperature of the crystal, in Celsius.
 
         Raises:
-            ValueError: `temperature` is not a valid number.
+            ValueError: `temp` is not a valid number.
         Note:
             See `heater_voltage` notes for rationale behind input validation.
         """
         htemp_low, htemp_high = 20, 100  # hardcoded based on firmware
-        if not (
-            isinstance(temperature, (int, float, np.number))
-            and htemp_low <= temperature <= htemp_high
-        ):
-            raise ValueError(
-                "Heater temperature setpoint can only take values between "
-                + f"[{htemp_low}, {htemp_high}] °C"
-            )
-        self._com.writeline(f"HSETTEMP {temperature:.3f}")
+        self._raise_if_oob(temp, htemp_low, htemp_high, "Heater temp setpoint", "°C")
+        self._com.writeline(f"HSETTEMP {temp:.3f}")
 
     @property
     def peltier_temp(self) -> float:
@@ -286,33 +263,26 @@ class SPDCDriver(object):
         return float(self._com.getresponse("PTEMP?"))
 
     @peltier_temp.setter
-    def peltier_temp(self, temperature: float):
-        """Alias for `peltier_temp_setpoint` setter, temperature in Celsius."""
-        self.peltier_temp_setpoint = temperature
+    def peltier_temp(self, temp: float):
+        """Alias for `peltier_temp_setpoint` setter, temp in Celsius."""
+        self.peltier_temp_setpoint = temp
 
     @property
     def peltier_temp_setpoint(self) -> float:
         return float(self._com.getresponse("PSETTEMP?"))
 
     @peltier_temp_setpoint.setter
-    def peltier_temp_setpoint(self, temperature: float) -> None:
+    def peltier_temp_setpoint(self, temp: float) -> None:
         """Sets the target temperature of the laser, in Celsius.
 
         Raises:
-            ValueError: `temperature` is not a valid number.
+            ValueError: `temp` is not a valid number.
         Note:
             See `heater_voltage` notes for rationale behind input validation.
         """
         ptemp_low, ptemp_high = 20, 50  # hardcoded based on firmware
-        if not (
-            isinstance(temperature, (int, float, np.number))
-            and ptemp_low <= temperature <= ptemp_high
-        ):
-            raise ValueError(
-                "Peltier temperature setpoint can only take values between "
-                + f"[{ptemp_low}, {ptemp_high}] °C"
-            )
-        self._com.writeline(f"PSETTEMP {temperature:.3f}")
+        self._raise_if_oob(temp, ptemp_low, ptemp_high, "Peltier temp setpoint", "°C")
+        self._com.writeline(f"PSETTEMP {temp:.3f}")
 
     @property
     def hconstp(self) -> float:
@@ -322,14 +292,9 @@ class SPDCDriver(object):
     def hconstp(self, constant: float) -> None:
         """Sets the proportional control constant for crystal heater, in V/K."""
         hconstp_low, hconstp_high = 0, 10  # hardcoded based on firmware
-        if not (
-            isinstance(constant, (int, float, np.number))
-            and hconstp_low <= constant <= hconstp_high
-        ):
-            raise ValueError(
-                "Heater P constant can only take values between "
-                + f"[{hconstp_low}, {hconstp_high}] V/K"
-            )
+        self._raise_if_oob(
+            constant, hconstp_low, hconstp_high, "Heater P constant", "V/K"
+        )
         self._com.writeline(f"HCONSTP {constant:.3f}")
 
     @property
@@ -340,14 +305,9 @@ class SPDCDriver(object):
     def hconsti(self, constant: float) -> None:
         """Sets the integral control constant for crystal heater, in V/(Ks)."""
         hconsti_low, hconsti_high = 0, 10  # hardcoded based on firmware
-        if not (
-            isinstance(constant, (int, float, np.number))
-            and hconsti_low <= constant <= hconsti_high
-        ):
-            raise ValueError(
-                "Heater I constant can only take values between "
-                + f"[{hconsti_low}, {hconsti_high}] V/(Ks)"
-            )
+        self._raise_if_oob(
+            constant, hconsti_low, hconsti_high, "Heater I constant", "V/(Ks)"
+        )
         self._com.writeline(f"HCONSTI {constant:.3f}")
 
     @property
@@ -358,14 +318,9 @@ class SPDCDriver(object):
     def hconstd(self, constant: float) -> None:
         """Sets the derivative control constant for crystal heater, in Vs/K."""
         hconstd_low, hconstd_high = 0, 10  # hardcoded based on firmware
-        if not (
-            isinstance(constant, (int, float, np.number))
-            and hconstd_low <= constant <= hconstd_high
-        ):
-            raise ValueError(
-                "Heater D constant can only take values between "
-                + f"[{hconstd_low}, {hconstd_high}] Vs/K"
-            )
+        self._raise_if_oob(
+            constant, hconstd_low, hconstd_high, "Heater D constant", "Vs/K"
+        )
         self._com.writeline(f"HCONSTD {constant:.3f}")
 
     @property
@@ -376,14 +331,9 @@ class SPDCDriver(object):
     def pconstp(self, constant: float) -> None:
         """Sets the proportional control constant for laser peltier, in V/K."""
         pconstp_low, pconstp_high = 0, 10  # hardcoded based on firmware
-        if not (
-            isinstance(constant, (int, float, np.number))
-            and pconstp_low <= constant <= pconstp_high
-        ):
-            raise ValueError(
-                "Peltier P constant can only take values between "
-                + f"[{pconstp_low}, {pconstp_high}] V/K"
-            )
+        self._raise_if_oob(
+            constant, pconstp_low, pconstp_high, "Peltier P constant", "V/K"
+        )
         self._com.writeline(f"PCONSTP {constant:.3f}")
 
     @property
@@ -394,14 +344,9 @@ class SPDCDriver(object):
     def pconsti(self, constant: float) -> None:
         """Sets the integral control constant for laser peltier, in V/(Ks)."""
         pconsti_low, pconsti_high = 0, 10  # hardcoded based on firmware
-        if not (
-            isinstance(constant, (int, float, np.number))
-            and pconsti_low <= constant <= pconsti_high
-        ):
-            raise ValueError(
-                "Peltier I constant can only take values between "
-                + f"[{pconsti_low}, {pconsti_high}] V/(Ks)"
-            )
+        self._raise_if_oob(
+            constant, pconsti_low, pconsti_high, "Peltier I constant", "V/(Ks)"
+        )
         self._com.writeline(f"PCONSTI {constant:.3f}")
 
     @property
@@ -412,14 +357,9 @@ class SPDCDriver(object):
     def pconstd(self, constant: float) -> None:
         """Sets the derivative control constant for laser peltier, in Vs/K."""
         pconstd_low, pconstd_high = 0, 10  # hardcoded based on firmware
-        if not (
-            isinstance(constant, (int, float, np.number))
-            and pconstd_low <= constant <= pconstd_high
-        ):
-            raise ValueError(
-                "Peltier D constant can only take values between "
-                + f"[{pconstd_low}, {pconstd_high}] Vs/K"
-            )
+        self._raise_if_oob(
+            constant, pconstd_low, pconstd_high, "Peltier D constant", "Vs/K"
+        )
         self._com.writeline(f"PCONSTD {constant:.3f}")
 
     @property

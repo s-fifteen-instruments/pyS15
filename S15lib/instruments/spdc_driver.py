@@ -79,61 +79,57 @@ class SPDCDriver(object):
     def heater_loop(self) -> int:
         return int(self._com.getresponse("HLOOP?"))
 
-    @heater_loop.setter
-    def heater_loop(self, value: int):
-        """Sets heater/crystal temperature loop (HLOOP) on/off.
+    def heater_loop_on(self):
+        """Switches on the crystal heater temperature PID loop.
 
-        Heater voltage is automatically set to zero, which is not part of the
-        device command set. Implemented because there is almost zero use case
-        for a voltage hold after PID is switched off, except for debugging.
-        Recommended to combine with `heater_voltage = 0` in scripts for visual
-        consistency.
-
-        Args:
-            value: 0 to switch off, otherwise non-0 to switch on loop.
-        Raises:
-            ValueError: value is not a valid number.
+        Note:
+            The `HLOOP 1` command is encapsulated within the `heater_loop_on()`
+            subroutine, since it is usually compounded with the power command.
+            See `heater_loop_off()`.
         """
-        if not isinstance(value, (int, np.integer)):
-            raise ValueError(
-                "Heater loop can only take integer values - "
-                "off (value=0) or on (value!=0)"
-            )
-        if value == 0:
-            self._com.writeline("HLOOP 0")  # holds HVOLT at current value
-            self._com.writeline("HVOLT 0")
-        else:  # value != 0
-            self._com.writeline("HLOOP 1")
+        self._com.writeline("HLOOP 1")
+        self._power_on_heater_peltier()
+
+    def heater_loop_off(self):
+        """Switches off the crystal heater temperature PID loop.
+
+        Note:
+            Heater voltage is automatically set to zero, which is not part of the
+            device command set, and hence is implemented as a method instead of
+            a `heater_loop` setter. This avoids the cognitive inconsistency
+            between `heater_loop = 0` and `HLOOP 0`.
+
+            Implemented because there is likely no use case
+            for a voltage hold after PID is switched off, except for debugging.
+        """
+        self._com.writeline("HLOOP 0")  # holds voltage at current value
+        self.heater_voltage = 0
+        if not self.peltier_loop:  # switch off power only if peltier loop also off
+            self._power_off_heater_peltier()
 
     @property
     def peltier_loop(self) -> int:
         return int(self._com.getresponse("PLOOP?"))
 
-    @peltier_loop.setter
-    def peltier_loop(self, value: int):
-        """Sets peltier/laser temperature loop (PLOOP) on/off.
+    def peltier_loop_on(self):
+        """Switches on the laser peltier temperature PID loop.
 
-        Peltier voltage is automatically set to zero, which is not part of the
-        device command set. Implemented because there is almost zero use case
-        for a voltage hold after PID is switched off, except for debugging.
-        Recommended to combine with `peltier_voltage = 0` in scripts for visual
-        consistency.
-
-        Args:
-            value: 0 to switch off, otherwise non-0 to switch on loop.
-        Raises:
-            ValueError: value is not an integer.
+        Note:
+            See `heater_loop_on()`.
         """
-        if not isinstance(value, (int, np.integer)):
-            raise ValueError(
-                "Peltier loop can only take integer values - "
-                "off (value=0) or on (value!=0)"
-            )
-        if value == 0:
-            self._com.writeline("PLOOP 0")  # holds PVOLT at current value
-            self._com.writeline("PVOLT 0")
-        else:  # value != 0
-            self._com.writeline("PLOOP 1")
+        self._com.writeline("PLOOP 1")
+        self._power_on_heater_peltier()
+
+    def peltier_loop_off(self):
+        """Switches off the laser peltier temperature PID loop.
+
+        Note:
+            See `peltier_loop_off()`.
+        """
+        self._com.writeline("PLOOP 0")  # holds voltage at current value
+        self.peltier_voltage = 0
+        if not self.heater_loop:  # switch off power only if heater loop also off
+            self._power_off_heater_peltier()
 
     @property
     def heater_voltage(self) -> float:
@@ -480,3 +476,15 @@ class SPDCDriver(object):
         if not (isinstance(value, (int, np.integer)) and 0 <= value <= 3):
             raise ValueError("Power can only take integer values (0, 1, 2, 3)")
         self._com.writeline(f"POWER {value}")
+
+    def _power_on_heater_peltier(self) -> None:
+        self.power = {0: 2, 1: 3, 2: 2, 3: 3}[self.power]
+
+    def _power_off_heater_peltier(self) -> None:
+        self.power = {0: 0, 1: 1, 2: 0, 3: 1}[self.power]
+
+    def _power_on_laser(self) -> None:
+        self.power = {0: 1, 1: 1, 2: 3, 3: 3}[self.power]
+
+    def _power_off_laser(self) -> None:
+        self.power = {0: 0, 1: 0, 2: 2, 3: 2}[self.power]

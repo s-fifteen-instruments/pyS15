@@ -97,7 +97,7 @@ class SPDCDriver(object):
         if not isinstance(value, (int, np.integer)):
             raise ValueError(
                 "Heater loop can only take integer values - "
-                "off (value=0) or on (value!=0)."
+                "off (value=0) or on (value!=0)"
             )
         if value == 0:
             self._com.writeline("HLOOP 0")  # holds HVOLT at current value
@@ -127,7 +127,7 @@ class SPDCDriver(object):
         if not isinstance(value, (int, np.integer)):
             raise ValueError(
                 "Peltier loop can only take integer values - "
-                "off (value=0) or on (value!=0)."
+                "off (value=0) or on (value!=0)"
             )
         if value == 0:
             self._com.writeline("PLOOP 0")  # holds PVOLT at current value
@@ -387,25 +387,67 @@ class SPDCDriver(object):
         )
         self._com.writeline(f"LLIMIT {current:.3f}")
 
-    def laser_on(self, current: int):
-        if self.laser_current == 0:
-            self.peltier_temp = 25
-            self._com.write(b"LCURRENT 0\n")
-            cmd = "on\n".encode()
-            self._com.write(b"on\n")
-            # laser current ramp
-            for i in range(1, current + 1):
-                cmd = ("LCURRENT {}\n".format(i)).encode()
-                self._com.write(cmd)
-                time.sleep(0.05)
-        else:
-            print("Laser is on already.")
+    def laser_on(self, current: float):
+        """Switches on laser using a 1mA/50ms ramp.
+
+        Raises:
+            ValueError: `current` is not a valid number.
+            RuntimeError: Laser is already switched on.
+        Note:
+            The `ON` command are encapsulated within `laser_on()` instead of
+            provisioning a standalone command, to prevent accidental laser
+            delivery while it is switched off. Use case of `ON` is almost
+            always tied to a laser ramp up.
+        """
+        lcurrent_low, lcurrent_high = 0, self.laser_current_limit
+        self._raise_if_oob(current, lcurrent_low, lcurrent_high, "Laser current", "mA")
+        if self.laser_current != 0:
+            raise RuntimeError(
+                "Laser is already switched on - use `SPDCDriver.laser_current` to"
+                "change the current"
+            )
+
+        # Switch on laser only, ignoring heater/peltier
+        if self.power in (0, 2):
+            self.power = self.power + 1
+        self._com.writeline("ON")
+
+        # Ramp laser current
+        for c in np.arange(0, current, 1):
+            self.laser_current = c
+            time.sleep(0.05)  # ~5 seconds
+        self.laser_current = current  # target current
 
     def laser_off(self):
-        if self.laser_current != 0:
-            for i in range(int(self.laser_current), -1, -1):
-                cmd = ("LCURRENT {}\n".format(i)).encode()
-                # print(cmd)
-                self._com.write(cmd)
-                time.sleep(0.05)
-        self._com.write("off\n".encode())
+        """Switches off the laser."""
+        # Ramp laser current
+        for c in np.arange(self.laser_current, 0, -1):
+            self.laser_current = c
+            time.sleep(0.05)
+        self.laser_current = 0
+
+        # Switch off laser only, ignoring heater/peltier
+        self._com.writeline("OFF")
+        if self.power in (1, 3):
+            self.power = self.power - 1
+
+    @property
+    def power(self) -> int:
+        return int(self._com.getresponse("POWER?"))
+
+    @power.setter
+    def power(self, value: int) -> None:
+        """Sets power converter enable lines on board.
+
+        Args:
+            value: Takes the following integer values,
+                0 (0b00) - all lines disabled
+                1 (0b01) - enable heater/peltier power lines only
+                2 (0b10) - enable laser power lines only
+                3 (0b11) - all lines enabled
+        Raises:
+            ValueError: value is not a valid number.
+        """
+        if not (isinstance(value, (int, np.integer)) and 0 <= value <= 3):
+            raise ValueError("Power can only take integer values (0, 1, 2, 3)")
+        self._com.writeline(f"POWER {value}")

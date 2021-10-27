@@ -3,11 +3,15 @@
 # Example script to operate EPPS
 #   Initial script - Justin 29.09.2021
 
+import sys
 import time
 
 from S15lib.instruments import SPDCDriver
 
-spdc = SPDCDriver("COM7")  # CHANGEME, for Windows (e.g. "/dev/ttyACM0" for Linux)
+device_path = "COM7"  # CHANGEME, for Windows (e.g. "/dev/ttyACM0" for Linux)
+if len(sys.argv) > 1:
+    device_path = sys.argv[1]
+spdc = SPDCDriver(device_path)
 
 # Setpoint constants
 LCURRENT = 70

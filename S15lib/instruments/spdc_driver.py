@@ -28,7 +28,7 @@ from .serial_connection import SerialConnection
 class SPDCDriver(object):
     """Python wrapper to communcate with SPDC board."""
 
-    DEVICE_IDENTIFIER = "SPDC driver"
+    DEVICE_IDENTIFIER = "SPDCSDR"
 
     def __init__(self, device_path: str = ""):
         if device_path == "":

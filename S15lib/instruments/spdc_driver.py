@@ -1,23 +1,3 @@
-"""
-TODO:
-    Resolve the following bug in the firmware:
-    >>> spdc.heater_voltage_limit = 3
-    >>> spdc.heater_voltage = 2
-    >>> spdc.heater_voltage_limit = 1
-    >>> spdc.heater_voltage  # expected: 1.0
-    2.0
-
-    This in contrast to laser current:
-    >>> spdc.laser_current_limit = 3
-    >>> spdc.laser_current = 2
-    >>> spdc.laser_current_limit = 1
-    >>> spdc.laser_current  # expected: ~1.0
-    0.952
-
-    Bug occurs for peltier_voltage as well, independent on POWER setting.
-    This bug does not occur with peltier/heater loops on.
-"""
-
 import time
 
 import numpy as np  # for type checking with numpy types

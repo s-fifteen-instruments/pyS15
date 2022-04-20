@@ -477,4 +477,3 @@ class SPDCDriver(object):
             Power 2 --> 512 (0b10 0000 0000)
         """
         return int(self._com.getresponse("STATUS?"))
-

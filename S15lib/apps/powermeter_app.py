@@ -13,6 +13,9 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QMenuBar,
     QWidget,
+    QComboBox,
+    QPushButton,
+    QSpinBox
 )
 
 from S15lib.instruments import powermeter, serial_connection
@@ -103,47 +106,47 @@ class MainWindow(QMainWindow):
         dev_list = serial_connection.search_for_serial_devices(
             powermeter.PowerMeter.DEVICE_IDENTIFIER
         )
-        self.comboBox = QtGui.QComboBox()
+        self.comboBox = QComboBox()
         self.comboBox.addItems(dev_list)
         # self.comboBox.setStyleSheet("font-size: 20px;height:30px");
 
         # Start plot
-        self.button = QtGui.QPushButton("Live start")
+        self.button = QPushButton("Live start")
         # self.button.setStyleSheet("font-size: 15px;height:25px;width: "
         #                           + "60self.comboBox.setEnabled(False)px;")
         self.button.clicked.connect(self.on_button_clicked)
 
         # wavelength selection
-        self.wavelength_label = QtGui.QLabel(self.tr("wave length (nm):"))
-        self.wavelength_spinBox = QtGui.QSpinBox()
+        self.wavelength_label = QLabel(self.tr("wave length (nm):"))
+        self.wavelength_spinBox = QSpinBox()
         self.wavelength_spinBox.setRange(400, 1800)
         self.wavelength_spinBox.setValue(780)
         self.wavelength_spinBox.valueChanged.connect(self.update_wavelength)
 
         # logging
-        self.label_logfile = QtGui.QLabel("")
-        label_tot_time = QtGui.QLabel("Acquisition time (s):")
-        label_sample_rate = QtGui.QLabel("Sampling rate (1/s):")
+        self.label_logfile = QLabel("")
+        label_tot_time = QLabel("Acquisition time (s):")
+        label_sample_rate = QLabel("Sampling rate (1/s):")
         label_sample_rate.setAlignment(PyQt5.QtCore.Qt.AlignRight)
         label_tot_time.setAlignment(PyQt5.QtCore.Qt.AlignRight)
-        self.logfile_button = QtGui.QPushButton("Select log file")
-        self.startLoggin_button = QtGui.QPushButton("Start logging")
-        self.stopLoggin_buton = QtGui.QPushButton("Stop logging")
+        self.logfile_button = QPushButton("Select log file")
+        self.startLoggin_button = QPushButton("Start logging")
+        self.stopLoggin_buton = QPushButton("Stop logging")
         self.startLoggin_button.clicked.connect(self.on_clicked_start_log)
         self.startLoggin_button.setEnabled(False)
         # self.startLoggin_button.setAlignment(PyQt5.QtCore.Qt.AlignTop)
         self.logfile_button.clicked.connect(self.file_save)
-        self.log_tot_time = QtGui.QSpinBox()
-        self.log_sample_rate = QtGui.QSpinBox()
+        self.log_tot_time = QSpinBox()
+        self.log_sample_rate = QSpinBox()
         # self.log_tot_time.setRange(1, 1000)
         self.log_tot_time.setValue(10)
         self.log_sample_rate.setRange(0, 200)
         self.log_sample_rate.setValue(10)
-        self.live_refresh_rate = QtGui.QSpinBox()
+        self.live_refresh_rate = QSpinBox()
         self.live_refresh_rate.setRange(1, 15)
         self.live_refresh_rate.setValue(10)
         self.live_refresh_rate.valueChanged.connect(self.update_refresh_rate)
-        refresh_rate_label = QtGui.QLabel("Plot refresh rate (1/s):")
+        refresh_rate_label = QLabel("Plot refresh rate (1/s):")
 
         # Grid
         self.grid = QGridLayout()

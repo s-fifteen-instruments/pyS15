@@ -268,9 +268,8 @@ class TimeStampTDC1(object):
             Tuple[int, int , int, int, int, int, int, int]: Events ch1, ch2, ch3, ch4;
                 Coincidences: ch1-ch3, ch1-ch4, ch2-ch3, ch2-ch4
         """
-        self.mode = "pairs"
-        self._com.readlines()  # empties buffer
-
+        #self._com.readlines()  # empties buffer
+        self._com.timeout = 0.05
         if t_acq is None:
             t_acq = self.int_time
         else:
@@ -286,7 +285,7 @@ class TimeStampTDC1(object):
                 print(time.time() - t_start)
                 raise serial.SerialTimeoutException("Command timeout")
         singlesAndPairs = self._com.readline()
-        self._com.timeout = 1
+        self._com.timeout = 0.05
         return tuple([int(i) for i in singlesAndPairs.split()])
 
     def get_timestamps(self, t_acq: float = 1):

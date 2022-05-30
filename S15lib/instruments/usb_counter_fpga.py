@@ -268,7 +268,6 @@ class TimeStampTDC1(object):
             Tuple[int, int , int, int, int, int, int, int]: Events ch1, ch2, ch3, ch4;
                 Coincidences: ch1-ch3, ch1-ch4, ch2-ch3, ch2-ch4
         """
-        #self._com.readlines()  # empties buffer
         self._com.timeout = 0.05
         if t_acq is None:
             t_acq = self.int_time

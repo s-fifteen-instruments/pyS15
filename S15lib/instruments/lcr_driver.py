@@ -86,24 +86,24 @@ class LCRDriver(object):
         return self._com.getresponse("AMP? 2")
 
     @V2.setter
-    def V2(self, value):
-        self._com.write(("AMPLITUDE 2 {}\r\n".format(value)).encode())
+    def V2(self, V2: float):
+        self._com.write(("AMPLITUDE 2 {}\r\n".format(V2)).encode())
 
     @property
     def V3(self):
         return self._com.getresponse("AMP? 3")
 
     @V3.setter
-    def V3(self, value):
-        self._com.write(("AMPLITUDE 3 {}\r\n".format(value)).encode())
+    def V3(self, V3: float):
+        self._com.write(("AMPLITUDE 3 {}\r\n".format(V3)).encode())
 
     @property
     def V4(self):
         return self._com.getresponse("AMP? 4")
 
     @V4.setter
-    def V4(self, value):
-        self._com.write(("AMPLITUDE 4 {}\r\n".format(value)).encode())
+    def V4(self, V4: float):
+        self._com.write(("AMPLITUDE 4 {}\r\n".format(V4)).encode())
 
     @property
     def identity(self) -> str:

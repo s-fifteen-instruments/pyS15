@@ -91,7 +91,7 @@ class LCRDriver(object):
 
     @property
     def V3(self):
-        return flort(self._com.getresponse("AMP? 3"))
+        return float(self._com.getresponse("AMP? 3"))
 
     @V3.setter
     def V3(self, V3: float):

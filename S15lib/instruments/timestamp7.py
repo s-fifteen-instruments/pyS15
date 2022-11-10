@@ -77,6 +77,8 @@ class TimestampTDC7:
         ]
         if self.device_path:
             command.extend(["-U", self.device_path])
+        
+        print(command)
 
         if not target_file:
             target_file = TimestampTDC7.DEFAULT_OUTFILE
@@ -145,7 +147,6 @@ class TimestampTDC7:
             # No errors detected
             break
 
-
         t, p = parser.read_a1(TimestampTDC7.DEFAULT_OUTFILE, legacy=False)
 
         # TODO(Justin): Add checks on timestamp output validity
@@ -155,12 +156,14 @@ class TimestampTDC7:
         t4 = t[p & 0b1000 != 0]
         return len(t1), len(t2), len(t3), len(t4)
     
-    def _threshold_dac2volt(self, value: float):
-        """Converts threshold value from voltage to DAC units."""
-        return round((2.047+1.024)/4095 * value - 1.024)
+    @staticmethod
+    def _threshold_dac2volt(value: float):
+        """Converts threshold value from DAC units to voltage."""
+        return round((2.047+1.024)/4095 * value - 1.024, 3)
 
-    def _threshold_volt2dac(self, value: float):
-        """Converts threshold value from DAC units to voltage.
+    @staticmethod
+    def _threshold_volt2dac(value: float):
+        """Converts threshold value from voltage to DAC units.
 
         Note: In DAC units, 0 corresponds to -1.024V, 4095 corresponds to +2.047V.
         """
@@ -168,7 +171,8 @@ class TimestampTDC7:
         
     @property
     def threshold(self):
-        return self._threshold_dacs
+        """Returns threshold voltage for all four channels, in volts."""
+        return tuple(map(TimestampTDC7._threshold_dac2volt, self._threshold_dacs))
     
     @threshold.setter
     def threshold(self, value: Union[float, Tuple[float]]):
@@ -185,7 +189,7 @@ class TimestampTDC7:
         # Attempt to parse as simple float
         try:
             value = float(value)
-            value_dac = self._threshold_volt2dac(limit(value))
+            value_dac = TimestampTDC7._threshold_volt2dac(limit(value))
             self._threshold_dacs = [value_dac]*4
             return
         except TypeError:
@@ -195,7 +199,7 @@ class TimestampTDC7:
         try:
             if len(value) != 4: raise
             value = tuple(map(lambda v: limit(float(v)), value))
-            value_dac = tuple(map(self._threshold_volt2dac, value))
+            value_dac = tuple(map(TimestampTDC7._threshold_volt2dac, value))
             self._threshold_dacs = value_dac
             return
         
@@ -208,3 +212,5 @@ t = TimestampTDC7(
     "/dev/ioboards/usbtmst0",
     "/home/qitlab/programs/usbtmst4/apps/readevents7",
 )
+# args = ["-a2", "-q100"]
+# t.call(args)

@@ -77,8 +77,6 @@ class TimestampTDC7:
         ]
         if self.device_path:
             command.extend(["-U", self.device_path])
-        
-        print(command)
 
         if not target_file:
             target_file = TimestampTDC7.DEFAULT_OUTFILE
@@ -90,7 +88,60 @@ class TimestampTDC7:
         fd = os.open(target_file, os.O_WRONLY | os.O_TRUNC | os.O_CREAT)
         process = psutil.Popen(command, stdout=fd, stderr=subprocess.PIPE)
         return process, fd
+
+    def _call_with_duration(
+            self,
+            args: List[str],
+            target_file: str = "",
+            duration: float = 1,
+            max_retries: int = 3,
+        ):
+        """Run '_call' with automatic termination and output validity checks.
+
+        Args:
+            duration: Time before terminating process, in seconds.
+            max_retries: Maximum retries to avoid error loop.
+        """
+        # TODO(Justin): Implement a better way to catch premature termination
+        # e.g. when LUT lookup fails and readevents exits. As well as make the
+        # timing output more precise.
+        
+        emsg = None
+        for i in range(max_retries):
+            process = fd = None
+
+            try:
+                process, fd = self._call(args, target_file)
+                end_time = time.time() + duration
+                while time.time() <= end_time: pass
+
+            except Exception as e:
+                raise RuntimeError(
+                    f"Call failed with {e.__class__.__name__}: {e}"
+                )
             
+            finally:
+                # Clean up
+                if process:
+                    process.terminate()
+                    gone, alive = psutil.wait_procs([process], timeout=0.5)
+                    for p in alive: p.kill()
+                    os.close(fd)
+
+            # Check for stderr messages
+            if process:
+                emsg = process.stderr.read1(100)
+                if emsg: continue
+
+            # TODO: Check for event hardcoded signatures
+            
+            # No errors detected
+            break
+        
+        # No successful call completed
+        else:
+            raise RuntimeError(f"Call failed with readevents error '{emsg.decode().strip()}'")
+
 
     @property
     def int_time(self) -> float:
@@ -118,35 +169,8 @@ class TimestampTDC7:
         Currently copies TimestampTDC1 implementation using a blocking while loop,
         but can rewrite into asynchronous variety.
         """
-        # TODO(Justin): Implement a better way to catch premature termination
-        # e.g. when LUT lookup fails and readevents exits. As well as make the
-        # timing output more precise.
-        
-        # Run for 'int_time' duration
-        while True:
-            try:
-                process = fd = None
-                process, fd = self._call(["-a1"])
-                end_time = time.time() + (duration if duration else self.int_time)
-                while time.time() <= end_time: pass
-
-            finally:
-                # Clean up
-                if process:
-                    process.terminate()
-                    gone, alive = psutil.wait_procs([process], timeout=0.5)
-                    for p in alive: p.kill()
-                    os.close(fd)
-
-            # Check for stderr messages
-            if process.stderr.read1(1):
-                continue
-
-            # TODO: Check for event hardcoded signatures
-            
-            # No errors detected
-            break
-
+        duration = duration if duration else self.int_time
+        self._call_with_duration(["-a1"], duration=duration)
         t, p = parser.read_a1(TimestampTDC7.DEFAULT_OUTFILE, legacy=False)
 
         # TODO(Justin): Add checks on timestamp output validity
@@ -206,6 +230,13 @@ class TimestampTDC7:
         # Everything else didn't work
         except:
             raise ValueError(f"'{value}' is not a valid argument to threshold().")
+
+    def get_timestamps(self, duration: float = None):
+        """See parser.read_a1 doc."""
+        duration = duration if duration else self.int_time
+        self._call_with_duration(["-a1"], duration=duration)
+        t, p = parser.read_a1(TimestampTDC7.DEFAULT_OUTFILE, legacy=False)
+        return t, p
 
 
 t = TimestampTDC7(

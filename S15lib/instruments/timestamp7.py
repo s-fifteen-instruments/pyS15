@@ -89,28 +89,49 @@ class TimestampTDC7:
         process = psutil.Popen(command, stdout=fd, stderr=subprocess.PIPE)
         return process, fd
 
+    def _clear_buffer(self):
+        """Convenience function to clear the buffer."""
+        while True:
+            fd = None
+            try:
+                process, fd = self._call(["-q1"])
+                process.wait()
+                break
+            except Exception as e:
+                raise RuntimeError(
+                    f"Call failed with {e.__class__.__name__}: {e}"
+                )
+            finally:
+                if fd: os.close(fd)
+
     def _call_with_duration(
             self,
             args: List[str],
             target_file: str = "",
             duration: float = 1,
             max_retries: int = 3,
+            clear_buffer: bool = True,
         ):
         """Run '_call' with automatic termination and output validity checks.
 
         Args:
+            args: List of readevents arguments.
+            target_file: Path to local storage to store timestamp event data.
             duration: Time before terminating process, in seconds.
             max_retries: Maximum retries to avoid error loop.
+            clear_buffer: Attempts to clear buffer before executing call.
         """
         # TODO(Justin): Implement a better way to catch premature termination
         # e.g. when LUT lookup fails and readevents exits. As well as make the
         # timing output more precise.
         
         emsg = None
-        for i in range(max_retries):
+        for _ in range(max_retries):
             process = fd = None
 
             try:
+                if clear_buffer:
+                    self._clear_buffer()
                 process, fd = self._call(args, target_file)
                 end_time = time.time() + duration
                 while time.time() <= end_time: pass
@@ -126,7 +147,7 @@ class TimestampTDC7:
                     process.terminate()
                     gone, alive = psutil.wait_procs([process], timeout=0.5)
                     for p in alive: p.kill()
-                    os.close(fd)
+                if fd: os.close(fd)
 
             # Check for stderr messages
             if process:

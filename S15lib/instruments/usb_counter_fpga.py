@@ -220,7 +220,7 @@ class TimeStampTDC1(object):
     @property
     def clock(self) -> str:
         """Choice of clock"""
-        self._com.write("REFCLK?\r\n")
+        self._com.write("REFCLK?\r\n".encode())
         return self._com.readline()
 
     @clock.setter
@@ -231,7 +231,13 @@ class TimeStampTDC1(object):
             value (str): 0 autoselect clock, 1 force external clock,
                          2 force internal clock reference
         """
-        self.write_only("REFCLK {}".format(value).encode())
+        self.write_only("REFCLK {}".format(value))
+
+    @property
+    def eclock(self) -> str:
+        """Check external clock availability."""
+        self._com.write("ECLOCK?\r\n".encode())
+        return self._com.readline()
 
     def _stream_response_into_buffer(self, cmd: str, acq_time: float) -> bytes:
         """Streams data from the timestamp unit into a buffer.
@@ -251,9 +257,9 @@ class TimeStampTDC1(object):
         ts_list = []
         time0 = time.time()
         self._com.write((cmd + "\r\n").encode())
-        while (time.time() - time0) <= acq_time:
+        while (time.time() - time0) <= acq_time+0.01:
             ts_list.append(self._com.read((1 << 20) * 4))
-        self._com.write(b"abort\r\n")
+        #self._com.write(b"abort\r\n")
         self._com.readlines()
         return b"".join(ts_list)
 

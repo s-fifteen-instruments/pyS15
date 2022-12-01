@@ -76,6 +76,9 @@ class TimestampTDC2:
         # Other initialization parameters
         self._int_time = 1.0
         self._threshold_dacs = (768, 768, 768, 768)
+        self._int_trig = False
+        self._legacy = False
+        self._mode = 2
 
     def _call(self, args: List[str], target_file: str = ""):
         """Convenience method to call underlying readevents.
@@ -213,7 +216,7 @@ class TimestampTDC2:
         """
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
-        t, p = parser.read_a1(self.outfile_path, legacy=False)
+        t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
 
         # TODO(Justin): Add checks on timestamp output validity
         t1 = t[p & 0b0001 != 0]
@@ -284,7 +287,7 @@ class TimestampTDC2:
         """See parser.read_a1 doc."""
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
-        t, p = parser.read_a1(self.outfile_path, legacy=False)
+        t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
         return t, p
 
 
@@ -295,4 +298,6 @@ t = TimestampTDC2(
     READEVENTS_PROG,
 )
 # args = ["-a2", "-q100"]
-# t.call(args)
+# p,pid = t._call(args)
+# time.sleep(2)
+# p.terminate()

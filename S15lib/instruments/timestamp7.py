@@ -19,31 +19,37 @@ import psutil
 
 import parse_timestamps as parser
 
-class TimestampTDC7:
+class TimestampTDC2:
     """Interfaces with timestamp7 device.
 
-    Aligns with methods of TimestampTDC1 class as much as possible.
+    Aligns with methods of TimeStampTDC1 class as much as possible.
     
     Current implementation flushes the output into file. This has the disadvantage
     of slow disk writes, but avoids potential memory full issues when collecting
     large amounts of data. To eventually port into an adaptive version depending on
-    singles rate + integration time. 
+    singles rate + integration time.
+
+    Note:
+        The naming of 'TimestampTDC2' instead of 'TimeStampTDC2' is intentional.
+        Ought to eventually migrate 'TimeStampTDC1' to 'TimestampTDC1'.
     """
 
     DEFAULT_READEVENTS = "./readevents7"
-    DEFAULT_OUTFILE = "/tmp/_TimestampTDC7_events.dat"
+    DEFAULT_OUTFILE = "/tmp/_TimestampTDC2_events.dat"
     
-    def __init__(self, device_path: str = "", readevents_path: str = ""):
+    def __init__(self, device_path: str = "", readevents_path: str = "", outfile_path: str = ""):
         """Loads path to timestamp device and readevents interfacing code.
 
         Args:
+            device_path: Optional, path to timestamp device.
             readevents_path: Optional, path to readevents.
+            outfile_path: Optional, path to event cache on filesystem.
         """
         # If device path not specified, use default loaded by readevents
         self.device_path = device_path
 
         # Local directory fallback for readevents
-        target = readevents_path if readevents_path else TimestampTDC7.DEFAULT_READEVENTS
+        target = readevents_path if readevents_path else TimestampTDC2.DEFAULT_READEVENTS
         if pathlib.Path(target).is_file():
             self.readevents_path = target  # account for spaces in path
         
@@ -55,6 +61,9 @@ class TimestampTDC7:
                 f"'readevents7' could not be found at specified path '{target_path}'. "
                 "[INSERT DOWNLOAD_INSTRUCTIONS]."
             )
+        
+        # Use default outfile if not specified
+        self.outfile_path = outfile_path if outfile_path else DEFAULT_OUTFILE
 
         # Other initialization parameters
         self._int_time = 1
@@ -79,7 +88,7 @@ class TimestampTDC7:
             command.extend(["-U", self.device_path])
 
         if not target_file:
-            target_file = TimestampTDC7.DEFAULT_OUTFILE
+            target_file = self.outfile_path
         
         # TODO(Justin): Asynchronous manner?
         # TODO(Justin): Consider migration to psutil.Popen.
@@ -192,7 +201,7 @@ class TimestampTDC7:
         """
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
-        t, p = parser.read_a1(TimestampTDC7.DEFAULT_OUTFILE, legacy=False)
+        t, p = parser.read_a1(self.outfile_path, legacy=False)
 
         # TODO(Justin): Add checks on timestamp output validity
         t1 = t[p & 0b0001 != 0]
@@ -217,7 +226,7 @@ class TimestampTDC7:
     @property
     def threshold(self):
         """Returns threshold voltage for all four channels, in volts."""
-        return tuple(map(TimestampTDC7._threshold_dac2volt, self._threshold_dacs))
+        return tuple(map(TimestampTDC2._threshold_dac2volt, self._threshold_dacs))
     
     @threshold.setter
     def threshold(self, value: Union[float, Tuple[float]]):
@@ -234,7 +243,7 @@ class TimestampTDC7:
         # Attempt to parse as simple float
         try:
             value = float(value)
-            value_dac = TimestampTDC7._threshold_volt2dac(limit(value))
+            value_dac = TimestampTDC2._threshold_volt2dac(limit(value))
             self._threshold_dacs = [value_dac]*4
             return
         except TypeError:
@@ -244,7 +253,7 @@ class TimestampTDC7:
         try:
             if len(value) != 4: raise
             value = tuple(map(lambda v: limit(float(v)), value))
-            value_dac = tuple(map(TimestampTDC7._threshold_volt2dac, value))
+            value_dac = tuple(map(TimestampTDC2._threshold_volt2dac, value))
             self._threshold_dacs = value_dac
             return
         
@@ -256,11 +265,11 @@ class TimestampTDC7:
         """See parser.read_a1 doc."""
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
-        t, p = parser.read_a1(TimestampTDC7.DEFAULT_OUTFILE, legacy=False)
+        t, p = parser.read_a1(self.outfile_path, legacy=False)
         return t, p
 
 
-t = TimestampTDC7(
+t = TimestampTDC2(
     "/dev/ioboards/usbtmst0",
     "/home/qitlab/programs/usbtmst4/apps/readevents7",
 )

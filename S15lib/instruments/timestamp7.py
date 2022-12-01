@@ -9,16 +9,17 @@
 # Currently implemented only for Linux platforms: need to first implement the
 # Windows driver.
 
-from os.path import expanduser
 import os
 import pathlib
 import subprocess
 import time
+from os.path import expanduser
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
-from ..g2lib import parse_timestamps as parser
 import psutil
+
+from ..g2lib import parse_timestamps as parser
 
 
 class TimestampTDC2:

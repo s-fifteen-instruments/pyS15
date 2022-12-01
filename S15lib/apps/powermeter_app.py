@@ -6,9 +6,17 @@ import PyQt5
 import pyqtgraph as pg
 from PyQt5 import QtGui
 from PyQt5.QtCore import QThread, QTimer, pyqtSignal
-from PyQt5.QtWidgets import (QApplication, QComboBox, QGridLayout, QLabel,
-                             QMainWindow, QMenuBar, QPushButton, QSpinBox,
-                             QWidget)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QGridLayout,
+    QLabel,
+    QMainWindow,
+    QMenuBar,
+    QPushButton,
+    QSpinBox,
+    QWidget,
+)
 
 from S15lib.instruments import powermeter, serial_connection
 

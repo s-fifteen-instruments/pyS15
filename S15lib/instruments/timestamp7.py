@@ -10,14 +10,15 @@
 # Windows driver.
 
 import os
-import subprocess
 import pathlib
+import subprocess
 import time
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, cast
 
+import numpy as np
+import parse_timestamps as parser
 import psutil
 
-import parse_timestamps as parser
 
 class TimestampTDC2:
     """Interfaces with timestamp7 device.
@@ -58,16 +59,16 @@ class TimestampTDC2:
         # without prompting.
         else:
             raise FileNotFoundError(
-                f"'readevents7' could not be found at specified path '{target_path}'. "
+                f"'readevents7' could not be found at specified path '{readevents_path}'. "
                 "[INSERT DOWNLOAD_INSTRUCTIONS]."
             )
         
         # Use default outfile if not specified
-        self.outfile_path = outfile_path if outfile_path else DEFAULT_OUTFILE
+        self.outfile_path = outfile_path if outfile_path else TimestampTDC2.DEFAULT_OUTFILE
 
         # Other initialization parameters
-        self._int_time = 1
-        self._threshold_dacs = [768, 768, 768, 768]
+        self._int_time = 1.0
+        self._threshold_dacs = (768, 768, 768, 768)
             
     def _call(self, args: List[str], target_file: str = ""):
         """Convenience method to call underlying readevents.
@@ -170,7 +171,8 @@ class TimestampTDC2:
         
         # No successful call completed
         else:
-            raise RuntimeError(f"Call failed with readevents error '{emsg.decode().strip()}'")
+            if emsg:
+                raise RuntimeError(f"Call failed with readevents error '{emsg.decode().strip()}'")
 
 
     @property
@@ -229,7 +231,7 @@ class TimestampTDC2:
         return tuple(map(TimestampTDC2._threshold_dac2volt, self._threshold_dacs))
     
     @threshold.setter
-    def threshold(self, value: Union[float, Tuple[float]]):
+    def threshold(self, value: Union[float, Tuple[float, float, float, float]]):
         """Sets threshold voltage by converting into DAC units, for each channel.
 
         If 'value' is a single number, this value is broadcasted to all channels.
@@ -237,29 +239,32 @@ class TimestampTDC2:
 
         Args:
             value: Either a 4-tuple of voltages, or a single voltage.
+        
+        Note:
+            Type handling for 'value' follows the convention followed by Scipy[1].
+        
+        References:
+            [1] https://github.com/scipy/scipy/blob/d1684e067a12d7166119d455a9f78eecf9c2c6bb/scipy/optimize/_lsq/least_squares.py#L95
         """
         limit = lambda v: min(2.047, max(-1.024, v))
 
-        # Attempt to parse as simple float
-        try:
-            value = float(value)
-            value_dac = TimestampTDC2._threshold_volt2dac(limit(value))
-            self._threshold_dacs = [value_dac]*4
-            return
-        except TypeError:
-            pass
+        # Broadcast single values into a 4-tuple
+        avalue = np.asarray(value, dtype=float)
+        if avalue.ndim == 0:
+            avalue = np.resize(avalue, 4)
 
-        # Attempt to parse as list
-        try:
-            if len(value) != 4: raise
-            value = tuple(map(lambda v: limit(float(v)), value))
-            value_dac = tuple(map(TimestampTDC2._threshold_volt2dac, value))
-            self._threshold_dacs = value_dac
-            return
+        # Check for length of tuple
+        if avalue.size != 4:
+            raise ValueError(f"Only arrays of size 4 is allowed.")
+            
+        # Convert voltages into DAC values
+        value_dac = (TimestampTDC2._threshold_volt2dac(limit(float(v))) for v in avalue)
         
-        # Everything else didn't work
-        except:
-            raise ValueError(f"'{value}' is not a valid argument to threshold().")
+        # Set threshold voltages
+        # Result from tuple comprehension is Tuple[Any, ...], which yields type mismatch
+        # Alternative to 'ignore' is to cast type: cast(Tuple[int, int, int, int], value_dac)
+        self._threshold_dacs = value_dac  # type: ignore
+        return
 
     def get_timestamps(self, duration: float = None):
         """See parser.read_a1 doc."""

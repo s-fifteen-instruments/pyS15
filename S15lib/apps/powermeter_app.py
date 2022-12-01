@@ -8,14 +8,14 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
+    QComboBox,
     QGridLayout,
     QLabel,
     QMainWindow,
     QMenuBar,
-    QWidget,
-    QComboBox,
     QPushButton,
-    QSpinBox
+    QSpinBox,
+    QWidget,
 )
 
 from S15lib.instruments import powermeter, serial_connection

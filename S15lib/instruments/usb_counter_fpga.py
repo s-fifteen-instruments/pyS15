@@ -11,7 +11,7 @@ import multiprocessing
 import os
 import time
 from os.path import expanduser
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import serial
@@ -127,7 +127,7 @@ class TimeStampTDC1(object):
             self._com.write("time {:d};".format(int(value)).encode())
             self._com.readlines()
 
-    def get_counts(self, duration_seconds: int = None) -> Tuple:
+    def get_counts(self, duration_seconds: Optional[int] = None) -> Tuple:
         """[summary]
 
         Args:

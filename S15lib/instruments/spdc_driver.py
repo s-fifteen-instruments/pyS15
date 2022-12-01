@@ -470,10 +470,10 @@ class SPDCDriver(object):
     @property
     def status(self) -> int:
         """Returns the sst.loopstates
-            hloop 1 --> 1   (0b 0001)
-            ploop 1 --> 2   (0b 0010)
-            on      --> 4   (0b 0100)
-            Power 1 --> 256 (0b01 0000 0000)
-            Power 2 --> 512 (0b10 0000 0000)
+        hloop 1 --> 1   (0b 0001)
+        ploop 1 --> 2   (0b 0010)
+        on      --> 4   (0b 0100)
+        Power 1 --> 256 (0b01 0000 0000)
+        Power 2 --> 512 (0b10 0000 0000)
         """
         return int(self._com.getresponse("STATUS?"))

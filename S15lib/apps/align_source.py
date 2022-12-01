@@ -1,6 +1,7 @@
 import os
 import sys
 from datetime import datetime
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,7 +35,7 @@ class Result(object):
 
 
 def show_source_properties(
-    dev_path: str = None,
+    dev_path: Optional[str] = None,
     logging: bool = False,
     ch_stop_delay: float = 5,
     t_acq: float = 1,

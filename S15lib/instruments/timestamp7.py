@@ -18,7 +18,7 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import psutil
 
-from . import parse_timestamps as parser
+from ..g2lib import parse_timestamps as parser
 
 
 class TimestampTDC2:

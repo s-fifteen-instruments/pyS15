@@ -9,6 +9,7 @@
 # Currently implemented only for Linux platforms: need to first implement the
 # Windows driver.
 
+from os.path import expanduser
 import os
 import pathlib
 import subprocess
@@ -16,7 +17,7 @@ import time
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
-import parse_timestamps as parser
+from ..g2lib import parse_timestamps as parser
 import psutil
 
 
@@ -287,9 +288,11 @@ class TimestampTDC2:
         return t, p
 
 
+DEVICE_PATH = "/dev/ioboards/usbtmst0"
+READEVENTS_PROG = expanduser("~") + "/programs/usbtmst4/apps/readevents7"
 t = TimestampTDC2(
-    "/dev/ioboards/usbtmst0",
-    "/home/qitlab/programs/usbtmst4/apps/readevents7",
+    DEVICE_PATH,
+    READEVENTS_PROG,
 )
 # args = ["-a2", "-q100"]
 # t.call(args)

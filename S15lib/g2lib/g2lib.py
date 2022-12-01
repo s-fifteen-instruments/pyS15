@@ -146,7 +146,7 @@ def peak_finder(
             new_signal[sample_nr] += 1
         return new_signal
 
-    n = 2 ** buffer_length
+    n = 2**buffer_length
     t1_series = resample_and_fold_t(t1_series, t_resolution, n)
     t2_series = resample_and_fold_t(t2_series, t_resolution, n)
     t1_fft = np.fft.fft(t1_series)

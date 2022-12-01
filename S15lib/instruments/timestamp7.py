@@ -298,6 +298,7 @@ class TimestampTDC2:
     ):
         duration = duration if duration else self.int_time
         mode = mode if mode else self._mode
+        events = events if events else 0
         if self._legacy:
             swap_opt = " -X"
         else:

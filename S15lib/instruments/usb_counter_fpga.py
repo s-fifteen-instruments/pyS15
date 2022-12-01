@@ -257,9 +257,9 @@ class TimeStampTDC1(object):
         ts_list = []
         time0 = time.time()
         self._com.write((cmd + "\r\n").encode())
-        while (time.time() - time0) <= acq_time+0.01:
+        while (time.time() - time0) <= acq_time + 0.01:
             ts_list.append(self._com.read((1 << 20) * 4))
-        #self._com.write(b"abort\r\n")
+        # self._com.write(b"abort\r\n")
         self._com.readlines()
         return b"".join(ts_list)
 

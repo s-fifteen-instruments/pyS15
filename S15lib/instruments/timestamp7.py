@@ -290,6 +290,29 @@ class TimestampTDC2:
         t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
         return t, p
 
+    def begin_readevents(self, duration: Optional[float] = None, 
+            mode: Optional[int] = None, events: Optional[int] = 0):
+        duration = duration if duration else self.int_time
+        mode = mode if mode else self._mode
+        if self._legacy:
+            swap_opt = ' -X'
+        else:
+            swap_opt = ''
+        if events > 0:
+            q_opt = ' -q' + f"{events}"
+        else:
+            q_opt = ''
+        if self._int_trig:
+            j_opt = ' -j'
+        else:
+            j_opt = ''
+        mode_opt = f'-a{mode}'
+        re_opts = ' ' + mode_opt + swap_opt + q_opt + j_opt
+        file = ' > ' + self.outfile_path
+        # Take data
+        os.system('timeout ' + str(duration) + ' ' + READEVENTS_PROG + re_opts  + file)
+        return
+
 
 DEVICE_PATH = "/dev/ioboards/usbtmst0"
 READEVENTS_PROG = expanduser("~") + "/programs/usbtmst4/apps/readevents7"

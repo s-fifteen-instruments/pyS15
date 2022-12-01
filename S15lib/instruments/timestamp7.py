@@ -16,8 +16,9 @@ import time
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
-import parse_timestamps as parser
 import psutil
+
+from . import parse_timestamps as parser
 
 
 class TimestampTDC2:
@@ -285,11 +286,3 @@ class TimestampTDC2:
         self._call_with_duration(["-a1"], duration=duration)
         t, p = parser.read_a1(self.outfile_path, legacy=False)
         return t, p
-
-
-t = TimestampTDC2(
-    "/dev/ioboards/usbtmst0",
-    "/home/qitlab/programs/usbtmst4/apps/readevents7",
-)
-# args = ["-a2", "-q100"]
-# t.call(args)

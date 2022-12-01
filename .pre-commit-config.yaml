@@ -11,7 +11,9 @@ repos:
       - id: black
         language_version: python3
   - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+    # Python 3.7 support dropped in flake8 6.0.0
+    # https://flake8.pycqa.org/en/latest/release-notes/5.0.4.html
+    rev: 5.0.4
     hooks:
       - id: flake8
         language_version: python3

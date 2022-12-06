@@ -26,33 +26,117 @@
 #  181607   48976 10877.5  604058  450367    10.9     8.1     9.4
 #  181613   48998 10851.1  601716  452697    10.8     8.1     9.4
 
+import argparse
 import datetime as dt
+import sys
 
 import numpy as np
+import tqdm
 
 from S15lib.g2lib import g2lib as g2
-from S15lib.instruments import TimestampTDC2
+from S15lib.instruments import LCRDriver, TimestampTDC2
 
 timestamp = TimestampTDC2(
-    readevents_path="/home/belgianwit/projects/qkd_asyktp/bin/readevents7",
+    readevents_path="/home/qitlab/programs/drivers/usbtmst4/apps/readevents7",
     outfile_path="/tmp/quick_timestamp",
 )
+timestamp.threshold = 1.1
 
-# Set coincidence window
-WINDOW_START = 18
-WINDOW_STOP = 21
-BIN_WIDTH = 2
-BINS = 40
+settings = {
+    "default": {
+        "WINDOW_START": 0,
+        "WINDOW_STOP": 1,
+        "BIN_WIDTH": 1,
+        "BINS_START": 0,
+        "BINS": 1000,
+    },
+    "50km": {
+        "WINDOW_START": 10,
+        "WINDOW_STOP": 11,
+        "BIN_WIDTH": 1,
+        "BINS_START": 246944,
+        "BINS": 100,
+    },
+    "27mA_si_ingaas40nsdelay": {
+        "WINDOW_START": 1,
+        "WINDOW_STOP": 4,
+        "BIN_WIDTH": 1,
+        "BINS_START": 34,
+        "BINS": 15,
+    },
+    "27mA_ingaas_si40nsdelay": {
+        "WINDOW_START": 1,
+        "WINDOW_STOP": 3,
+        "BIN_WIDTH": 1,
+        "BINS_START": 42,
+        "BINS": 15,
+    },
+    "28mA_ingaas_si40nsdelay": {
+        "WINDOW_START": 2,
+        "WINDOW_STOP": 6,
+        "BIN_WIDTH": 1,
+        "BINS_START": 34,
+        "BINS": 15,
+    },
+}
+
+INTEGRATION_TIME = 1
 
 
-def print_fixedwidth(*values, width=7):
+def init_settings(profile):
+    global WINDOW_START
+    global WINDOW_STOP
+    global BIN_WIDTH
+    global BINS_START
+    global BINS
+
+    setting = settings[profile]
+
+    # Set coincidence window
+    WINDOW_START = setting["WINDOW_START"]
+    WINDOW_STOP = setting["WINDOW_STOP"]
+    BIN_WIDTH = setting["BIN_WIDTH"]
+    BINS_START = setting["BINS_START"]
+    BINS = setting["BINS"]
+
+
+# (monitor_singles) Set dark count rates (units of cps)
+DARKCOUNTS_CH1 = 9843
+DARKCOUNTS_CH2 = 5630
+DARKCOUNTS_CH3 = 8348
+DARKCOUNTS_CH4 = 11509
+
+DARKCOUNTS_CH1 = 6644  # 136
+DARKCOUNTS_CH2 = 0
+DARKCOUNTS_CH3 = 0
+DARKCOUNTS_CH4 = 136  # 6644
+
+DARKCOUNTS_CH1 = 0
+DARKCOUNTS_CH2 = 0
+DARKCOUNTS_CH3 = 0
+DARKCOUNTS_CH4 = 0
+
+# Constants
+INT_MAX = np.iinfo(np.int64).max
+INT_MIN = np.iinfo(np.int64).min
+
+
+def print_fixedwidth(*values, width=7, out=None, pbar=None):
     """Prints right-aligned columns of fixed width."""
-    line = " ".join([f"{str(value): >7s}" for value in values])
-    print(line)
+    line = " ".join(
+        [f"{str(value) if value != INT_MIN else ' ': >7s}" for value in values]
+    )
+    if pbar:
+        pbar.set_description(line)
+    else:
+        print(line)
+    if out:
+        with open(out, "a") as f:
+            f.write(line + "\n")
 
 
-def monitor():
-    """Prints out pair source statistics."""
+def monitor_pairs(enable_hist=False):
+    """Prints out pair source statistics, between ch1 and ch4."""
     i = 0
     window_size = WINDOW_STOP - WINDOW_START + 1
     acc_start = (BINS - WINDOW_STOP) // 2  # location to compute accidentals
@@ -60,7 +144,7 @@ def monitor():
     while True:
 
         # Invoke timestamp data recording
-        timestamp._call_with_duration(["-a1", "-X"])
+        timestamp._call_with_duration(["-a1", "-X"], duration=INTEGRATION_TIME)
 
         # Extract g2 histogram and other data
         data = g2.g2_extr(
@@ -70,36 +154,53 @@ def monitor():
             highres_tscard=True,
             bin_width=BIN_WIDTH,
             bins=BINS,
+            min_range=BINS_START,
         )
         hist = data[0]
 
         # Visualize g2 histogram
-        if not is_initialized:
+        HIST_ROWSIZE = 10
+        if not is_initialized or enable_hist:
             is_initialized = True
             a = np.array(hist, dtype=np.int64)
+            # Append -1 values until fits number of rows
+            # where -1 represents nan coincidence value
+            a = np.append(a, np.resize(INT_MIN, HIST_ROWSIZE - (a.size % HIST_ROWSIZE)))
             print("\nObtained histogram:")
-            [print_fixedwidth(*row) for row in a.reshape(-1, 8)]
+            [print_fixedwidth(*row) for row in a.reshape(-1, HIST_ROWSIZE)]
             print(f"Maximum {max(a)} @ index {np.argmax(a)}\n")
 
         # Calculate statistics
         s1, s2 = data[2:4]
+        inttime = data[4] * 1e-9  # convert to units of seconds
         acc = window_size * np.mean(hist[acc_start:])
         pairs = sum(hist[WINDOW_START : WINDOW_STOP + 1]) - acc
+        s1 -= DARKCOUNTS_CH1 * inttime  # timestamp data more precise
+        s2 -= DARKCOUNTS_CH4 * inttime
         e1 = 100 * pairs / s2
         e2 = 100 * pairs / s1
         eavg = 100 * pairs / (s1 * s2) ** 0.5
 
         # Print the header line after every 10 lines
-        if i == 0:
+        if i == 0 or enable_hist:
             i = 10
             print_fixedwidth(
-                "TIME", "PAIRS", "ACC", "SINGLE1", "SINGLE2", "EFF1", "EFF2", "EFF_AVG"
+                "TIME",
+                "ITIME",
+                "PAIRS",
+                "ACC",
+                "SINGLE1",
+                "SINGLE2",
+                "EFF1",
+                "EFF2",
+                "EFF_AVG",
             )
         i -= 1
 
         # Print statistics
         print_fixedwidth(
             dt.datetime.now().strftime("%H%M%S"),
+            round(inttime, 1),
             int(pairs),
             round(acc, 1),
             int(s1),
@@ -110,4 +211,128 @@ def monitor():
         )
 
 
-monitor()
+def monitor_singles():
+    """Prints out singles statistics."""
+    i = 0
+    while True:
+
+        # Invoke timestamp data recording
+        counts = timestamp.get_counts(duration=INTEGRATION_TIME)
+        counts = (
+            counts[0] - DARKCOUNTS_CH1 * INTEGRATION_TIME,
+            counts[1] - DARKCOUNTS_CH2 * INTEGRATION_TIME,
+            counts[2] - DARKCOUNTS_CH3 * INTEGRATION_TIME,
+            counts[3] - DARKCOUNTS_CH4 * INTEGRATION_TIME,
+        )
+
+        # Print the header line after every 10 lines
+        if i == 0:
+            i = 10
+            print_fixedwidth(
+                "TIME",
+                "CH1",
+                "CH2",
+                "CH3",
+                "CH4",
+                "TOTAL",
+            )
+        i -= 1
+
+        # Print statistics
+        print_fixedwidth(
+            dt.datetime.now().strftime("%H%M%S"),
+            *counts,
+            sum(counts),
+        )
+
+
+def scan_lcvr_singles():
+    import time
+    from itertools import product
+
+    target = dt.datetime.now().strftime("%Y%m%d_%H%M%S_lcvrsingles.log")
+    lcvr = LCRDriver(
+        "/dev/serial/by-id/"
+        "usb-Centre_for_Quantum_Technologies_Quad_LCD_driver_QLC-QO05-if00"
+    )
+    lcvr.all_channels_on()
+
+    voltages = np.round(np.linspace(0.9, 5.5, 9), 3)
+    combinations = product(voltages, repeat=4)
+
+    pbar = tqdm.tqdm(combinations)
+    for combination in pbar:
+
+        # Set LCVR values
+        lcvr.V1, lcvr.V2, lcvr.V3, lcvr.V4 = combination
+        time.sleep(0.1)
+
+        # Invoke timestamp data recording
+        counts = timestamp.get_counts()
+        counts = (
+            counts[0],
+            counts[1],
+            counts[2],
+            counts[3],
+        )
+
+        # Print statistics
+        print_fixedwidth(
+            dt.datetime.now().strftime("%H%M%S"),
+            *combination,
+            *counts,
+            out=target,
+            pbar=pbar,
+        )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Continuous printing of timestamp statistics"
+    )
+    parser.add_argument("-p", action="store_true", help="Calculate pairs")
+    parser.add_argument(
+        "-s",
+        action="store_true",
+        help="Calculate singles",
+    )
+    parser.add_argument(
+        "-H",
+        action="store_true",
+        help="Enable histogram in pairs mode",
+    )
+    parser.add_argument(
+        "-L",
+        action="store_true",
+        help="Measure LCVR stuff",
+    )
+    parser.add_argument(
+        "--profile",
+        action="store",
+        choices=list(settings.keys()),
+        default="default",
+        help="Specify detection profile",
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=0,
+        help="Specify debug verbosity",
+    )
+
+    # Do script only if arguments supplied
+    # otherwise run as a normal script (for interactive mode)
+    if len(sys.argv) > 1:
+        args = parser.parse_args()
+        if args.verbose:
+            print(args)
+
+        if args.s:
+            monitor_singles()
+        elif args.p:
+            if args.profile:
+                init_settings(args.profile)
+            monitor_pairs(args.H)
+        elif args.L:
+            scan_lcvr_singles()

@@ -72,8 +72,8 @@ settings = {
         "BINS": 15,
     },
     "28mA_ingaas_si40nsdelay": {
-        "WINDOW_START": 2,
-        "WINDOW_STOP": 6,
+        "WINDOW_START": 3,
+        "WINDOW_STOP": 5,
         "BIN_WIDTH": 1,
         "BINS_START": 34,
         "BINS": 15,
@@ -106,15 +106,15 @@ DARKCOUNTS_CH2 = 5630
 DARKCOUNTS_CH3 = 8348
 DARKCOUNTS_CH4 = 11509
 
-DARKCOUNTS_CH1 = 6644  # 136
+DARKCOUNTS_CH1 = 5466
 DARKCOUNTS_CH2 = 0
 DARKCOUNTS_CH3 = 0
-DARKCOUNTS_CH4 = 136  # 6644
+DARKCOUNTS_CH4 = 150
 
-DARKCOUNTS_CH1 = 0
+# DARKCOUNTS_CH1 = 0
 DARKCOUNTS_CH2 = 0
 DARKCOUNTS_CH3 = 0
-DARKCOUNTS_CH4 = 0
+# DARKCOUNTS_CH4 = 0
 
 # Constants
 INT_MAX = np.iinfo(np.int64).max
@@ -139,7 +139,7 @@ def monitor_pairs(enable_hist=False):
     """Prints out pair source statistics, between ch1 and ch4."""
     i = 0
     window_size = WINDOW_STOP - WINDOW_START + 1
-    acc_start = (BINS - WINDOW_STOP) // 2  # location to compute accidentals
+    acc_start = max((BINS + WINDOW_STOP) // 2, 1)  # location to compute accidentals
     is_initialized = False
     while True:
 
@@ -163,11 +163,11 @@ def monitor_pairs(enable_hist=False):
         if not is_initialized or enable_hist:
             is_initialized = True
             a = np.array(hist, dtype=np.int64)
-            # Append -1 values until fits number of rows
-            # where -1 represents nan coincidence value
+            # Append NaN values until fits number of rows
             a = np.append(a, np.resize(INT_MIN, HIST_ROWSIZE - (a.size % HIST_ROWSIZE)))
             print("\nObtained histogram:")
-            [print_fixedwidth(*row) for row in a.reshape(-1, HIST_ROWSIZE)]
+            for row in a.reshape(-1, HIST_ROWSIZE):
+                print_fixedwidth(*row)
             print(f"Maximum {max(a)} @ index {np.argmax(a)}\n")
 
         # Calculate statistics
@@ -211,9 +211,11 @@ def monitor_pairs(enable_hist=False):
         )
 
 
-def monitor_singles():
+def monitor_singles(enable_avg: bool = False):
     """Prints out singles statistics."""
     i = 0
+    avg = np.array([0, 0, 0, 0])  # averaging facility, e.g. for measuring dark counts
+    avg_iters = 0
     while True:
 
         # Invoke timestamp data recording
@@ -224,6 +226,12 @@ def monitor_singles():
             counts[2] - DARKCOUNTS_CH3 * INTEGRATION_TIME,
             counts[3] - DARKCOUNTS_CH4 * INTEGRATION_TIME,
         )
+
+        # Implement rolling average to avoid overflow
+        if enable_avg:
+            avg_iters += 1
+            avg = (avg_iters - 1) / avg_iters * avg + np.array(counts) / avg_iters
+            counts = np.round(avg, 1)
 
         # Print the header line after every 10 lines
         if i == 0:
@@ -242,7 +250,7 @@ def monitor_singles():
         print_fixedwidth(
             dt.datetime.now().strftime("%H%M%S"),
             *counts,
-            sum(counts),
+            round(sum(counts), 1),
         )
 
 
@@ -297,6 +305,12 @@ if __name__ == "__main__":
         help="Calculate singles",
     )
     parser.add_argument(
+        "--averaging",
+        "-a",
+        action="store_true",
+        help="Change to averaging singles mode",
+    )
+    parser.add_argument(
         "-H",
         action="store_true",
         help="Enable histogram in pairs mode",
@@ -329,7 +343,7 @@ if __name__ == "__main__":
             print(args)
 
         if args.s:
-            monitor_singles()
+            monitor_singles(args.averaging)
         elif args.p:
             if args.profile:
                 init_settings(args.profile)

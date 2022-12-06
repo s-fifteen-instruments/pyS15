@@ -35,9 +35,17 @@ class TimestampTDC2:
     Note:
         The naming of 'TimestampTDC2' instead of 'TimeStampTDC2' is intentional.
         Ought to eventually migrate 'TimeStampTDC1' to 'TimestampTDC1'.
+
+    Examples:
+        >>> DEVICE_PATH = "/dev/ioboards/usbtmst0"
+        >>> t = TimestampTDC2(DEVICE_PATH)
+        >>> args = ["-a2", "-q100"]
+        >>> p, pid = t._call(args)
+        >>> time.sleep(2)
+        >>> p.terminate()
     """
 
-    DEFAULT_READEVENTS = "./readevents7"
+    DEFAULT_READEVENTS = expanduser("~") + "/programs/usbtmst4/apps/readevents7"
     DEFAULT_OUTFILE = "/tmp/_TimestampTDC2_events.dat"
 
     def __init__(
@@ -63,6 +71,7 @@ class TimestampTDC2:
         # Otherwise direct user to either download precompiled binaries, or
         # or provide manual build instructions.
         # Note: Not a good practice to install software without prompting.
+        # TODO(Justin, 2022-12-07): Update download instructions.
         else:
             raise FileNotFoundError(
                 f"'readevents7' could not be found at specified path "
@@ -318,17 +327,7 @@ class TimestampTDC2:
         re_opts = " " + mode_opt + swap_opt + q_opt + j_opt
         file = " > " + self.outfile_path
         # Take data
-        os.system("timeout " + str(duration) + " " + READEVENTS_PROG + re_opts + file)
+        os.system(
+            "timeout " + str(duration) + " " + self.readevents_path + re_opts + file
+        )
         return
-
-
-DEVICE_PATH = "/dev/ioboards/usbtmst0"
-READEVENTS_PROG = expanduser("~") + "/programs/usbtmst4/apps/readevents7"
-t = TimestampTDC2(
-    DEVICE_PATH,
-    READEVENTS_PROG,
-)
-# args = ["-a2", "-q100"]
-# p,pid = t._call(args)
-# time.sleep(2)
-# p.terminate()

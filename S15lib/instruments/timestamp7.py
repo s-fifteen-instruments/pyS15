@@ -13,12 +13,13 @@ import os
 import pathlib
 import subprocess
 import time
+from os.path import expanduser
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import psutil
 
-from . import parse_timestamps as parser
+from ..g2lib import parse_timestamps as parser
 
 
 class TimestampTDC2:
@@ -76,6 +77,9 @@ class TimestampTDC2:
         # Other initialization parameters
         self._int_time = 1.0
         self._threshold_dacs = (768, 768, 768, 768)
+        self._int_trig = False
+        self._legacy = False
+        self._mode = 2
 
     def _call(self, args: List[str], target_file: str = ""):
         """Convenience method to call underlying readevents.
@@ -213,7 +217,7 @@ class TimestampTDC2:
         """
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
-        t, p = parser.read_a1(self.outfile_path, legacy=False)
+        t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
 
         # TODO(Justin): Add checks on timestamp output validity
         t1 = t[p & 0b0001 != 0]
@@ -284,5 +288,45 @@ class TimestampTDC2:
         """See parser.read_a1 doc."""
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
-        t, p = parser.read_a1(self.outfile_path, legacy=False)
+        t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
         return t, p
+
+    def begin_readevents(
+        self,
+        duration: Optional[float] = None,
+        mode: Optional[int] = None,
+        events: Optional[int] = 0,
+    ):
+        duration = duration if duration else self.int_time
+        mode = mode if mode else self._mode
+        events = events if events else 0
+        if self._legacy:
+            swap_opt = " -X"
+        else:
+            swap_opt = ""
+        if events > 0:
+            q_opt = " -q" + f"{events}"
+        else:
+            q_opt = ""
+        if self._int_trig:
+            j_opt = " -j"
+        else:
+            j_opt = ""
+        mode_opt = f"-a{mode}"
+        re_opts = " " + mode_opt + swap_opt + q_opt + j_opt
+        file = " > " + self.outfile_path
+        # Take data
+        os.system("timeout " + str(duration) + " " + READEVENTS_PROG + re_opts + file)
+        return
+
+
+DEVICE_PATH = "/dev/ioboards/usbtmst0"
+READEVENTS_PROG = expanduser("~") + "/programs/usbtmst4/apps/readevents7"
+t = TimestampTDC2(
+    DEVICE_PATH,
+    READEVENTS_PROG,
+)
+# args = ["-a2", "-q100"]
+# p,pid = t._call(args)
+# time.sleep(2)
+# p.terminate()

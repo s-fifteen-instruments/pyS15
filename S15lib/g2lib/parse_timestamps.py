@@ -111,6 +111,28 @@ def write_a1(filename: str, t: list, p: list, legacy: bool = False):
             f.write(struct.pack("=Q", line))
 
 
+def read_bits(filename: str, mode: int = 2, legacy: bool = False):
+    if mode == 0:
+        data = np.genfromtxt(filename, delimiter="\n", dtype="U8")
+        data = np.array([int(v, 16) for v in data]).reshape(-1, 2)
+        data64 = (np.uint64(data[:, 1]) << 32) + np.uint64(data[:, 0])
+    elif mode == 1:
+        high_pos = 1
+        low_pos = 0
+        if legacy:
+            high_pos, low_pos = low_pos, high_pos
+        with open(filename, "rb") as f:
+            data = np.fromfile(file=f, dtype="=I").reshape(-1, 2)
+            data64 = (np.uint64(data[:, high_pos]) << 32) + np.uint64(data[:, low_pos])
+    elif mode == 2:
+        data = np.genfromtxt(filename, delimiter="\n", dtype="U16")
+        data = np.array([int(v, 16) for v in data])
+        data64 = np.uint64(data)
+    else:
+        raise NotImplementedError()
+    return data64
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Converts between different timestamp7 formats"

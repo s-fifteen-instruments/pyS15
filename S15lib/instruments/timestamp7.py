@@ -130,7 +130,7 @@ class TimestampTDC2:
         args: List[str],
         target_file: str = "",
         duration: float = 1,
-        max_retries: int = 3,
+        max_retries: int = 5,
         clear_buffer: bool = True,
     ):
         """Run '_call' with automatic termination and output validity checks.
@@ -275,7 +275,9 @@ class TimestampTDC2:
             raise ValueError("Only arrays of size 4 is allowed.")
 
         # Convert voltages into DAC values
-        value_dac = (TimestampTDC2._threshold_volt2dac(limit(float(v))) for v in avalue)
+        value_dac = tuple(
+            TimestampTDC2._threshold_volt2dac(limit(float(v))) for v in avalue
+        )
 
         # Set threshold voltages
         # Result from tuple comprehension is Tuple[Any, ...], which yields type mismatch

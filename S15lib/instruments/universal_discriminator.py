@@ -37,19 +37,47 @@ class UniversalDiscriminator:
         """
         return self._com.getresponse(b"*RST")
 
-    @property
-    def inputthreshold(self, ch):
+    #    @property
+    #    def inputthreshold(self):
+    #        """
+    #        Queries threshold from threshvolt register.
+    #        """
+    #        out = []
+    #        full_range = 6.6
+    #        offset = -3.3
+    #        for ch in [0, 1]:
+    #            cmd = ("CONFIG {}\n".format((ch) << 1)).encode()
+    #            self._com.write(cmd)
+    #            retval = self._com.getresponse(b"READW?")
+    #            out.append(retval / (1 << 16) * full_range + offset)
+    #
+    #        return out
+    #
+    #    @inputthreshold.setter
+    def inputthreshold(self, ch, vol):
         """
-        Queries threshold from threshvolt register.
+        Sets input polarity of channels 0 or 1.
+        vol: -2 -> 2
         """
-        cmd = ("CONFIG {}\n".format((ch) << 1)).encode()
+        cmd = ("THRESHOLD {} {}\n".format(ch, vol)).encode()
         self._com.write(cmd)
-        retval = self._com.getresponse(b"READW?")
-        full_range = 6.6
-        offset = -3.3
-        return retval / (1 << 16) * full_range + offset
 
-    @inputpolarity.setter
+    #    @property
+    #    def inputpolarity(self):
+    #        """
+    #        Queries polarity from config register.
+    #        0: positive
+    #        1: negative
+    #        """
+    #        out = []
+    #        for ch in [0, 1]:
+    #            cmd = ("CONFIG {}\n".format((ch + 2) << 4)).encode()
+    #            self._com.write(cmd)
+    #            retval = self._com.getresponse(b"READW?")
+    #            out.append(retval & 0x1)
+    #        return out
+    #
+    #    @inputpolarity.setter
     def inputpolarity(self, ch, pol):
         """
         Sets input polarity of channels 0 or 1.
@@ -59,45 +87,24 @@ class UniversalDiscriminator:
         cmd = ("POLARITY {} {}\n".format(ch, pol)).encode()
         self._com.write(cmd)
 
-    @property
-    def inputpolarity(self, ch):
-        """
-        Queries polarity from config register.
-        0: positive
-        1: negative
-        """
-        cmd = ("CONFIG {}\n".format((ch + 2) << 4)).encode()
-        self._com.write(cmd)
-        retval = self._com.getresponse(b"READW?")
-
-        return retval & 0x1
-
-    @inputpolarity.setter
-    def inputpolarity(self, ch, pol):
-        """
-        Sets input polarity of channels 0 or 1.
-        pol: 0 -> Positive
-             1 -> Negative
-        """
-        cmd = ("POLARITY {} {}\n".format(ch, pol)).encode()
-        self._com.write(cmd)
-
-    @property
-    def outputpolarity(self, ch):
-        """
-        Queries polarity from config register.
-        0: NIM on A and B
-        1: TTL on A and NIM on B
-        2: NIM on A and TTL on B
-        3: TTL on A and B
-        """
-        cmd = ("CONFIG {}\n".format((ch + 2) << 4)).encode()
-        self._com.write(cmd)
-        retval = self._com.getresponse(b"READW?")
-
-        return (retval & 0x6) >> 1
-
-    @outputpolarity.setter
+    #    @property
+    #    def outputpolarity(self):
+    #        """
+    #        Queries polarity from config register.
+    #        0: NIM on A and B
+    #        1: TTL on A and NIM on B
+    #        2: NIM on A and TTL on B
+    #        3: TTL on A and B
+    #        """
+    #        out = []
+    #        for ch in [0, 1]:
+    #            cmd = ("CONFIG {}\n".format((ch + 2) << 4)).encode()
+    #            self._com.write(cmd)
+    #            retval = self._com.getresponse(b"READW?")
+    #            (retval & 0x6) >> 1
+    #        return out
+    #
+    #    @outputpolarity.setter
     def outputpolarity(self, ch, pol):
         """
         Sets output polarity of channels 0A/B or 1A/B.
@@ -113,22 +120,25 @@ class UniversalDiscriminator:
         cmd = ("OUTLEVEL {} {}\n".format(ch, pol)).encode()
         self._com.write(cmd)
 
-    @property
-    def outmode(self, ch) -> int:
-        """
-        Queries outmode from config register.
-        0: Direct discriminator output
-        1: Combinatorical leading edge generation
-        2: Triggered flip-flop with reset by delayed discriminator signal
-        3: TBD
-        """
-        cmd = ("CONFIG {}\n".format((ch + 2) << 4)).encode()
-        self._com.write(cmd)
-        retval = self._com.getresponse(b"READW?")
-
-        return (retval & 0x18) >> 3
-
-    @outmode.setter
+    #    @property
+    #    def outmode(self) -> int:
+    #        """
+    #        Queries outmode from config register.
+    #        0: Direct discriminator output
+    #        1: Combinatorical leading edge generation
+    #        2: Triggered flip-flop with reset by delayed discriminator signal
+    #        3: TBD
+    #        """
+    #        out = []
+    #        for ch in [0, 1]:
+    #            cmd = ("CONFIG {}\n".format((ch + 2) << 4)).encode()
+    #            self._com.write(cmd)
+    #            retval = self._com.getresponse(b"READW?")
+    #            out.append((retval & 0x18) >> 3)
+    #
+    #        return out
+    #
+    #    @outmode.setter
     def outmode(self, ch, mode):
         """
         Sets output polarity of channels 0A/B or 1A/B.
@@ -146,18 +156,20 @@ class UniversalDiscriminator:
         cmd = ("OUTMODE {} {}\n".format(ch, mode)).encode()
         self._com.write(cmd)
 
-    @property
-    def inputdelay(self, ch):
-        """
-        Queries delay from config register.
-        """
-        cmd = ("CONFIG {}\n".format((ch + 2) << 4)).encode()
-        self._com.write(cmd)
-        retval = self._com.getresponse(b"READW?")
-
-        return (retval & 0x1F00) >> 8
-
-    @inputpolarity.setter
+    #    @property
+    #    def inputdelay(self):
+    #        """
+    #        Queries delay from config register.
+    #        """
+    #        out = []
+    #        for ch in [0, 1]:
+    #            cmd = ("CONFIG {}\n".format((ch + 2) << 4)).encode()
+    #            self._com.write(cmd)
+    #            retval = self._com.getresponse(b"READW?")
+    #            out.append((retval & 0x1F00) >> 8)
+    #        return out
+    #
+    #    @inputdelay.setter
     def inputdelay(self, ch, delay):
         """
         Sets input delay of channels 0 or 1.
@@ -171,13 +183,5 @@ class UniversalDiscriminator:
         return self._identity
 
     def help(self) -> str:
-        return self._com.get_help()
-
-
-if __name__ == "__main__":
-    powermeter = PowerMeter()
-    start = time.time()
-    print(powermeter.get_voltage())
-    Dt = time.time() - start
-
-    print("Waktu {}".format(Dt))
+        print(self._com.get_help())
+        return

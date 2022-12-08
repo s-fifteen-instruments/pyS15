@@ -2,11 +2,6 @@
 Created on 5th Dec 2022
 """
 
-import time
-from typing import Tuple
-
-import numpy as np
-
 from . import serial_connection
 
 
@@ -182,6 +177,6 @@ class UniversalDiscriminator:
     def identity(self) -> str:
         return self._identity
 
-    def help(self) -> str:
+    def help(self):
         print(self._com.get_help())
         return

@@ -1,44 +1,47 @@
-import time
-import numpy as np  # for type checking with numpy types
-from serial_connection import SerialConnection
 import re
+import time
 
-COMMENT_PATTERN = re.compile(r'(#.*)?\n?', re.MULTILINE)
-status_bits = dict({'tablestat' : 0x00f,
-    'inlines' : 0x0f0,
-    'clk' : 0x100,
-    'pll' : 0x200,
-    'level' : 0x400})
+import numpy as np  # for type checking with numpy types
 
-class DigitalPatternGenerator(object):
+from .serial_connection import SerialConnection
+
+COMMENT_PATTERN = re.compile(r"(#.*)?\n?", re.MULTILINE)
+status_bits = dict(
+    {"tablestat": 0x00F, "inlines": 0x0F0, "clk": 0x100, "pll": 0x200, "level": 0x400}
+)
+
+
+class PattGen(object):
     """Python wrapper to communcate with DPG1 board."""
 
     DEVICE_IDENTIFIER = "DPG1"
 
-    def __init__(self, device_path: str = "",  level: str = "NIM"):
+    def __init__(self, device_path: str = "", level: str = "NIM"):
         if device_path == "":
             self._com = SerialConnection.connect_by_name(self.DEVICE_IDENTIFIER)
         else:
             self._com = SerialConnection(device_path)
-        for k, v in status_bits.items():
-            setattr(self, k, v)
-        self.status()
+        self._clk = None
+
+        # for k, v in status_bits.items():
+        #    setattr(self, k, v)
+        # self.status()
 
     @property
     def level(self):
         """Set type of incoming pulses"""
-        return self.level
+        return self._level
 
     @level.setter
     def level(self, value: str):
         if value.lower() == "nim":
             self.write_only("NIM")
-
+            self._level = "NIM"
         elif value.lower() == "ttl":
             self.write_only("TTL")
+            self._level = "TTL"
         else:
             print("Accepted input is a string and either 'TTL' or 'NIM'")
-        self.status()
 
     @staticmethod
     def _raise_if_oob(value, low, high, propname, propunits):
@@ -54,7 +57,8 @@ class DigitalPatternGenerator(object):
             )
 
     def help(self) -> str:
-        return self._com.get_help()
+        print(self._com.get_help())
+        return
 
     @property
     def identity(self) -> str:
@@ -68,11 +72,6 @@ class DigitalPatternGenerator(object):
         """Close connection to device."""
         self._com.close()
 
-    @property
-    def heater_voltage(self) -> float:
-        return float(self._com.getresponse("HVOLT?"))
-
-    @heater_voltage.setter
     def heater_voltage(self, voltage: float) -> None:
         """Sets voltage across crystal heater, in volts.
 
@@ -105,411 +104,119 @@ class DigitalPatternGenerator(object):
         self._com.writeline(f"HVOLT {voltage:.3f}")
 
     @property
-    def peltier_voltage(self) -> float:
-        return float(self._com.getresponse("PVOLT?"))
-
-    @peltier_voltage.setter
-    def peltier_voltage(self, voltage: float) -> None:
-        """Sets voltage across laser peltier, in volts.
-
-        The set voltage should have magnitude less than or equal to
-        `peltier_voltage_limit`.
-
-        Raises:
-            ValueError: `voltage` is not a valid number.
-        """
-        plimit = self.peltier_voltage_limit
-        self._raise_if_oob(voltage, -plimit, plimit, "Peltier voltage", "V")
-        self._com.writeline(f"PVOLT {voltage:.3f}")
-
-    @property
-    def heater_voltage_limit(self) -> float:
-        return float(self._com.getresponse("HLIMIT?"))
-
-    @heater_voltage_limit.setter
-    def heater_voltage_limit(self, voltage: float) -> None:
-        """Sets the crystal heater voltage limit, in volts.
-
-        The voltage limit should be within [0, 10] V.
-
-        Raises:
-            ValueError: `voltage` is not a valid number.
-        """
-        hlimit_low, hlimit_high = 0, 10  # hardcoded based on firmware
-        self._raise_if_oob(
-            voltage, hlimit_low, hlimit_high, "Heater voltage limit", "V"
-        )
-        self._com.writeline(f"HLIMIT {voltage:.3f}")
-
-    @property
-    def peltier_voltage_limit(self) -> float:
-        return float(self._com.getresponse("PLIMIT?"))
-
-    @peltier_voltage_limit.setter
-    def peltier_voltage_limit(self, voltage: float) -> None:
-        """Sets the laser peltier voltage limit, in volts.
-
-        Raises:
-            ValueError: `voltage` is not a valid number.
-        """
-        plimit_low, plimit_high = 0, 2.5  # hardcoded based on firmware
-        self._raise_if_oob(
-            voltage, plimit_low, plimit_high, "Peltier voltage limit", "V"
-        )
-        self._com.writeline(f"PLIMIT {voltage:.3f}")
-
-    @property
-    def heater_temp(self) -> float:
-        """Measures the instantaneous temperature near the crystal."""
-        return float(self._com.getresponse("HTEMP?"))
-
-    @heater_temp.setter
-    def heater_temp(self, temp: float):
-        """Alias for `heater_temp_setpoint` setter, temp in Celsius."""
-        self.heater_temp_setpoint = temp
-
-    @property
-    def heater_temp_setpoint(self) -> float:
-        return float(self._com.getresponse("HSETTEMP?"))
-
-    @heater_temp_setpoint.setter
-    def heater_temp_setpoint(self, temp: float) -> None:
-        """Sets the target temperature of the crystal, in Celsius.
-
-        Raises:
-            ValueError: `temp` is not a valid number.
-        """
-        htemp_low, htemp_high = 20, 100  # hardcoded based on firmware
-        self._raise_if_oob(temp, htemp_low, htemp_high, "Heater temp setpoint", "°C")
-        self._com.writeline(f"HSETTEMP {temp:.3f}")
-
-    @property
-    def heater_temp_rate(self) -> float:
-        return float(self._com.getresponse("HRATE?"))
-
-    @heater_temp_rate.setter
-    def heater_temp_rate(self, rate: float) -> None:
-        """Sets the heater temperature ramp rate, in K/s.
-
-        Two separate and distinct heating profiles are used depending on the
-        value of `rate`. If `rate` is set at 0, the change in heater temp setpoint
-        will be instantaneous. Otherwise, the heater setpoint will ramp up/down
-        linearly, starting from the previous value when `rate` > 0.
-
-        Raises:
-            ValueError: `rate` is not a valid number.
-        Note:
-            Strongly related to `heater_temp_target`, which determines the
-            instantaneous time-varying heater setpoint.
-        """
-        hrate_low, hrate_high = 0.0, 1.0  # hardcoded based on firmware
-        self._raise_if_oob(rate, hrate_low, hrate_high, "Heater temp ramp", "K/s")
-        self._com.writeline(f"HRATE {rate:.3f}")
-
-    @property
-    def heater_temp_target(self) -> float:
-        return float(self._com.getresponse("HTARGET?"))
-
-    @property
-    def peltier_temp(self) -> float:
-        """Measures the instantaneous temperature near the laser."""
-        return float(self._com.getresponse("PTEMP?"))
-
-    @peltier_temp.setter
-    def peltier_temp(self, temp: float):
-        """Alias for `peltier_temp_setpoint` setter, temp in Celsius."""
-        self.peltier_temp_setpoint = temp
-
-    @property
-    def peltier_temp_setpoint(self) -> float:
-        return float(self._com.getresponse("PSETTEMP?"))
-
-    @peltier_temp_setpoint.setter
-    def peltier_temp_setpoint(self, temp: float) -> None:
-        """Sets the target temperature of the laser, in Celsius.
-
-        Raises:
-            ValueError: `temp` is not a valid number.
-        """
-        ptemp_low, ptemp_high = 20, 50  # hardcoded based on firmware
-        self._raise_if_oob(temp, ptemp_low, ptemp_high, "Peltier temp setpoint", "°C")
-        self._com.writeline(f"PSETTEMP {temp:.3f}")
-
-    @property
-    def hconstp(self) -> float:
-        return float(self._com.getresponse("HCONSTP?"))
-
-    @hconstp.setter
-    def hconstp(self, constant: float) -> None:
-        """Sets the proportional control constant for crystal heater, in V/K."""
-        hconstp_low, hconstp_high = 0, 10  # hardcoded based on firmware
-        self._raise_if_oob(
-            constant, hconstp_low, hconstp_high, "Heater P constant", "V/K"
-        )
-        self._com.writeline(f"HCONSTP {constant:.3f}")
-
-    @property
-    def hconsti(self) -> float:
-        return float(self._com.getresponse("HCONSTI?"))
-
-    @hconsti.setter
-    def hconsti(self, constant: float) -> None:
-        """Sets the integral control constant for crystal heater, in V/(Ks)."""
-        hconsti_low, hconsti_high = 0, 10  # hardcoded based on firmware
-        self._raise_if_oob(
-            constant, hconsti_low, hconsti_high, "Heater I constant", "V/(Ks)"
-        )
-        self._com.writeline(f"HCONSTI {constant:.3f}")
-
-    @property
-    def hconstd(self) -> float:
-        return float(self._com.getresponse("HCONSTD?"))
-
-    @hconstd.setter
-    def hconstd(self, constant: float) -> None:
-        """Sets the derivative control constant for crystal heater, in Vs/K."""
-        hconstd_low, hconstd_high = 0, 10  # hardcoded based on firmware
-        self._raise_if_oob(
-            constant, hconstd_low, hconstd_high, "Heater D constant", "Vs/K"
-        )
-        self._com.writeline(f"HCONSTD {constant:.3f}")
-
-    @property
-    def pconstp(self) -> float:
-        return float(self._com.getresponse("PCONSTP?"))
-
-    @pconstp.setter
-    def pconstp(self, constant: float) -> None:
-        """Sets the proportional control constant for laser peltier, in V/K."""
-        pconstp_low, pconstp_high = 0, 10  # hardcoded based on firmware
-        self._raise_if_oob(
-            constant, pconstp_low, pconstp_high, "Peltier P constant", "V/K"
-        )
-        self._com.writeline(f"PCONSTP {constant:.3f}")
-
-    @property
-    def pconsti(self) -> float:
-        return float(self._com.getresponse("PCONSTI?"))
-
-    @pconsti.setter
-    def pconsti(self, constant: float) -> None:
-        """Sets the integral control constant for laser peltier, in V/(Ks)."""
-        pconsti_low, pconsti_high = 0, 10  # hardcoded based on firmware
-        self._raise_if_oob(
-            constant, pconsti_low, pconsti_high, "Peltier I constant", "V/(Ks)"
-        )
-        self._com.writeline(f"PCONSTI {constant:.3f}")
-
-    @property
-    def pconstd(self) -> float:
-        return float(self._com.getresponse("PCONSTD?"))
-
-    @pconstd.setter
-    def pconstd(self, constant: float) -> None:
-        """Sets the derivative control constant for laser peltier, in Vs/K."""
-        pconstd_low, pconstd_high = 0, 10  # hardcoded based on firmware
-        self._raise_if_oob(
-            constant, pconstd_low, pconstd_high, "Peltier D constant", "Vs/K"
-        )
-        self._com.writeline(f"PCONSTD {constant:.3f}")
-
-    @property
-    def laser_current(self) -> float:
-        return float(self._com.getresponse("LCURRENT?"))
-
-    @laser_current.setter
-    def laser_current(self, current: float) -> None:
-        """Sets the laser current, in mA.
-
-        Note that `SPDCDriver.power` needs to be 1 or 3 for lasing to begin.
-
-        Raises:
-            ValueError: `current` is not a valid number.
-        """
-        lcurrent_low, lcurrent_high = 0, self.laser_current_limit
-        self._raise_if_oob(current, lcurrent_low, lcurrent_high, "Laser current", "mA")
-        self._com.writeline(f"LCURRENT {current:.3f}")
-
-    @property
-    def laser_current_limit(self) -> float:
-        return float(self._com.getresponse("LLIMIT?"))
-
-    @laser_current_limit.setter
-    def laser_current_limit(self, current: float) -> None:
-        """Sets the laser current limit, in mA.
-
-        Raises:
-            ValueError: `current` is not a valid number.
-        """
-        llimit_low, llimit_high = 0, 97  # hardcoded based on firmware
-        self._raise_if_oob(
-            current, llimit_low, llimit_high, "Laser current limit", "mA"
-        )
-        self._com.writeline(f"LLIMIT {current:.3f}")
-
-    def laser_on(self, current: float):
-        """Switches on laser.
-
-        The lasing current ramp used is 1mA/50ms.
-
-        Raises:
-            ValueError: `current` is not a valid number.
-            RuntimeError: Laser is already switched on.
-        Note:
-            The `ON` command are encapsulated within `laser_on()` instead of
-            provisioning a standalone command, to prevent accidental laser
-            delivery while it is switched off. Use case of `ON` is almost
-            always tied to a laser ramp up.
-        """
-        lcurrent_low, lcurrent_high = 0, self.laser_current_limit
-        self._raise_if_oob(current, lcurrent_low, lcurrent_high, "Laser current", "mA")
-        if self.laser_current != 0:
-            raise RuntimeError(
-                "Laser is already switched on - use `SPDCDriver.laser_current` to "
-                "change the current"
-            )
-
-        # Switch on laser only, ignoring heater/peltier
-        self._power_on_laser()
-        self._com.writeline("ON")
-
-        # Ramp laser current
-        for c in np.arange(0, current, 1):
-            self.laser_current = c
-            time.sleep(0.05)  # ~5 seconds
-        self.laser_current = current  # target current
-
-    def laser_off(self):
-        """Switches off the laser."""
-        # Ramp laser current
-        for c in np.arange(self.laser_current, 0, -1):
-            self.laser_current = c
-            time.sleep(0.05)
-        self.laser_current = 0
-
-        # Switch off laser only, ignoring heater/peltier
-        self._com.writeline("OFF")
-        self._power_off_laser()
-
-    @property
-    def power(self) -> int:
-        return int(self._com.getresponse("POWER?"))
-
-    @power.setter
-    def power(self, value: int) -> None:
-        """Sets power converter enable lines on board.
-
-        Args:
-            value: Takes the following integer values,
-                0 (0b00) - all lines disabled
-                1 (0b01) - enable heater/peltier power lines only
-                2 (0b10) - enable laser power lines only
-                3 (0b11) - all lines enabled
-        Raises:
-            ValueError: value is not a valid number.
-        """
-        if not (isinstance(value, (int, np.integer)) and 0 <= value <= 3):
-            raise ValueError("Power can only take integer values (0, 1, 2, 3)")
-        self._com.writeline(f"POWER {value}")
-
-    def _power_on_heater_peltier(self) -> None:
-        self.power |= 0b01
-
-    def _power_off_heater_peltier(self) -> None:
-        self.power &= 0b10
-
-    def _power_on_laser(self) -> None:
-        self.power |= 0b10
-
-    def _power_off_laser(self) -> None:
-        self.power &= 0b01
-
-    @property
     def status(self) -> int:
         """
-            Returns the status of the pattern generator
-            status_bits = dict({'tablestat' : 0x00f,
-                     'inlines' : 0x0f0,
-                     'clk' : 0x100,
-                     'pll' : 0x200,
-                     'level' : 0x400})
+        Returns the status of the pattern generator
+        status_bits = dict({'tablestat' : 0x00f,
+                 'inlines' : 0x0f0,
+                 'clk' : 0x100,
+                 'pll' : 0x200,
+                 'level' : 0x400})
 
         """
         self._status = int(self._com.getresponse("STATUS?"))
-        self.tablestat = self._status & 0x00f
-        self.inlines = self._status & 0x0f0
+        self.tablestat = self._status & 0x00F
+        self.inlines = self._status & 0x0F0
         self.clk = TRUE if self._status & 0x100 else False
-        self.pll = 'LOCKED' if self._status & 0x200 else 'UNLOCKED'
-        self.level = 'NIM' if self._status & 0x400 else 'TTL'
-        return 
+        self.pll = "LOCKED" if self._status & 0x200 else "UNLOCKED"
+        self.level = "TTL" if self._status & 0x400 else "NIM"
+        return self._status
 
     @property
     def clk(self) -> bool:
         return self._clk
 
+    @clk.setter
+    def clk(self, val: bool) -> bool:
+        self._clk = val
+        return self._clk
+
     @property
     def clock(self) -> str:
         """
-            Reads the current clock setting.
+        Reads the current clock setting.
         """
-        self._com.write("CLOCKSEL?\r\n".encode())
-        val = self._com.readline()
+        val = int(self._com.getresponse("CLOCKSEL?"))
         clk_ok = self.clk
-        if val == '0' and clk_ok:
-            return '100MHz Auto reference, ext reference good'
-        if val == '0':
-            return '100MHz Auto reference, internal reference'
-        elif val == '1' and clk_ok:
-            return '100MHz force External reference, ext reference good'
-        elif val == '1' and not clk_ok:
-            return '100MHz force External reference, ext reference not good'
-        elif val == '2':
-            return '100MHZ force Internal reference'
-        elif val == '3':
-            return 'External clock reference'
+        if val == 0 and clk_ok:
+            return "100MHz Auto reference, ext reference good"
+        if val == 0:
+            return "100MHz Auto reference, internal reference"
+        elif val == 1 and clk_ok:
+            return "100MHz force External reference, ext reference good"
+        elif val == 1 and not clk_ok:
+            return "100MHz force External reference, ext reference not good"
+        elif val == 2:
+            return "100MHZ force Internal reference"
+        elif val == 3:
+            return "External clock reference"
         else:
-            raise ValueError('Clock should not return this value')
+            raise ValueError("Clock should not return this value")
 
     @clock.setter
     def clock(self, value: str):
-        """Set the clock source 
+        """Set the clock source
 
         Args:
             sets the clock source. 0: 100MHz autoref, 1: 100MHz ext ref
           2: 100MHz internal ref, 3: External clock directly
 
             value (str): 0: 100MHz autoselect clock, 1: 100MHz external clock,
-                         2: 100MHz internal clock, 3: 
+                         2: 100MHz internal clock, 3:
         """
         self.write_only("CLOCKSEL {}".format(value))
-    
+
     def strip_comments(self, code):
-        return COMMENT_PATTERN.sub('', str(code))
+        out = []
+        for line in code:
+            out.append(COMMENT_PATTERN.sub("", line))
+        return out
+
+    def cleanup_string(self, code):
+        out = []
+        for line in code:
+            clean = " ".join(line.split())
+            clean = clean.replace(",", " ")
+            clean = clean.lower()
+            out.append(clean)
+        return out
 
     def hex_to_dec(self, line: list):
+        """Converts hex beginning with 0x to decimal"""
         dec_line = []
-        for i in line.split(' '):
-            if i.startswith('0x'):
-                dec_line.append(f'{int(i,16)}')
-            elif i.isdecimal():
-                dec_line.append(f'{int(i)}')
-            else: 
-                dec_line.append(i)
-        return ' '.join(dec_line)
+        dec_out = []
+        for j in line:
+            for i in j.split(" "):
+                if i.startswith("0x"):
+                    dec_line.append(f"{int(i,16)}")
+                elif i.isdecimal():
+                    dec_line.append(f"{int(i)}")
+                else:
+                    dec_line.append(i)
+            dec_out.append(" ".join(dec_line))
+            dec_line = []
+        return dec_out
 
-    def read_word(self, filepath):
-        tables = open(filepath, "r")
-        tables = self.strip_commments(tables)
-        tables = ' '.join(tables.split()) # remove whitespace
-        tables = tables.replace(',',' ') 
-        tables = tables.split(';')
-        tables = tables.lower()
-        tables = self.hex_to_dec(tables)
-        self.writeDPG(tables)
-        return
+    def read_word_file(self, filepath):
+        """Opens a word/pattern file and writes it to the DPG
+        Eats both hex and decimal. No checking for correctness done.
+        """
+        with open(filepath, "r") as fd:
+            tables = self.strip_comments(fd.readlines())
+            tables = self.cleanup_string(tables)
+            tables = self.hex_to_dec(tables)
+            self.writeDPG(tables)
+        return tables
 
-    def writeDPG(self, value):
-        tables = str(value)+'\n'
-        self.write(tables.encode())
-        print('tables loaded.')
+    def writeDPG(self, table):
+        """Writes into DPG"""
+        for line in table:
+            line = line + ";"
+            self._com.write(line.encode())
+        print("tables loaded.")
 
+    def write_only(self, cmd):
+        """Write something but don't care about any response"""
+        self._com.write((cmd + "\r\n").encode())
+        self._com.readlines()
+        time.sleep(0.1)

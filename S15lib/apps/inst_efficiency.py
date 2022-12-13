@@ -5,7 +5,7 @@
 # Python port of 'inst_efficiency.sh' from CQT
 #
 # Example:
-# ./inst_efficiency.py
+# ./inst_efficiency.py pairs --profile optimization -L logger
 #
 # Obtained histogram:
 #       0       0       0       0      13     170     289     412
@@ -28,7 +28,11 @@
 
 import argparse
 import datetime as dt
+import pathlib
+import re
 import sys
+import time
+from itertools import product
 
 import numpy as np
 import tqdm
@@ -40,16 +44,8 @@ timestamp = TimestampTDC2(
     readevents_path="/home/qitlab/programs/drivers/usbtmst4/apps/readevents7",
     outfile_path="/tmp/quick_timestamp",
 )
-timestamp.threshold = 1.1
 
-settings = {
-    "default": {
-        "WINDOW_START": 0,
-        "WINDOW_STOP": 1,
-        "BIN_WIDTH": 1,
-        "BINS_START": 0,
-        "BINS": 1000,
-    },
+SETTINGS = {
     "50km": {
         "WINDOW_START": 10,
         "WINDOW_STOP": 11,
@@ -57,68 +53,90 @@ settings = {
         "BINS_START": 246944,
         "BINS": 100,
     },
-    "27mA_si_ingaas40nsdelay": {
-        "WINDOW_START": 1,
+    "optimization": {
+        "WINDOW_START": 2,
         "WINDOW_STOP": 4,
         "BIN_WIDTH": 1,
-        "BINS_START": 34,
-        "BINS": 15,
-    },
-    "27mA_ingaas_si40nsdelay": {
-        "WINDOW_START": 1,
-        "WINDOW_STOP": 3,
-        "BIN_WIDTH": 1,
-        "BINS_START": 42,
-        "BINS": 15,
-    },
-    "28mA_ingaas_si40nsdelay": {
-        "WINDOW_START": 3,
-        "WINDOW_STOP": 5,
-        "BIN_WIDTH": 1,
-        "BINS_START": 34,
-        "BINS": 15,
+        "BINS_START": 38,
+        "BINS": 12,
+        "DARKCOUNTS_CH1": 5466 + 2600,
+        "DARKCOUNTS_CH4": 150,
     },
 }
-
-INTEGRATION_TIME = 1
-
-
-def init_settings(profile):
-    global WINDOW_START
-    global WINDOW_STOP
-    global BIN_WIDTH
-    global BINS_START
-    global BINS
-
-    setting = settings[profile]
-
-    # Set coincidence window
-    WINDOW_START = setting["WINDOW_START"]
-    WINDOW_STOP = setting["WINDOW_STOP"]
-    BIN_WIDTH = setting["BIN_WIDTH"]
-    BINS_START = setting["BINS_START"]
-    BINS = setting["BINS"]
-
-
-# (monitor_singles) Set dark count rates (units of cps)
-DARKCOUNTS_CH1 = 9843
-DARKCOUNTS_CH2 = 5630
-DARKCOUNTS_CH3 = 8348
-DARKCOUNTS_CH4 = 11509
-
-DARKCOUNTS_CH1 = 5466
-DARKCOUNTS_CH2 = 0
-DARKCOUNTS_CH3 = 0
-DARKCOUNTS_CH4 = 150
-
-# DARKCOUNTS_CH1 = 0
-DARKCOUNTS_CH2 = 0
-DARKCOUNTS_CH3 = 0
-# DARKCOUNTS_CH4 = 0
 
 # Constants
 INT_MAX = np.iinfo(np.int64).max
 INT_MIN = np.iinfo(np.int64).min
+
+# Dynamically assigned constants
+# Default configuration specified here
+# Coincidence window
+WINDOW_START = 0
+WINDOW_STOP = 1
+BIN_WIDTH = 1
+BINS_START = 0
+BINS = 1000
+
+# Timestamp settings
+INTEGRATION_TIME = 1
+THRESHOLD = -0.4
+
+# Dark count rates in cps, for efficiency calc.
+DARKCOUNTS_CH1 = 0
+DARKCOUNTS_CH2 = 0
+DARKCOUNTS_CH3 = 0
+DARKCOUNTS_CH4 = 0
+
+
+def init_settings(profile):
+    """Initialize script-wide settings.
+
+    Must be executed first before running any functions in this script.
+
+    This is used to dynamically set the timestamp and g(2) parameters
+    so that profiles for different configurations can be quickly
+    executed via the command line.
+
+    For examples of which specific parameters are used, refer
+    to the global SETTINGS dictionary.
+    """
+    settings = SETTINGS[profile]
+    for param, value in settings.items():
+        if param == "THRESHOLD":
+            timestamp.threshold = value
+        else:
+            globals()[param] = value
+
+
+def _request_filecomment(comment_cache=".inst_efficiency.comment") -> pathlib.Path:
+    """Request for comments to append to logfile and returns path to logfile."""
+
+    # If logging is enabled, request for filename
+    # Search for any cached comments from previous runs
+    path_comment = pathlib.Path(comment_cache)
+    if path_comment.is_file():
+        with open(path_comment, "r") as f:
+            comment = f.read()
+    else:
+        comment = ""  # default
+
+    # Request for new comment from user, reassign only if issued
+    _comment = re.sub(" ", "_", input(f"Enter comment [{comment}]: "))
+    if _comment:
+        comment = _comment
+
+    # Check writable to location
+    path_logfile = _append_datetime_logfile(comment)
+    with open(path_logfile, "a") as f:
+        f.write("")
+    with open(path_comment, "w") as f:
+        f.write(comment)
+
+    return path_logfile
+
+
+def _append_datetime_logfile(comment):
+    return dt.datetime.now().strftime(f"%Y%m%d_inst_efficiency_{comment}.log")
 
 
 def print_fixedwidth(*values, width=7, out=None, pbar=None):
@@ -135,8 +153,14 @@ def print_fixedwidth(*values, width=7, out=None, pbar=None):
             f.write(line + "\n")
 
 
-def monitor_pairs(enable_hist=False):
+#############
+#  SCRIPTS  #
+#############
+
+
+def monitor_pairs(enable_hist=False, logfile=None):
     """Prints out pair source statistics, between ch1 and ch4."""
+    is_header_logged = False
     i = 0
     window_size = WINDOW_STOP - WINDOW_START + 1
     acc_start = max((BINS + WINDOW_STOP) // 2, 1)  # location to compute accidentals
@@ -157,6 +181,13 @@ def monitor_pairs(enable_hist=False):
             min_range=BINS_START,
         )
         hist = data[0]
+        s1, s2 = data[2:4]
+        inttime = data[4] * 1e-9  # convert to units of seconds
+
+        # TODO(Justin, 2022-12-08):
+        #     Formalize the integration time check
+        if inttime <= 0.75 * INTEGRATION_TIME:
+            continue
 
         # Visualize g2 histogram
         HIST_ROWSIZE = 10
@@ -171,15 +202,21 @@ def monitor_pairs(enable_hist=False):
             print(f"Maximum {max(a)} @ index {np.argmax(a)}\n")
 
         # Calculate statistics
-        s1, s2 = data[2:4]
-        inttime = data[4] * 1e-9  # convert to units of seconds
         acc = window_size * np.mean(hist[acc_start:])
         pairs = sum(hist[WINDOW_START : WINDOW_STOP + 1]) - acc
-        s1 -= DARKCOUNTS_CH1 * inttime  # timestamp data more precise
-        s2 -= DARKCOUNTS_CH4 * inttime
-        e1 = 100 * pairs / s2
-        e2 = 100 * pairs / s1
-        eavg = 100 * pairs / (s1 * s2) ** 0.5
+
+        # Normalize to per unit second
+        s1 = s1 / inttime - DARKCOUNTS_CH1  # timestamp data more precise
+        s2 = s2 / inttime - DARKCOUNTS_CH4
+        pairs = pairs / inttime
+        acc = acc / inttime
+
+        if s1 == 0 or s2 == 0:
+            e1 = e2 = eavg = 0
+        else:
+            e1 = 100 * pairs / s2
+            e2 = 100 * pairs / s1
+            eavg = 100 * pairs / (s1 * s2) ** 0.5
 
         # Print the header line after every 10 lines
         if i == 0 or enable_hist:
@@ -194,7 +231,9 @@ def monitor_pairs(enable_hist=False):
                 "EFF1",
                 "EFF2",
                 "EFF_AVG",
+                out=logfile if not is_header_logged else None,
             )
+            is_header_logged = True
         i -= 1
 
         # Print statistics
@@ -208,6 +247,7 @@ def monitor_pairs(enable_hist=False):
             round(e1, 1),
             round(e2, 1),
             round(eavg, 1),
+            out=logfile,
         )
 
 
@@ -255,9 +295,6 @@ def monitor_singles(enable_avg: bool = False):
 
 
 def scan_lcvr_singles():
-    import time
-    from itertools import product
-
     target = dt.datetime.now().strftime("%Y%m%d_%H%M%S_lcvrsingles.log")
     lcvr = LCRDriver(
         "/dev/serial/by-id/"
@@ -294,15 +331,20 @@ def scan_lcvr_singles():
         )
 
 
+##########################
+#  PRE-SCRIPT EXECUTION  #
+##########################
+
+# Store all program scripts
+PROGRAMS = {
+    "singles",
+    "pairs",
+    "lcvr",
+}
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Continuous printing of timestamp statistics"
-    )
-    parser.add_argument("-p", action="store_true", help="Calculate pairs")
-    parser.add_argument(
-        "-s",
-        action="store_true",
-        help="Calculate singles",
     )
     parser.add_argument(
         "--averaging",
@@ -311,20 +353,25 @@ if __name__ == "__main__":
         help="Change to averaging singles mode",
     )
     parser.add_argument(
+        "--histogram",
         "-H",
         action="store_true",
         help="Enable histogram in pairs mode",
     )
     parser.add_argument(
+        "--logging",
         "-L",
-        action="store_true",
-        help="Measure LCVR stuff",
+        nargs="?",
+        action="store",
+        const="unspecified",
+        help="Log stuff",
     )
     parser.add_argument(
         "--profile",
+        "-p",
+        nargs="?",
         action="store",
-        choices=list(settings.keys()),
-        default="default",
+        choices=list(SETTINGS.keys()),
         help="Specify detection profile",
     )
     parser.add_argument(
@@ -334,6 +381,8 @@ if __name__ == "__main__":
         default=0,
         help="Specify debug verbosity",
     )
+    parser.add_argument("--silent", "-s", action="store_true", help="Suppress errors")
+    parser.add_argument("script", choices=PROGRAMS, help="Script to run")
 
     # Do script only if arguments supplied
     # otherwise run as a normal script (for interactive mode)
@@ -342,11 +391,34 @@ if __name__ == "__main__":
         if args.verbose:
             print(args)
 
-        if args.s:
+        # Request for comments
+        path_logfile = None
+        if args.logging:
+
+            # No arguments supplied, to query user manually
+            if args.logging == "unspecified":
+                path_logfile = _request_filecomment()
+
+            # Comment for logfile supplied, use that
+            else:
+                path_logfile = _append_datetime_logfile(args.logging)
+
+        # Set profile
+        if args.profile:
+            init_settings(args.profile)
+
+        # Silence all errors/tracebacks
+        if args.silent:
+            sys.excepthook = lambda etype, e, tb: print()
+
+        # Collect required arguments
+        # TODO(Justin, 2022-12-14):
+        #     Implement this dynamically without conflicting
+        #     with mypy signature checks.
+        program = args.script
+        if program == "singles":
             monitor_singles(args.averaging)
-        elif args.p:
-            if args.profile:
-                init_settings(args.profile)
-            monitor_pairs(args.H)
-        elif args.L:
+        elif program == "pairs":
+            monitor_pairs(args.histogram, path_logfile)
+        elif program == "lcvr":
             scan_lcvr_singles()

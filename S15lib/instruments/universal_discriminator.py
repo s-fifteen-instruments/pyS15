@@ -5,15 +5,29 @@ Settings are set via dictionaries with 2 elements for inputs channels 0: and 1:
 
     Examples:
         >>> ud = UniversalDiscriminator()
-        >>> ud.inputthreshold = {0:-0.8, 1:0.8} # Sets threshold voltage to -9.8 on ch 0 and 0.8 on ch 1
-        >>> ud.inputpolarity({0:1, 1:0}) # Sets input polarity to be negative on ch 0 and positive on ch 1
-        >>> ud.ouputpolarity({"0A": 0 , "1A": 1, "0B" : 0, "1B" : 1}) # s
-        >>> ud.outmode() # Sets variety of outmode in the 4 outputs.
+        >>> # Sets threshold voltage to -9.8 on ch 0 and 0.8 on ch 1
+        >>> ud.inputthreshold = {0:-0.8, 1:0.8}
+        >>> # Sets input polarity to be negative on ch 0 and positive on ch 1
+        >>> ud.inputpolarity({0: ud.in_pol.NEG.value, 1: ud.in_pol.POS.value})
+        >>> # Setting can be done by Enums.value or the numbers directly
+        >>> ud.outputlevel({
+                    "0A": ud.out_level.NIM.value,
+                    "1A": ud.out_level.TTL.value,
+                    "0B" : 0, "1B" : 1,
+                    })
+        >>> ud.outmode({
+                    "0A" : ud.out_mode.DIRECT.value,
+                    "0B" : ud.out_mode.DIFF.value,
+                    }) # Sets variety of outmode in the outputs.
+        # Filling missing elements in dict 1A with 0 #Unset channels are reset
+        # Filling missing elements in dict 1B with 0 #Unset channels are reset
         >>> ud.inputdelay({0:0, 1:0})
 
 """
 
 from . import serial_connection
+from enum import Enum, unique
+
 
 ref_in_dict = {0: 0, 1: 1}
 ref_out_dict = {"0A": 0, "1A": 1, "0B": 2, "1B": 3}
@@ -23,6 +37,23 @@ class UniversalDiscriminator:
     """Module to use the Universarl Discriminator with 2 inputs and 4 outputs"""
 
     DEVICE_IDENTIFIER = "UD"
+
+    @unique
+    class out_level(int, Enum):
+        NIM = 0
+        TTL = 1
+
+    @unique
+    class in_pol(int, Enum):
+        NEG = 1
+        POS = 0
+
+    @unique
+    class out_mode(int, Enum):
+        DIRECT = 0
+        DIFF = 1
+        SET_RESET = 2
+        TBD = 3
 
     def __init__(
         self,
@@ -37,6 +68,8 @@ class UniversalDiscriminator:
         self._device_path = device_path
         self._com = serial_connection.SerialConnection(device_path)
         self._identity = self._com.getresponse("*idn?")
+        self._ref_in = ref_in_dict
+        self._ref_out = ref_out_dict
 
     def reset(self):
         """Resets the device.
@@ -74,7 +107,7 @@ class UniversalDiscriminator:
         n = 2
         if len(vol) < n:
             for key in ref_in_dict.keys():
-                if not vol.get(key):
+                if vol.get(key) is None:
                     vol[key] = -0.8
                     print(f"Filling missing elements in dict {key} with -0.8")
 
@@ -106,7 +139,7 @@ class UniversalDiscriminator:
         n = 2
         if len(pol) < n:
             for key in ref_in_dict.keys():
-                if not pol.get(key):
+                if pol.get(key) is None:
                     pol[key] = 0
                     print(f"Filling missing elements in dict {key} with 0")
 
@@ -115,7 +148,7 @@ class UniversalDiscriminator:
             self._com.write(cmd)
 
     #    @property
-    #    def outputpolarity(self):
+    #    def outputlevel(self):
     #        """
     #        Queries polarity from config register.
     #        0: NIM on A and B
@@ -130,10 +163,10 @@ class UniversalDiscriminator:
     #            out.append((retval & 0x6) >> 1)
     #        return out
     #
-    #    @outputpolarity.setter
-    def outputpolarity(self, pol: dict = ref_out_dict):
+    #    @outputlevel.setter
+    def outputlevel(self, pol: dict = ref_out_dict):
         """
-        Sets output polarity of channels 0A/B or 1A/B.
+        Sets output level of channels 0A/B or 1A/B.
         ch:
             0: 0A
             1: 1A
@@ -146,7 +179,7 @@ class UniversalDiscriminator:
         n = 4
         if len(pol) < n:
             for key in ref_out_dict.keys():
-                if not pol.get(key):
+                if pol.get(key) is None:
                     pol[key] = 0
                     print(f"Filling missing elements in dict {key} with 0")
 
@@ -189,7 +222,7 @@ class UniversalDiscriminator:
         n = 4
         if len(mode) < n:
             for key in ref_out_dict.keys():
-                if not mode.get(key):
+                if mode.get(key) is None:
                     mode[key] = 0
                     print(f"Filling missing elements in dict {key} with 0")
 
@@ -218,7 +251,7 @@ class UniversalDiscriminator:
         n = 2
         if len(delay) < n:
             for key in ref_in_dict.keys():
-                if not delay.get(key):
+                if delay.get(key) is None:
                     delay[key] = 0
                     print(f"Filling missing elements in dict {key} with 0")
 
@@ -235,7 +268,10 @@ class UniversalDiscriminator:
         return
 
     def _readword(self, cmd) -> int:
-        """Reads the config from FPGA. Currently only works on Config 0 and 1 for threshold registers"""
+        """
+        Reads the config from FPGA.
+        Currently only works on Config 0 and 1 for threshold registers
+        """
         self._com.write(cmd)
         retval = self._com.getresponse("READW?;").strip()
         return int(retval, 10)

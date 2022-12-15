@@ -25,9 +25,9 @@ Settings are set via dictionaries with 2 elements for inputs channels 0: and 1:
 
 """
 
-from . import serial_connection
 from enum import Enum, unique
 
+from . import serial_connection
 
 ref_in_dict = {0: 0, 1: 1}
 ref_out_dict = {"0A": 0, "1A": 1, "0B": 2, "1B": 3}

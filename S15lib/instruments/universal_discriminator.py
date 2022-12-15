@@ -85,7 +85,7 @@ class UniversalDiscriminator:
         Queries threshold from threshvolt register.
 
         """
-        out = {0: 0, 1: 0}
+        out = {0: 0.0, 1: 0.0}
         step_n = 0.0000979
         step_p = step_n
 

@@ -99,7 +99,6 @@ class PattGen(object):
             failure and input sanitization. Replacing TypeError with ValueError
             to minimize the possible exceptions raised.
         """
-<<<<<<< HEAD
         # hlimit_low, hlimit_high = 0, self.heater_voltage_limit
         # self._raise_if_oob(voltage, hlimit_low, hlimit_high, "Heater voltage", "V")
         # self._com.writeline(f"HVOLT {voltage:.3f}")

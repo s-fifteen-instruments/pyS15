@@ -86,6 +86,7 @@ class TimestampTDC2:
         # Other initialization parameters
         self._int_time = 1.0
         self._threshold_dacs = (768, 768, 768, 768)
+        self._dealy = (0, 0, 0, 0)
         self._int_trig = False
         self._legacy = False
         self._mode = 2
@@ -104,6 +105,8 @@ class TimestampTDC2:
             self.readevents_path,
             "-t",
             ",".join(map(str, self._threshold_dacs)),
+            "-D",
+            ",".join(map(str, self._delay)),
             *args,
         ]
         if self.device_path:
@@ -249,6 +252,31 @@ class TimestampTDC2:
         return round((value + 1.024) * 4095 / (2.047 + 1.024))
 
     @property
+    def delay(self):
+        """Returns delay settings of channels, in 1/256 ns."""
+        return self._delay)
+
+    @delay.setter
+    def delay(self, value: Union[int, Tuple[int, int, int, int]]):
+        """Sets threshold voltage by converting into DAC units, for each channel.
+
+        If 'value' is a single number, this value is broadcasted to all channels.
+        Args:
+            value: Either a 4-tuple of delay, or a single delay.
+        """
+        # Broadcast single values into a 4-tuple
+        avalue = np.asarray(value, dtype=int16)
+        if avalue.ndim == 0:
+            avalue = np.resize(avalue, 4)
+        # Check for length of tuple
+        if avalue.size != 4:
+            raise ValueError("Only arrays of size 4 is allowed.")
+        
+        self._delay = tuple(avalue)  # type: ignore
+        return
+
+
+    @property
     def threshold(self):
         """Returns threshold voltage for all four channels, in volts."""
         return tuple(map(TimestampTDC2._threshold_dac2volt, self._threshold_dacs))
@@ -298,7 +326,7 @@ class TimestampTDC2:
     def get_timestamps(self, duration: Optional[float] = None):
         """See parser.read_a1 doc."""
         duration = duration if duration else self.int_time
-        self._call_with_duration(["-a1"], duration=duration)
+        self._call_with_duration(["-a1","-D"], duration=duration)
         t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
         return t, p
 

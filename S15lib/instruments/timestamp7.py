@@ -86,7 +86,7 @@ class TimestampTDC2:
         # Other initialization parameters
         self._int_time = 1.0
         self._threshold_dacs = (768, 768, 768, 768)
-        self._dealy = (0, 0, 0, 0)
+        self._delay = (0, 0, 0, 0)
         self._int_trig = False
         self._legacy = False
         self._mode = 2
@@ -254,7 +254,7 @@ class TimestampTDC2:
     @property
     def delay(self):
         """Returns delay settings of channels, in 1/256 ns."""
-        return self._delay)
+        return self._delay
 
     @delay.setter
     def delay(self, value: Union[int, Tuple[int, int, int, int]]):
@@ -265,7 +265,7 @@ class TimestampTDC2:
             value: Either a 4-tuple of delay, or a single delay.
         """
         # Broadcast single values into a 4-tuple
-        avalue = np.asarray(value, dtype=int16)
+        avalue = np.asarray(value, dtype=np.int16)
         if avalue.ndim == 0:
             avalue = np.resize(avalue, 4)
         # Check for length of tuple
@@ -326,7 +326,7 @@ class TimestampTDC2:
     def get_timestamps(self, duration: Optional[float] = None):
         """See parser.read_a1 doc."""
         duration = duration if duration else self.int_time
-        self._call_with_duration(["-a1","-D"], duration=duration)
+        self._call_with_duration(["-a1"], duration=duration)
         t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
         return t, p
 

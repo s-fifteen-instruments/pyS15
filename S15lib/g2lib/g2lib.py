@@ -4,6 +4,17 @@ from typing import List
 
 import numpy as np
 
+import pyximport
+pyximport.install()
+
+try:
+    from .delta import cond_delta_loop
+    cflag = True
+except ImportError:
+    print('Unable to import conditional g2 module')
+
+
+
 try:
     from .delta import delta_loop
 

@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 import pyximport
-pyximport.install()
+pyximport.install(language_level=3)
 
 try:
     from .delta import cond_delta_loop

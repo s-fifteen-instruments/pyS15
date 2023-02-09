@@ -3,17 +3,16 @@
 from typing import List
 
 import numpy as np
-
 import pyximport
+
 pyximport.install(language_level=3)
 
 try:
     from .delta import cond_delta_loop
+
     cflag = True
 except ImportError:
-    print('Unable to import conditional g2 module')
-
-
+    print("Unable to import conditional g2 module")
 
 try:
     from .delta import delta_loop
@@ -86,6 +85,12 @@ def _data_extractor(filename: str, highres_tscard: bool = False):
         return t, p
 
 
+def cond_g2_extr():
+    """Unimplemented yet. Use cond_delta_loop() directly"""
+    cond_delta_loop()
+    return
+
+
 def g2_extr(
     filename: str,
     bins: int = 100,
@@ -95,6 +100,7 @@ def g2_extr(
     channel_stop: int = 1,
     c_stop_delay: int = 0,
     highres_tscard: bool = False,
+    normalise: bool = False,
 ):
     """Generates G2 histogram from a raw timestamp file
 
@@ -112,6 +118,8 @@ def g2_extr(
             Adds time (in nanoseconds) to the stop channel time stamps. Defaults to 0.
         highres_tscard (bool, optional):
             Setting for timestamp cards with higher time resolution. Defaults to False.
+        normalise (bool, optional):
+            Setting to normalise the g2 with N1*N2*dT/T . Defaults to False.
 
     Raises:
         ValueError: When channel is not between 0 - 3.
@@ -138,8 +146,13 @@ def g2_extr(
     )
     try:
         t_max = t[-1] - t[0]
+        if normalise:
+            N = len(t1) * len(t2) / t_max * bin_width
+            hist = hist / N
     except IndexError:
         t_max = 0
+        if normalise:
+            print("Unable to normalise, intergration time error")
     dt = np.arange(0, bins * bin_width, bin_width)
     return hist, dt + min_range, len(t1), len(t2), t_max
 

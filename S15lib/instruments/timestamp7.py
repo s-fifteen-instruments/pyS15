@@ -271,10 +271,9 @@ class TimestampTDC2:
         # Check for length of tuple
         if avalue.size != 4:
             raise ValueError("Only arrays of size 4 is allowed.")
-        
+
         self._delay = tuple(avalue)  # type: ignore
         return
-
 
     @property
     def threshold(self):

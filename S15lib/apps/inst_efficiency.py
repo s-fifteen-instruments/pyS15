@@ -83,9 +83,9 @@ INT_MIN = np.iinfo(np.int64).min
 # Default configuration specified here
 # Coincidence window
 WINDOW_START = 0
-WINDOW_STOP = 1
+WINDOW_STOP = 0
 BIN_WIDTH = 1
-BINS_START = 0
+BINS_START = -500
 BINS = 1000
 
 # Timestamp settings
@@ -264,7 +264,7 @@ def read_log(filename: str, schema: list, merge: bool = False):
 def read_pairs():
     """Compute single pass pair statistics."""
     window_size = WINDOW_STOP - WINDOW_START + 1
-    acc_start = max((BINS + WINDOW_STOP) // 2, 1)  # location to compute accidentals
+    acc_start = max((BINS) // 2, 1)  # location to compute accidentals
     while True:
 
         # Invoke timestamp data recording
@@ -278,20 +278,20 @@ def read_pairs():
             highres_tscard=True,
             bin_width=BIN_WIDTH,
             bins=BINS,
-            min_range=BINS_START,
+            # Include window at position 1
+            min_range=BINS_START + WINDOW_START - 1,
         )
         hist = data[0]
         s1, s2 = data[2:4]
         inttime = data[4] * 1e-9  # convert to units of seconds
 
-        # TODO(Justin, 2022-12-08):
-        #     Formalize the integration time check
+        # Integration time check for data validity
         if inttime <= 0.75 * INTEGRATION_TIME:
             continue
 
         # Calculate statistics
         acc = window_size * np.mean(hist[acc_start:])
-        pairs = sum(hist[WINDOW_START : WINDOW_STOP + 1]) - acc
+        pairs = sum(hist[1 : 1 + window_size]) - acc
 
         # Normalize to per unit second
         s1 = s1 / inttime - DARKCOUNTS_CH1  # timestamp data more precise
@@ -331,7 +331,13 @@ def monitor_pairs(enable_hist=False, logfile=None):
             print("\nObtained histogram:")
             for row in a.reshape(-1, HIST_ROWSIZE):
                 print_fixedwidth(*row)
-            print(f"Maximum {max(a)} @ index {np.argmax(a)}\n")
+            print(
+                f"Maximum {max(a)} @ index {np.argmax(a)+BINS_START+WINDOW_START-1}\n"
+            )
+
+            # Display current window as well
+            window_size = WINDOW_STOP - WINDOW_START + 1
+            print(f"Current window: {list(hist[1:window_size+1])}\n")
 
         # Print the header line after every 10 lines
         if i == 0 or enable_hist:
@@ -374,7 +380,19 @@ def monitor_singles(enable_avg: bool = False):
     while True:
 
         # Invoke timestamp data recording
-        counts = timestamp.get_counts(duration=INTEGRATION_TIME)
+        data = timestamp.get_counts(
+            duration=INTEGRATION_TIME,
+            return_actual_duration=True,
+        )
+        counts = data[:4]
+        inttime = data[4]
+
+        # Rough integration time check
+        if inttime <= 0.75 * INTEGRATION_TIME:
+            continue
+        if any(np.array(counts) < 0):
+            continue
+
         counts = (
             counts[0] - DARKCOUNTS_CH1 * INTEGRATION_TIME,
             counts[1] - DARKCOUNTS_CH2 * INTEGRATION_TIME,

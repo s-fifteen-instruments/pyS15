@@ -28,6 +28,7 @@
 
 import argparse
 import datetime as dt
+import logging
 import pathlib
 import re
 import sys
@@ -522,8 +523,20 @@ if __name__ == "__main__":
     # otherwise run as a normal script (for interactive mode)
     if len(sys.argv) > 1:
         args = parser.parse_args()
-        if args.verbose:
-            print(args)
+
+        # Set program logging verbosity
+        levels = [
+            logging.CRITICAL,
+            logging.WARNING,
+            logging.INFO,
+            logging.DEBUG,
+        ]
+        logging.basicConfig(
+            level=levels[min(args.verbose, 3)],
+            format="{asctime} {levelname}: {message}",
+            style="{",
+        )
+        logging.debug("Arguments: %s", args)
 
         # Request for comments
         path_logfile = None

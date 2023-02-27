@@ -221,21 +221,42 @@ class TimestampTDC2:
             raise ValueError("Invalid integration time.")
         self._int_time = value
 
-    def get_counts(self, duration=None) -> Tuple:
+    def get_counts(
+        self,
+        duration: Optional[float] = None,
+        return_actual_duration: bool = False,
+    ) -> Tuple:
         """Returns the singles counts in each channel.
 
         Currently copies TimestampTDC1 implementation using a blocking while loop,
         but can rewrite into asynchronous variety.
+
+        Args:
+            duration: Integration time in seconds.
+            return_actual_duration:
+                Appends time difference between first and last timestamp.
+
+        Note:
+            Timestamp output validity checks should be performed on the application
+            level instead of on this lower-level interface, unless this feature
+            is separately enabled using a feature flag, e.g. "block_until_valid".
         """
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
         t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
 
-        # TODO(Justin): Add checks on timestamp output validity
         t1 = t[p & 0b0001 != 0]
         t2 = t[p & 0b0010 != 0]
         t3 = t[p & 0b0100 != 0]
         t4 = t[p & 0b1000 != 0]
+
+        # Retrieve actual integration time
+        inttime = duration
+        if len(t) > 0:
+            inttime = t[-1] - t[0]
+        if return_actual_duration:
+            return len(t1), len(t2), len(t3), len(t4), inttime
+
         return len(t1), len(t2), len(t3), len(t4)
 
     @staticmethod

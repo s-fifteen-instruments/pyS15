@@ -201,10 +201,18 @@ def read_pairs(params):
     roffset = params["window_right_offset"]
     loffset = params["window_left_offset"]
     duration = params["integration_time"]
-    darkcount_ch1 = params["darkcount_ch1"]
-    darkcount_ch4 = params["darkcount_ch4"]
+    darkcounts = [
+        params["darkcount_ch1"],
+        params["darkcount_ch2"],
+        params["darkcount_ch3"],
+        params["darkcount_ch4"],
+    ]
+    channel_start = params["channel_start"] - 1
+    channel_stop = params["channel_stop"] - 1
     timestamp = params["timestamp"]
 
+    darkcount_start = darkcounts[channel_start]
+    darkcount_stop = darkcounts[channel_stop]
     window_size = roffset - loffset + 1
     acc_start = max(bins // 2, 1)  # location to compute accidentals
     while True:
@@ -215,8 +223,8 @@ def read_pairs(params):
         # Extract g2 histogram and other data
         data = g2.g2_extr(
             "/tmp/quick_timestamp",
-            channel_start=0,
-            channel_stop=3,
+            channel_start=channel_start,
+            channel_stop=channel_stop,
             highres_tscard=True,
             bin_width=bin_width,
             bins=bins,
@@ -228,7 +236,7 @@ def read_pairs(params):
         inttime = data[4] * 1e-9  # convert to units of seconds
 
         # Integration time check for data validity
-        if inttime <= 0.75 * duration:
+        if not (0.75 < inttime / duration < 2):
             continue
 
         # Calculate statistics
@@ -236,8 +244,8 @@ def read_pairs(params):
         pairs = sum(hist[1 : 1 + window_size]) - acc
 
         # Normalize to per unit second
-        s1 = s1 / inttime - darkcount_ch1  # timestamp data more precise
-        s2 = s2 / inttime - darkcount_ch4
+        s1 = s1 / inttime - darkcount_start  # timestamp data more precise
+        s2 = s2 / inttime - darkcount_stop
         pairs = pairs / inttime
         acc = acc / inttime
 
@@ -361,7 +369,7 @@ def monitor_singles(params):
         inttime = data[4]
 
         # Rough integration time check
-        if inttime <= 0.75 * duration:
+        if not (0.75 < inttime / duration < 2):
             continue
         if any(np.array(counts) < 0):
             continue
@@ -458,6 +466,8 @@ ARGUMENTS = [
     "darkcount_ch2",
     "darkcount_ch3",
     "darkcount_ch4",
+    "channel_start",
+    "channel_stop",
 ]
 
 # Idea: Follow philosophy of ConfigArgParse.
@@ -559,6 +569,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--darkcount_ch4", "--ch4", "-4", type=float, default=0.0,
         help="Dark count level for detector channel 1, in counts/second")
+    parser.add_argument(
+        "--channel_start", "--start", type=int, default=1,
+        help="Reference timestamp channel for calculating time delay offset")
+    parser.add_argument(
+        "--channel_stop", "--stop", type=int, default=4,
+        help="Target timestamp channel for calculating time delay offset")
     # Reenable python-black linter
     # fmt: on
 

@@ -195,22 +195,22 @@ def read_pairs(params):
     """Compute single pass pair statistics."""
 
     # Unpack arguments into aliases
-    BIN_WIDTH = params["bin_width"]
-    BINS = params["bins"]
-    BINS_START = params["window_middle"]
-    WINDOW_STOP = params["window_right_offset"]
-    WINDOW_START = params["window_left_offset"]
-    INTEGRATION_TIME = params["integration_time"]
-    DARKCOUNTS_CH1 = params["darkcount_ch1"]
-    DARKCOUNTS_CH4 = params["darkcount_ch4"]
+    bin_width = params["bin_width"]
+    bins = params["bins"]
+    peak = params["peak"]
+    roffset = params["window_right_offset"]
+    loffset = params["window_left_offset"]
+    duration = params["integration_time"]
+    darkcount_ch1 = params["darkcount_ch1"]
+    darkcount_ch4 = params["darkcount_ch4"]
     timestamp = params["timestamp"]
 
-    window_size = WINDOW_STOP - WINDOW_START + 1
-    acc_start = max((BINS) // 2, 1)  # location to compute accidentals
+    window_size = roffset - loffset + 1
+    acc_start = max(bins // 2, 1)  # location to compute accidentals
     while True:
 
         # Invoke timestamp data recording
-        timestamp._call_with_duration(["-a1", "-X"], duration=INTEGRATION_TIME)
+        timestamp._call_with_duration(["-a1", "-X"], duration=duration)
 
         # Extract g2 histogram and other data
         data = g2.g2_extr(
@@ -218,17 +218,17 @@ def read_pairs(params):
             channel_start=0,
             channel_stop=3,
             highres_tscard=True,
-            bin_width=BIN_WIDTH,
-            bins=BINS,
+            bin_width=bin_width,
+            bins=bins,
             # Include window at position 1
-            min_range=BINS_START + WINDOW_START - 1,
+            min_range=peak + loffset - 1,
         )
         hist = data[0]
         s1, s2 = data[2:4]
         inttime = data[4] * 1e-9  # convert to units of seconds
 
         # Integration time check for data validity
-        if inttime <= 0.75 * INTEGRATION_TIME:
+        if inttime <= 0.75 * duration:
             continue
 
         # Calculate statistics
@@ -236,8 +236,8 @@ def read_pairs(params):
         pairs = sum(hist[1 : 1 + window_size]) - acc
 
         # Normalize to per unit second
-        s1 = s1 / inttime - DARKCOUNTS_CH1  # timestamp data more precise
-        s2 = s2 / inttime - DARKCOUNTS_CH4
+        s1 = s1 / inttime - darkcount_ch1  # timestamp data more precise
+        s2 = s2 / inttime - darkcount_ch4
         pairs = pairs / inttime
         acc = acc / inttime
 
@@ -271,9 +271,9 @@ def print_pairs(params):
 def monitor_pairs(params):
     """Prints out pair source statistics, between ch1 and ch4."""
     # Unpack arguments into aliases
-    BINS_START = params["window_middle"]
-    WINDOW_STOP = params["window_right_offset"]
-    WINDOW_START = params["window_left_offset"]
+    peak = params["peak"]
+    roffset = params["window_right_offset"]
+    loffset = params["window_left_offset"]
     enable_hist = params.get("histogram", False)
     logfile = params.get("logfile", None)
 
@@ -294,10 +294,10 @@ def monitor_pairs(params):
             print("\nObtained histogram:")
             for row in a.reshape(-1, HIST_ROWSIZE):
                 print_fixedwidth(*row)
-            print(f"Maximum {max(a)} @ index {np.argmax(a)+BINS_START+WINDOW_START-1}")
+            print(f"Maximum {max(a)} @ index {np.argmax(a)+peak+loffset-1}")
 
             # Display current window as well
-            window_size = WINDOW_STOP - WINDOW_START + 1
+            window_size = roffset - loffset + 1
             print(f"Current window: {list(hist[1:window_size+1])}\n")
 
         # Print the header line after every 10 lines
@@ -337,14 +337,16 @@ def monitor_pairs(params):
 def monitor_singles(params):
     """Prints out singles statistics."""
     # Unpack arguments into aliases
-    INTEGRATION_TIME = params["integration_time"]
-    DARKCOUNTS_CH1 = params["darkcount_ch1"]
-    DARKCOUNTS_CH2 = params["darkcount_ch2"]
-    DARKCOUNTS_CH3 = params["darkcount_ch3"]
-    DARKCOUNTS_CH4 = params["darkcount_ch4"]
+    duration = params["integration_time"]
+    darkcount_ch1 = params["darkcount_ch1"]
+    darkcount_ch2 = params["darkcount_ch2"]
+    darkcount_ch3 = params["darkcount_ch3"]
+    darkcount_ch4 = params["darkcount_ch4"]
     timestamp = params["timestamp"]
+    logfile = params.get("logfile", None)
     enable_avg = params.get("averaging", False)
 
+    is_header_logged = False
     i = 0
     avg = np.array([0, 0, 0, 0])  # averaging facility, e.g. for measuring dark counts
     avg_iters = 0
@@ -352,23 +354,23 @@ def monitor_singles(params):
 
         # Invoke timestamp data recording
         data = timestamp.get_counts(
-            duration=INTEGRATION_TIME,
+            duration=duration,
             return_actual_duration=True,
         )
         counts = data[:4]
         inttime = data[4]
 
         # Rough integration time check
-        if inttime <= 0.75 * INTEGRATION_TIME:
+        if inttime <= 0.75 * duration:
             continue
         if any(np.array(counts) < 0):
             continue
 
         counts = (
-            counts[0] - DARKCOUNTS_CH1 * INTEGRATION_TIME,
-            counts[1] - DARKCOUNTS_CH2 * INTEGRATION_TIME,
-            counts[2] - DARKCOUNTS_CH3 * INTEGRATION_TIME,
-            counts[3] - DARKCOUNTS_CH4 * INTEGRATION_TIME,
+            counts[0] - darkcount_ch1 * inttime,
+            counts[1] - darkcount_ch2 * inttime,
+            counts[2] - darkcount_ch3 * inttime,
+            counts[3] - darkcount_ch4 * inttime,
         )
 
         # Implement rolling average to avoid overflow
@@ -387,7 +389,9 @@ def monitor_singles(params):
                 "CH3",
                 "CH4",
                 "TOTAL",
+                out=logfile if not is_header_logged else None,
             )
+            is_header_logged = True
         i -= 1
 
         # Print statistics
@@ -395,6 +399,7 @@ def monitor_singles(params):
             dt.datetime.now().strftime("%H%M%S"),
             *list(map(int, counts)),
             int(sum(counts)),
+            out=logfile,
         )
 
 
@@ -445,7 +450,7 @@ def scan_lcvr_singles(params):
 ARGUMENTS = [
     "bin_width",
     "bins",
-    "window_middle",
+    "peak",
     "window_left_offset",
     "window_right_offset",
     "integration_time",
@@ -531,7 +536,7 @@ if __name__ == "__main__":
         "--bins", "-B", type=int, default=500,
         help="Number of coincidence bins, in units of 'bin_width'")
     parser.add_argument(
-        "--window_middle", "--peak", "-M", type=int, default=-250,
+        "--peak", "--window-center", "-M", type=int, default=-250,
         help="Absolute bin location of coincidence window, in units of 'bin_width'")
     parser.add_argument(
         "--window_left_offset", "--left", "-L", type=int, default=0,

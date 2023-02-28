@@ -26,7 +26,6 @@
 #  181607   48976 10877.5  604058  450367    10.9     8.1     9.4
 #  181613   48998 10851.1  601716  452697    10.8     8.1     9.4
 
-import argparse
 import datetime as dt
 import logging
 import pathlib
@@ -35,6 +34,7 @@ import sys
 import time
 from itertools import product
 
+import configargparse
 import numpy as np
 import tqdm
 
@@ -477,47 +477,102 @@ PROGRAMS = {
     "pairs_once",
 }
 
+# Idea: Follow philosophy of ConfigArgParse.
+# Extensible sections are great, but its utility only applies up to three
+# layers, i.e. default, profile, subprofile (e.g. changing integration time)
+# On top of argument overriding, it might be more useful to mix and match
+# templates by specifying *multiple* configuration files. Check if ConfigArgParse
+# supports this behaviour.
+#
+# https://pypi.org/project/ConfigArgParse/
+# https://github.com/bw2/ConfigArgParse
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
+    # Request python-black linter to avoid parsing, for readability
+    # fmt: off
+    parser = configargparse.ArgumentParser(
         description="Continuous printing of timestamp statistics"
     )
+
+    # Parser-level arguments
+    # ConfigArgParse does not support multiple configuration files for same argument
+    # Workaround by adding additional argument with similar argument name to supply
+    # any secondary configuration, i.e. "-c" and "-C" both supplies configuration
     parser.add_argument(
-        "--averaging",
-        "-a",
-        action="store_true",
-        help="Change to averaging singles mode",
-    )
+        "--config", "-c", is_config_file_arg=True,
+        help="Configuration file")
     parser.add_argument(
-        "--histogram",
-        "-H",
-        action="store_true",
-        help="Enable histogram in pairs mode",
-    )
+        "--additional_config", "-C", is_config_file_arg=True,
+        help="Supplementary configuration file, of higher precedence")
     parser.add_argument(
-        "--logging",
-        "-L",
-        nargs="?",
-        action="store",
-        const="unspecified",
-        help="Log stuff",
-    )
+        "--save", is_write_out_config_file_arg=True,
+        help="Save configuration as file, and immediately exits program")
+
+    # Script-level arguments
     parser.add_argument(
-        "--profile",
-        "-p",
-        nargs="?",
-        action="store",
-        choices=list(SETTINGS.keys()),
-        help="Specify detection profile",
-    )
+        "--averaging", "-a", action="store_true",
+        help="Change to averaging singles mode")
     parser.add_argument(
-        "--verbose",
-        "-v",
-        action="count",
-        default=0,
-        help="Specify debug verbosity",
-    )
-    parser.add_argument("--silent", "-s", action="store_true", help="Suppress errors")
-    parser.add_argument("script", choices=PROGRAMS, help="Script to run")
+        "--histogram", "-H", action="store_true",
+        help="Enable histogram in pairs mode")
+    parser.add_argument(
+        "--logging", "-l", nargs="?", action="store", const="unspecified",
+        help="Log stuff")
+    parser.add_argument(
+        "--verbose", "-v", action="count", default=0,
+        help="Specify debug verbosity")
+    parser.add_argument(
+        "--quiet", "-q", action="store_true",
+        help="Suppress errors, does not block logging")
+    parser.add_argument(
+        "script", choices=PROGRAMS,
+        help="Script to run")
+
+    # Device-level argument
+    parser.add_argument(
+        "--device_path", "-U", default="/dev/ioboards/usbtmst0",
+        help="Path to timestamp device")
+    parser.add_argument(
+        "--readevents_path", "-S",
+        default="/home/belgianwit/programs/usbtmst4/apps/readevents7",
+        help="Path to readevents binary")
+    parser.add_argument(
+        "--timestamp_path", "-O", default="/tmp/quick_timestamp",
+        help="Path to temporary file for timestamp storage")
+
+    # Data processing arguments
+    parser.add_argument(
+        "--bin_width", "--width", "-W", type=float, default=1,
+        help="Size of time bin, in nanoseconds")
+    parser.add_argument(
+        "--bins", "-B", type=int, default=500,
+        help="Number of coincidence bins, in units of 'bin_width'")
+    parser.add_argument(
+        "--window_middle", "--peak", "-M", type=int, default=-250,
+        help="Absolute bin location of coincidence window, in units of 'bin_width'")
+    parser.add_argument(
+        "--window_left_offset", "--left", "-L", type=int, default=0,
+        help="Left boundary of coincidence window relative to window middle")
+    parser.add_argument(
+        "--window_right_offset", "--right", "-R", type=int, default=0,
+        help="Right boundary of coincidence window relative to window middle")
+    parser.add_argument(
+        "--integration_time", "--time", "-T", type=float, default=1.0,
+        help="Integration time for timestamp, in seconds")
+    parser.add_argument(
+        "--darkcount_ch1", "--ch1", "-1", type=float, default=0.0,
+        help="Dark count level for detector channel 1, in counts/second")
+    parser.add_argument(
+        "--darkcount_ch2", "--ch2", "-2", type=float, default=0.0,
+        help="Dark count level for detector channel 1, in counts/second")
+    parser.add_argument(
+        "--darkcount_ch3", "--ch3", "-3", type=float, default=0.0,
+        help="Dark count level for detector channel 1, in counts/second")
+    parser.add_argument(
+        "--darkcount_ch4", "--ch4", "-4", type=float, default=0.0,
+        help="Dark count level for detector channel 1, in counts/second")
+    # Reenable python-black linter
+    # fmt: on
 
     # Do script only if arguments supplied
     # otherwise run as a normal script (for interactive mode)
@@ -550,12 +605,8 @@ if __name__ == "__main__":
             else:
                 path_logfile = _append_datetime_logfile(args.logging)
 
-        # Set profile
-        if args.profile:
-            init_settings(args.profile)
-
         # Silence all errors/tracebacks
-        if args.silent:
+        if args.quiet:
             sys.excepthook = lambda etype, e, tb: print()
 
         # Collect required arguments

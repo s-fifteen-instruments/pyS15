@@ -471,6 +471,7 @@ if __name__ == "__main__":
     # Request python-black linter to avoid parsing, for readability
     # fmt: off
     parser = configargparse.ArgumentParser(
+        default_config_files=["./inst_efficiency.py.conf"],
         description="Continuous printing of timestamp statistics"
     )
 
@@ -482,10 +483,11 @@ if __name__ == "__main__":
         "--config", "-c", is_config_file_arg=True,
         help="Configuration file")
     parser.add_argument(
-        "--additional_config", "-C", is_config_file_arg=True,
+        "--config_extra", "-C", is_config_file_arg=True,
         help="Supplementary configuration file, of higher precedence")
     parser.add_argument(
-        "--save", is_write_out_config_file_arg=True,
+        "--save", nargs="?", is_write_out_config_file_arg=True,
+        const="./inst_efficiency.py.conf",
         help="Save configuration as file, and immediately exits program")
 
     # Script-level arguments

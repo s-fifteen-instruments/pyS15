@@ -1,30 +1,21 @@
 #!/usr/bin/env python3
-# S-Fifteen Instruments, 2022-12-01
-# Simple script to continuously feed pair source optimization statistics
-#
-# Python port of 'inst_efficiency.sh' from CQT
-#
-# Example:
-# ./inst_efficiency.py pairs --profile optimization -L logger
-#
-# Obtained histogram:
-#       0       0       0       0      13     170     289     412
-#     441     509     474     482     493     483     498     446
-#     620   11089   57358    1836     654     495     411     401
-#     554     601     562     564     435     336     693     714
-#     546     416     423     510     619     629     496     417
-# Maximum 57358 @ index 18
-#
-#    TIME   PAIRS     ACC SINGLE1 SINGLE2    EFF1    EFF2 EFF_AVG
-#  181533   49405 10937.3  602536  451915    10.9     8.2     9.5
-#  181537   48641 10762.8  591921  446168    10.9     8.2     9.5
-#  181541   48976 10786.3  597189  449125    10.9     8.2     9.5
-#  181544   48692 10737.5  593972  444109    11.0     8.2     9.5
-#  181550   48503 10707.9  592597  445542    10.9     8.2     9.4
-#  181555   49083 10873.9  602213  452347    10.9     8.2     9.4
-#  181601   49146 10863.2  602124  452245    10.9     8.2     9.4
-#  181607   48976 10877.5  604058  450367    10.9     8.1     9.4
-#  181613   48998 10851.1  601716  452697    10.8     8.1     9.4
+"""Simple script to continuously feed pair source optimization statistics
+
+Python port of 'inst_efficiency.sh' functionality written in CQT.
+Interface via CLI only, to avoid unnecessary GUI dependencies.
+
+Supports usage of 'inst_efficiency.py' both as a script (see Example below),
+as well as an importable library for specific function usage, e.g. read_log.
+
+Configuration files can be supplied according to parser specification, which
+can be viewed by supplying the '--help' flag.
+
+Example:
+    ./inst_efficiency pairs -t=-4.0
+
+Author:
+    S-Fifteen Instruments, 2022-12-01
+"""
 
 import datetime as dt
 import logging
@@ -41,91 +32,8 @@ import tqdm
 from S15lib.g2lib import g2lib as g2
 from S15lib.instruments import LCRDriver, TimestampTDC2
 
-timestamp = TimestampTDC2(
-    readevents_path="/home/qitlab/programs/drivers/usbtmst4/apps/readevents7",
-    outfile_path="/tmp/quick_timestamp",
-)
-
-SETTINGS = {
-    "50km": {
-        "WINDOW_START": 10,
-        "WINDOW_STOP": 11,
-        "BIN_WIDTH": 1,
-        "BINS_START": 246944,
-        "BINS": 100,
-    },
-    "optimization": {
-        "WINDOW_START": 2,
-        "WINDOW_STOP": 4,
-        "BIN_WIDTH": 1,
-        "BINS_START": 38,
-        "BINS": 12,
-        "DARKCOUNTS_CH1": 5466 + 2600,
-        "DARKCOUNTS_CH4": 150,
-    },
-    "optimization_monitor": {
-        "TEMPLATE": "optimization",
-        "INTEGRATION_TIME": 20,
-    },
-    "visibility_paddles": {
-        "TEMPLATE": "optimization",
-        "WINDOW_START": 2,
-        "WINDOW_STOP": 5,
-        "BINS_START": 14,
-        "BINS": 12,
-    },
-}
-
 # Constants
-INT_MAX = np.iinfo(np.int64).max
-INT_MIN = np.iinfo(np.int64).min
-
-# Dynamically assigned constants
-# Default configuration specified here
-# Coincidence window
-WINDOW_START = 0
-WINDOW_STOP = 0
-BIN_WIDTH = 1
-BINS_START = -500
-BINS = 1000
-
-# Timestamp settings
-INTEGRATION_TIME = 1
-THRESHOLD = -0.4
-
-# Dark count rates in cps, for efficiency calc.
-DARKCOUNTS_CH1 = 0
-DARKCOUNTS_CH2 = 0
-DARKCOUNTS_CH3 = 0
-DARKCOUNTS_CH4 = 0
-
-
-def init_settings(profile):
-    """Initialize script-wide settings.
-
-    Must be executed first before running any functions in this script.
-
-    This is used to dynamically set the timestamp and g(2) parameters
-    so that profiles for different configurations can be quickly
-    executed via the command line.
-
-    For examples of which specific parameters are used, refer
-    to the global SETTINGS dictionary.
-    """
-    settings = SETTINGS[profile]
-
-    # Set parent settings first before overriding
-    if "TEMPLATE" in settings.keys():
-        init_settings(settings["TEMPLATE"])
-
-    # Set overriding parameters
-    for param, value in settings.items():
-        if param == "TEMPLATE":
-            continue
-        elif param == "THRESHOLD":
-            timestamp.threshold = value
-        else:
-            globals()[param] = value
+INT_MIN = np.iinfo(np.int64).min  # indicate invalid value in int64 array
 
 
 def _request_filecomment(comment_cache=".inst_efficiency.comment") -> pathlib.Path:
@@ -261,9 +169,42 @@ def read_log(filename: str, schema: list, merge: bool = False):
 #  SCRIPTS  #
 #############
 
+# Collect program names
+PROGRAMS = {}
 
-def read_pairs():
+
+def _collect_as_script(alias=None):
+    """Decorator to dynamically collect functions for use as scripts."""
+
+    def collector(f):
+        nonlocal alias
+        if alias is None:
+            alias = f.__name__
+        PROGRAMS[alias] = f
+        return f
+
+    return collector
+
+
+# Parameter dictionary passed instead of directly into kwargs for two reasons:
+# 1. Minimize dependency with parser argument names
+# 2. Functions in the stack can reuse arguments, e.g. monitor_pairs -> read_pairs
+
+
+def read_pairs(params):
     """Compute single pass pair statistics."""
+
+    # Unpack arguments into aliases
+    BIN_WIDTH = params["bin_width"]
+    BINS = params["bins"]
+    BINS_START = params["window_middle"]
+    WINDOW_STOP = params["window_right_offset"]
+    WINDOW_START = params["window_left_offset"]
+    INTEGRATION_TIME = params["integration_time"]
+    DARKCOUNTS_CH1 = params["darkcount_ch1"]
+    DARKCOUNTS_CH4 = params["darkcount_ch4"]
+    timestamp = params["timestamp"]
+
     window_size = WINDOW_STOP - WINDOW_START + 1
     acc_start = max((BINS) // 2, 1)  # location to compute accidentals
     while True:
@@ -313,8 +254,29 @@ def read_pairs():
     return hist, inttime, pairs, acc, s1, s2, e1, e2, eavg
 
 
-def monitor_pairs(enable_hist=False, logfile=None):
+@_collect_as_script("pairs_once")
+def print_pairs(params):
+    """Pretty printed variant of 'read_pairs', showing pairs, acc, singles."""
+    _, _, pairs, acc, s1, s2, _, _, _ = read_pairs(params)
+    print_fixedwidth(
+        round(pairs, 1),
+        round(acc, 1),
+        int(s1),
+        int(s2),
+        width=0,
+    )
+
+
+@_collect_as_script("pairs")
+def monitor_pairs(params):
     """Prints out pair source statistics, between ch1 and ch4."""
+    # Unpack arguments into aliases
+    BINS_START = params["window_middle"]
+    WINDOW_STOP = params["window_right_offset"]
+    WINDOW_START = params["window_left_offset"]
+    enable_hist = params.get("histogram", False)
+    logfile = params.get("logfile", None)
+
     is_header_logged = False
     i = 0
     is_initialized = False
@@ -373,8 +335,18 @@ def monitor_pairs(enable_hist=False, logfile=None):
         )
 
 
-def monitor_singles(enable_avg: bool = False):
+@_collect_as_script("singles")
+def monitor_singles(params):
     """Prints out singles statistics."""
+    # Unpack arguments into aliases
+    INTEGRATION_TIME = params["integration_time"]
+    DARKCOUNTS_CH1 = params["darkcount_ch1"]
+    DARKCOUNTS_CH2 = params["darkcount_ch2"]
+    DARKCOUNTS_CH3 = params["darkcount_ch3"]
+    DARKCOUNTS_CH4 = params["darkcount_ch4"]
+    timestamp = params["timestamp"]
+    enable_avg = params.get("averaging", False)
+
     i = 0
     avg = np.array([0, 0, 0, 0])  # averaging facility, e.g. for measuring dark counts
     avg_iters = 0
@@ -428,7 +400,9 @@ def monitor_singles(enable_avg: bool = False):
         )
 
 
-def scan_lcvr_singles():
+@_collect_as_script("lcvr")
+def scan_lcvr_singles(params):
+    timestamp = params["timestamp"]
     target = dt.datetime.now().strftime("%Y%m%d_%H%M%S_lcvrsingles.log")
     lcvr = LCRDriver(
         "/dev/serial/by-id/"
@@ -469,13 +443,19 @@ def scan_lcvr_singles():
 #  PRE-SCRIPT EXECUTION  #
 ##########################
 
-# Store all program scripts
-PROGRAMS = {
-    "singles",
-    "pairs",
-    "lcvr",
-    "pairs_once",
-}
+# Enumerate data processing arguments
+ARGUMENTS = [
+    "bin_width",
+    "bins",
+    "window_middle",
+    "window_left_offset",
+    "window_right_offset",
+    "integration_time",
+    "darkcount_ch1",
+    "darkcount_ch2",
+    "darkcount_ch3",
+    "darkcount_ch4",
+]
 
 # Idea: Follow philosophy of ConfigArgParse.
 # Extensible sections are great, but its utility only applies up to three
@@ -534,11 +514,14 @@ if __name__ == "__main__":
         help="Path to timestamp device")
     parser.add_argument(
         "--readevents_path", "-S",
-        default="/home/belgianwit/programs/usbtmst4/apps/readevents7",
+        default="/home/qitlab/programs/drivers/usbtmst4/apps/readevents7",
         help="Path to readevents binary")
     parser.add_argument(
-        "--timestamp_path", "-O", default="/tmp/quick_timestamp",
+        "--outfile_path", "-O", default="/tmp/quick_timestamp",
         help="Path to temporary file for timestamp storage")
+    parser.add_argument(
+        "--threshvolt", "-t", type=float, default="-0.4",
+        help="Pulse trigger level for each detector channel, comma-delimited")
 
     # Data processing arguments
     parser.add_argument(
@@ -609,23 +592,20 @@ if __name__ == "__main__":
         if args.quiet:
             sys.excepthook = lambda etype, e, tb: print()
 
+        # Initialize timestamp
+        timestamp = TimestampTDC2(
+            device_path=args.device_path,
+            readevents_path=args.readevents_path,
+            outfile_path=args.outfile_path,
+        )
+        timestamp.threshold = args.threshvolt
+
         # Collect required arguments
-        # TODO(Justin, 2022-12-14):
-        #     Implement this dynamically without conflicting
-        #     with mypy signature checks.
-        program = args.script
-        if program == "singles":
-            monitor_singles(args.averaging)
-        elif program == "pairs":
-            monitor_pairs(args.histogram, path_logfile)
-        elif program == "lcvr":
-            scan_lcvr_singles()
-        elif program == "pairs_once":
-            _, _, pairs, acc, s1, s2, _, _, _ = read_pairs()
-            print_fixedwidth(
-                round(pairs, 1),
-                round(acc, 1),
-                int(s1),
-                int(s2),
-                width=0,
-            )
+        params = dict([(k, getattr(args, k, None)) for k in ARGUMENTS])
+        params["logfile"] = path_logfile
+        params["histogram"] = args.histogram
+        params["averaging"] = args.averaging
+        params["timestamp"] = timestamp
+
+        # Call script
+        PROGRAMS[args.script](params)

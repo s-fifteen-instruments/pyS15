@@ -282,7 +282,7 @@ def monitor_pairs(params):
     is_initialized = False
     while True:
 
-        hist, inttime, pairs, acc, s1, s2, e1, e2, eavg = read_pairs()
+        hist, inttime, pairs, acc, s1, s2, e1, e2, eavg = read_pairs(params)
 
         # Visualize g2 histogram
         HIST_ROWSIZE = 10
@@ -294,9 +294,7 @@ def monitor_pairs(params):
             print("\nObtained histogram:")
             for row in a.reshape(-1, HIST_ROWSIZE):
                 print_fixedwidth(*row)
-            print(
-                f"Maximum {max(a)} @ index {np.argmax(a)+BINS_START+WINDOW_START-1}\n"
-            )
+            print(f"Maximum {max(a)} @ index {np.argmax(a)+BINS_START+WINDOW_START-1}")
 
             # Display current window as well
             window_size = WINDOW_STOP - WINDOW_START + 1
@@ -395,8 +393,8 @@ def monitor_singles(params):
         # Print statistics
         print_fixedwidth(
             dt.datetime.now().strftime("%H%M%S"),
-            *counts,
-            round(sum(counts), 1),
+            *list(map(int, counts)),
+            int(sum(counts)),
         )
 
 

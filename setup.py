@@ -10,6 +10,7 @@ requirements_dev = [
 requirements_apps = [
     "PyQt5",
     "Pyqtgraph",
+    "configargparse",
 ]
 
 setuptools.setup(

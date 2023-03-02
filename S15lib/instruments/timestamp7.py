@@ -234,7 +234,7 @@ class TimestampTDC2:
         Args:
             duration: Integration time in seconds.
             return_actual_duration:
-                Appends time difference between first and last timestamp.
+                Appends time difference between first and last timestamp, in seconds.
 
         Note:
             Timestamp output validity checks should be performed on the application
@@ -253,7 +253,7 @@ class TimestampTDC2:
         # Retrieve actual integration time
         inttime = duration
         if len(t) > 0:
-            inttime = t[-1] - t[0]
+            inttime = (t[-1] - t[0]) * 1e-9
         if return_actual_duration:
             return len(t1), len(t2), len(t3), len(t4), inttime
 

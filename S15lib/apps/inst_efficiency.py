@@ -2,19 +2,89 @@
 """Simple script to continuously feed pair source optimization statistics
 
 Python port of 'inst_efficiency.sh' functionality written in CQT.
+Supports reading of singles, pairs, and other miscellaneous features.
 Interface via CLI only, to avoid unnecessary GUI dependencies.
 
-Supports usage of 'inst_efficiency.py' both as a script (see Example below),
-as well as an importable library for specific function usage, e.g. read_log.
+Supports usage of 'inst_efficiency.py' both as a script,
+as well as an importable library for specific function usage, e.g. 'read_log'.
 
 Configuration files can be supplied according to parser specification, which
 can be viewed by supplying the '--help' flag.
 
-Example:
-    ./inst_efficiency pairs -t=-4.0
+Usage:
+
+    1. View available configuration options
+
+       ./inst_efficiency.py --help
+
+
+    2. TTL input pulses with 2s integration time
+
+       ./inst_efficiency.py singles \
+           -U /dev/ioboards/usbtmst1 \
+           -S /home/sfifteen/programs/usbtmst4/apps/readevents7 \
+           --threshvolt 1 \
+           --integration_time 2
+
+
+    3. Search for pairs between detector channels 1 and 2, over +/-250ns,
+       showing histogram of coincidences for each dataset
+
+       ./inst_efficiency.py pairs -qH --channel_start 1 --channel_stop 2
+
+
+    4. Calculate total pairs located at +118ns delay, within a 2ns-wide
+       coincidence window spanning +117ns to +118ns, with only 20 bins
+
+       ./inst_efficiency.py pairs -q --peak 118 --left=-1 --right=0 --bins 20
+
+
+    5. Log measurements into a file
+
+       ./inst_efficiency.py pairs -q --logging pair_measurements
+
+
+    6. Save configuration from (4) into default config file
+
+       ./inst_efficiency.py pairs -q --peak 118 -L=-1 -R 0 --bins 20 \
+           --save ./inst_efficiency.py.default.conf
+
+
+    7. Load multiple configuration
+
+       > cat ./inst_efficiency.py.default.conf
+       bins = 10
+       peak = 200
+
+       > cat ./asympair
+       peak = 118
+       integration_time = 2
+
+       # Output yields 'bins=10', 'peak=118', 'integration_time=3'
+       ./inst_efficiency.py pairs -c asympair --time 3
+
 
 Author:
-    S-Fifteen Instruments, 2022-12-01
+    Justin, 2022-12-01
+
+Note:
+    Configuration specification follows the philosophy of ConfigArgParse[1].
+    Previous idea to use extensible sections (via overriding of profiles),
+    but its utility typically only applies up to three layers, in increasing
+    precedence, i.e.
+
+        1. Default (platform-specific, e.g. TTL inputs)
+        2. Profile (setup-specific, e.g. specific delays)
+        3. Sub-profile (setup-specific variations, e.g. longer integration)
+
+    This can be mapped into the respective ConfigArgParse input methods:
+
+        1. Default configuration file (i.e. 'inst_efficiency.py.default.conf')
+        2. Specified configuration file (via '--config' option)
+        3. Command line arguments, with highest precedence
+
+References:
+    [1] https://github.com/bw2/ConfigArgParse
 """
 
 import datetime as dt
@@ -186,13 +256,15 @@ def _collect_as_script(alias=None):
     return collector
 
 
-# Parameter dictionary passed instead of directly into kwargs for two reasons:
-# 1. Minimize dependency with parser argument names
-# 2. Functions in the stack can reuse arguments, e.g. monitor_pairs -> read_pairs
-
-
 def read_pairs(params):
-    """Compute single pass pair statistics."""
+    """Compute single pass pair statistics.
+
+    Note:
+        Parameter dictionary passed instead of directly into kwargs, since:
+            1. Minimize dependency with parser argument names
+            2. Functions in the stack can reuse arguments,
+               e.g. monitor_pairs -> read_pairs
+    """
 
     # Unpack arguments into aliases
     bin_width = params["bin_width"]
@@ -469,16 +541,6 @@ ARGUMENTS = [
     "channel_start",
     "channel_stop",
 ]
-
-# Idea: Follow philosophy of ConfigArgParse.
-# Extensible sections are great, but its utility only applies up to three
-# layers, i.e. default, profile, subprofile (e.g. changing integration time)
-# On top of argument overriding, it might be more useful to mix and match
-# templates by specifying *multiple* configuration files. Check if ConfigArgParse
-# supports this behaviour.
-#
-# https://pypi.org/project/ConfigArgParse/
-# https://github.com/bw2/ConfigArgParse
 
 if __name__ == "__main__":
     # Request python-black linter to avoid parsing, for readability

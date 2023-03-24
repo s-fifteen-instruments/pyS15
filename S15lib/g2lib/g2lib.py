@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 try:
-    from .delta import delta_loop
+    from delta import delta_loop
 
     cflag = True
 except ImportError:

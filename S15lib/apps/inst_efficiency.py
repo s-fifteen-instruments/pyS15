@@ -230,7 +230,7 @@ def read_log(filename: str, schema: list, merge: bool = False):
         raise ValueError("Logfile does not contain a header.")
 
     # Merge headers
-    _data = list(zip(*_data))  # type: ignore
+    _data = np.array(list(zip(*_data)))  # type: ignore
     _items = tuple(zip(_headers, _data))  # type: ignore
     return dict(_items)
 

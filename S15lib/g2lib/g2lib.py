@@ -4,10 +4,12 @@ from typing import List
 
 import numpy as np
 
+# Indicates success import of Cython g2 script
+CFLAG = False
 try:
-    from delta import delta_loop
+    from S15lib.g2lib.delta import delta_loop
 
-    cflag = True
+    CFLAG = True
 except ImportError:
     # print('delta.so module not found, using native option')
     def delta_loop(

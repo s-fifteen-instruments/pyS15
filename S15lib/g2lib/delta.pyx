@@ -45,7 +45,7 @@ def _delta_loop(double [:] t1 not None,
 def delta_loop(t1,
                t2,
                bins=500,
-               bin_width=2):
+               bin_width_ns=2):
     cdef int l_t1 = len(t1)
     cdef int l_t2 = len(t2)
-    return _delta_loop(t1, t2, bins, bin_width, l_t1, l_t2)
+    return _delta_loop(t1, t2, bins, bin_width_ns, l_t1, l_t2)

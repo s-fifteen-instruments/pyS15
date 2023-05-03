@@ -104,6 +104,72 @@ from S15lib.instruments import LCRDriver, TimestampTDC2
 
 # Constants
 INT_MIN = np.iinfo(np.int64).min  # indicate invalid value in int64 array
+RE_ANSIESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+# Colorama
+COLORAMA_IMPORTED = False
+try:
+    import colorama
+
+    COLORAMA_IMPORTED = True
+    try:
+        colorama.just_fix_windows_console()
+        COLORAMA_INIT = False
+    except AttributeError:
+        colorama.init()
+        COLORAMA_INIT = True
+except ModuleNotFoundError:
+    pass  # colorama does not exist, disable coloring
+
+
+def style(text, fg=None, bg=None, style=None, clear=False, up=0):
+    """Returns text with ANSI wrappers for each line.
+
+    Special note on newlines, where lines are broken up to apply
+    formatting on individual lines, excluding the newline character.
+
+    Position of start of print can be controlled using the 'up' arg.
+
+    Usage:
+        >>> print(s("hello\nworld", fg="red", style="dim"))
+        hello
+        world
+    """
+    # Construct formatting
+    fmt = ""
+    for c, cls in zip((fg, bg), (colorama.Fore, colorama.Back)):
+        if c:
+            c = c.upper()
+            if c.startswith("LIGHT"):
+                c += "_EX"
+            fmt += getattr(cls, c)
+    if style:
+        fmt += getattr(colorama.Style, style.upper())
+
+    # Force clear lines
+    if clear:
+        fmt = colorama.ansi.clear_line() + fmt
+
+    # Break by individual lines to apply formatting
+    lines = str(text).split("\n")
+    lines = [f"{fmt}{line}{colorama.Style.RESET_ALL}" for line in lines]
+    text = "\n".join(lines)
+
+    # Apply move and restore position
+    # Assuming Cursor.DOWN will stop at bottom of current terminal printing
+    # Non-positive numbers are treated strangely.
+    if up > 0:
+        text = colorama.Cursor.UP(up) + text + colorama.Cursor.DOWN(up)
+    return text
+
+
+def strip_ansi(text):
+    return RE_ANSIESCAPE.sub("", text)
+
+
+def len_ansi(text):
+    """Returns length after removing ANSI codes."""
+    return len(strip_ansi(text))
 
 
 def _request_filecomment(comment_cache=".inst_efficiency.comment") -> pathlib.Path:
@@ -146,14 +212,28 @@ def print_fixedwidth(*values, width=7, out=None, pbar=None):
         80-width terminal (with an extra buffer for newline depending
         on the shell).
     """
-    line = " ".join(
-        [f"{str(value) if value != INT_MIN else ' ': >{width}s}" for value in values]
-    )
+    row = []
+    for value in values:
+        if value == INT_MIN:
+            row.append(" " * width)
+        else:
+            # Measure length with ANSI control chars removed
+            value = str(value)
+            slen = max(0, width - len_ansi(value))
+            row.append(" " * slen + value)
+    line = " ".join(row)
+
     if pbar:
         pbar.set_description(line)
     else:
         print(line)
     if out:
+        line = " ".join(
+            [
+                f"{strip_ansi(str(value)) if value != INT_MIN else ' ': >{width}s}"
+                for value in values
+            ]
+        )
         with open(out, "a") as f:
             f.write(line + "\n")
 
@@ -400,15 +480,15 @@ def monitor_pairs(params):
 
         # Print statistics
         print_fixedwidth(
-            dt.datetime.now().strftime("%H%M%S"),
+            style(dt.datetime.now().strftime("%H%M%S"), style="dim"),
             round(inttime, 1),
-            int(pairs),
+            style(int(pairs), style="bright"),
             round(acc, 1),
-            int(s1),
-            int(s2),
+            style(int(s1), fg="yellow", style="bright"),
+            style(int(s2), fg="green", style="bright"),
             round(e1, 1),
             round(e2, 1),
-            round(eavg, 1),
+            style(round(eavg, 1), fg="cyan", style="bright"),
             out=logfile,
         )
 
@@ -476,9 +556,9 @@ def monitor_singles(params):
 
         # Print statistics
         print_fixedwidth(
-            dt.datetime.now().strftime("%H%M%S"),
+            style(dt.datetime.now().strftime("%H%M%S"), style="dim"),
             *list(map(int, counts)),
-            int(sum(counts)),
+            style(int(sum(counts)), style="bright"),
             out=logfile,
         )
 
@@ -633,6 +713,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--channel_stop", "--stop", type=int, default=4,
         help="Target timestamp channel for calculating time delay offset")
+    parser.add_argument(
+        "--color", action="store_true",
+        help="Add preset color highlighting to text in stdout")
     # Reenable python-black linter
     # fmt: on
 
@@ -670,6 +753,10 @@ if __name__ == "__main__":
         # Silence all errors/tracebacks
         if args.quiet:
             sys.excepthook = lambda etype, e, tb: print()
+
+        # Disable color if not explicitly enabled
+        if not args.color or not COLORAMA_IMPORTED:
+            style = lambda text, *args, **kwargs: text  # noqa
 
         # Initialize timestamp
         timestamp = TimestampTDC2(

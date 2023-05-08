@@ -46,7 +46,7 @@ def _cond_delta_loop(double [:] t1 not None,
                      double [:] t3 not None,
                      int bins,
                      double bin_width,
-                     int l_t1, 
+                     int l_t1,
                      int l_t2,
                      int l_t3):
 
@@ -65,7 +65,7 @@ def _cond_delta_loop(double [:] t1 not None,
     for it_a in range(l_t1):
         a = t1[it_a] # current t1
         idx = idx2 # set t2 pos to start
-        for it_b in range(l_t2): 
+        for it_b in range(l_t2):
             if (it_b + idx) >= l_t2: # protect against buffer overflow
                 break
             b = t2[it_b + idx] # get t2 based on start and list index
@@ -78,7 +78,7 @@ def _cond_delta_loop(double [:] t1 not None,
                     if (it_c + idx3) >= l_t3:
                         break
                     c = t3[it_c + idx3] # get t3 based on start and list index
-                    if c < a: # similar to 
+                    if c < a: # similar to b < a
                         idx4 = idx3 + it_c
                         continue
                     else:
@@ -91,7 +91,7 @@ def _cond_delta_loop(double [:] t1 not None,
                     break
                 histogram_ba[int(k // bin_width)] += 1
     # List while checking t3 first before t2
-    idx2 = 0 
+    idx2 = 0
     idx4 = 0
     for it_a in range(l_t1):
         a = t1[it_a]
@@ -121,7 +121,6 @@ def _cond_delta_loop(double [:] t1 not None,
                 if k >= max_range:
                     break
                 histogram_ca[int(k // bin_width)] += 1
-                
     return histogram_ba, histogram_ca, histogram_cb, histogram_bc
 
 
@@ -153,7 +152,7 @@ def cond_delta_loop(t1,
         t3,
         bins: int = 500,
         bin_width_ns: float = 2):
-    """Returns time difference histogram from therr given lists (t1, t2, t3) containing
+    """Returns time difference histogram from the given lists (t1, t2, t3) containing
            timestamps. List t1 contains the heralding times and t2, t3 the signal times.
            Correlated t2, t3 events should arrive after t1 events, since this function
            does not look for correlated events before t1 events.

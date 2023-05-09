@@ -1,5 +1,6 @@
 from .digital_pattern_generator import PattGen
 from .lcr_driver import LCRDriver
+from .optical_switch_triple import TripleOpticalSwitch
 from .powermeter import PowerMeter
 from .serial_connection import SerialConnection
 from .single_photon_detector import SinglePhotonDetector
@@ -19,5 +20,6 @@ __all__ = [
     "StepperMotorDriver",
     "TimeStampTDC1",
     "TimestampTDC2",
+    "TripleOpticalSwitch",
     "UniversalDiscriminator",
 ]

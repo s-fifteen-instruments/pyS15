@@ -159,4 +159,4 @@ class TripleOpticalSwitch:
         return self._com.getresponse(txt + "\n").strip()
 
     def write(self, txt: str) -> None:
-        self._com.write(txt + "\n")
+        self._com.write((txt + "\n").encode())

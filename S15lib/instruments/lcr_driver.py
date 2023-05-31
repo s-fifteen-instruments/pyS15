@@ -61,7 +61,7 @@ class LCRDriver(object):
             float: Voltage of the selected channel.
         """
         cmd = "AMP? " + str(channel)
-        return float(self._com.getresponses(cmd))
+        return float(self._com.getresponse(cmd))
 
     @property
     def V1(self):

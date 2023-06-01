@@ -7,7 +7,7 @@ from .spdc_driver import SPDCDriver
 from .stepper_motor_driver import StepperMotorDriver
 from .timestamp7 import TimestampTDC2
 from .universal_discriminator import UniversalDiscriminator
-from .usb_counter_fpga import TimeStampTDC1
+from .usb_counter_fpga import TimestampTDC1, TimeStampTDC1
 
 __all__ = [
     "LCRDriver",
@@ -17,6 +17,7 @@ __all__ = [
     "SinglePhotonDetector",
     "SPDCDriver",
     "StepperMotorDriver",
+    "TimestampTDC1",
     "TimeStampTDC1",
     "TimestampTDC2",
     "UniversalDiscriminator",

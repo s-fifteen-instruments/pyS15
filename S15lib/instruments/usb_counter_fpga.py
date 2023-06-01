@@ -10,6 +10,7 @@ Python scripts.
 import multiprocessing
 import os
 import time
+import warnings
 from os.path import expanduser
 from typing import Optional, Tuple
 
@@ -65,7 +66,7 @@ def channel_to_pattern(channel):
 #             time.sleep(self.interval)
 
 
-class TimeStampTDC1(object):
+class TimestampTDC1(object):
     """
     The usb counter is seen as an object through this class,
     inherited from the generic serial one.
@@ -534,3 +535,15 @@ class TimeStampTDC1(object):
         since reading from a file is time-consuming, we grab a couple at a go.
         """
         raise NotImplementedError()
+
+
+# Assign alias to new naming scheme
+class TimeStampTDC1(TimestampTDC1):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "Deprecating 'TimeStampTDC1', please migrate to the "
+            "renamed class 'TimestampTDC1'.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)

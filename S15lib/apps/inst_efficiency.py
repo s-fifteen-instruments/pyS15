@@ -203,7 +203,7 @@ def _append_datetime_logfile(comment):
     return dt.datetime.now().strftime(f"%Y%m%d_inst_efficiency_{comment}.log")
 
 
-def print_fixedwidth(*values, width=7, out=None, pbar=None):
+def print_fixedwidth(*values, width=7, out=None, pbar=None, end="\n"):
     """Prints right-aligned columns of fixed width.
 
     Note:
@@ -226,7 +226,7 @@ def print_fixedwidth(*values, width=7, out=None, pbar=None):
     if pbar:
         pbar.set_description(line)
     else:
-        print(line)
+        print(line, end=end)
     if out:
         line = " ".join(
             [
@@ -435,11 +435,14 @@ def monitor_pairs(params):
     roffset = params["window_right_offset"]
     loffset = params["window_left_offset"]
     enable_hist = params.get("histogram", False)
+    disable_hist = params.get("no_histogram", False)
     logfile = params.get("logfile", None)
 
     is_header_logged = False
     i = 0
     is_initialized = False
+    prev = None
+    longterm_data = {"count": 0, "inttime": 0, "pairs": 0, "acc": 0, "s1": 0, "s2": 0}
     while True:
 
         hist, inttime, pairs, acc, s1, s2, e1, e2, eavg = read_pairs(params)
@@ -451,14 +454,52 @@ def monitor_pairs(params):
             a = np.array(hist, dtype=np.int64)
             # Append NaN values until fits number of rows
             a = np.append(a, np.resize(INT_MIN, HIST_ROWSIZE - (a.size % HIST_ROWSIZE)))
-            print("\nObtained histogram:")
-            for row in a.reshape(-1, HIST_ROWSIZE):
-                print_fixedwidth(*row)
-            print(f"Maximum {max(a)} @ index {np.argmax(a)+peak+loffset-1}")
+            if not disable_hist:
+                print("\nObtained histogram:")
+                for row in a.reshape(-1, HIST_ROWSIZE):
+                    print_fixedwidth(*row)
+            peakvalue = max(a)
+            peakargmax = np.argmax(a)
+            peakpos = peakargmax + peak + loffset - 1
+            print(f"Maximum {peakvalue} @ index {peakpos}")
 
             # Display current window as well
             window_size = roffset - loffset + 1
-            print(f"Current window: {list(hist[1:window_size+1])}\n")
+            print(f"Current window: {list(hist[1:window_size+1])}")
+
+            # Display likely window
+            likely_window = [peakvalue]
+            likely_left = None
+            likely_right = None
+            acc_bin = acc / window_size
+            # Scan below
+            i = 0
+            while True:
+                i += 1
+                pos = peakargmax - i
+                value = a[pos]
+                if value > 2 * acc_bin:
+                    likely_window = [value] + likely_window
+                else:
+                    likely_left = -(i - 1)
+                    break
+            i = 0
+            while True:
+                i += 1
+                pos = peakargmax + i
+                value = a[pos]
+                if value > 2 * acc_bin:
+                    likely_window = likely_window + [value]
+                else:
+                    likely_right = i - 1
+                    break
+            print(
+                "Likely window: "
+                f"{list(a[likely_left+peakargmax:likely_right+1+peakargmax])}"
+            )
+            print(
+                f"Args: --peak={peakpos} --left={likely_left} --right={likely_right}\n"
+            )
 
         # Print the header line after every 10 lines
         if i == 0 or enable_hist:
@@ -491,6 +532,50 @@ def monitor_pairs(params):
             style(round(eavg, 1), fg="cyan", style="bright"),
             out=logfile,
         )
+
+        # Print long-term statistics, only if value supplied
+        if params["averaging_time"] > 0:
+            # Update first
+            longterm_data["count"] += 1
+            longterm_data["inttime"] += inttime
+            longterm_data["pairs"] += pairs
+            longterm_data["acc"] += acc
+            longterm_data["s1"] += s1
+            longterm_data["s2"] += s2
+
+            # Cache long term results if reach threshold
+            if longterm_data["inttime"] >= params["averaging_time"]:
+                counts = longterm_data["count"]
+                inttime = longterm_data["inttime"]
+                p = longterm_data["pairs"] / counts
+                acc = longterm_data["acc"] / counts
+                s1 = longterm_data["s1"] / counts
+                s2 = longterm_data["s2"] / counts
+                prev = (
+                    dt.datetime.now().strftime("%H%M%S"),
+                    round(inttime, 1),
+                    style(int(round(p, 0)), fg="red", style="bright"),
+                    round(acc, 1),
+                    int(round(s1, 0)),
+                    int(round(s2, 0)),
+                    round(100 * p / s2, 1),
+                    round(100 * p / s1, 1),
+                    style(
+                        round(100 * p / (s1 * s2) ** 0.5, 1), fg="red", style="bright"
+                    ),
+                )
+                longterm_data = {
+                    "count": 0,
+                    "inttime": 0,
+                    "pairs": 0,
+                    "acc": 0,
+                    "s1": 0,
+                    "s2": 0,
+                }
+
+            # Print if exists
+            if prev:
+                print_fixedwidth(*prev, end="\r")
 
 
 @_collect_as_script("singles")
@@ -532,6 +617,11 @@ def monitor_singles(params):
             counts[2] - darkcount_ch3 * inttime,
             counts[3] - darkcount_ch4 * inttime,
         )
+        counts = np.array(counts)
+        # VAHD
+        # counts = counts/ np.array([1,1.057,0.788,0.631])
+        # VDHA
+        # counts = counts/ np.array([1,0.631,0.788,1.057])
 
         # Implement rolling average to avoid overflow
         if enable_avg:
@@ -614,6 +704,7 @@ ARGUMENTS = [
     "window_left_offset",
     "window_right_offset",
     "integration_time",
+    "averaging_time",
     "darkcount_ch1",
     "darkcount_ch2",
     "darkcount_ch3",
@@ -648,6 +739,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--histogram", "-H", action="store_true",
         help="Enable histogram in pairs mode")
+    parser.add_argument(
+        "--no-histogram", action="store_true",
+        help="Disable histogram in pairs mode. Overrides other histogram options.")
     parser.add_argument(
         "--logging", "-l", nargs="?", action="store", const="unspecified",
         help="Log stuff")
@@ -698,6 +792,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--integration_time", "--time", "-T", type=float, default=1.0,
         help="Integration time for timestamp, in seconds")
+    parser.add_argument(
+        "--averaging_time", "--atime", type=float, default=0.0,
+        help="Auxiliary long-term integration time, in seconds")
     parser.add_argument(
         "--darkcount_ch1", "--ch1", "-1", type=float, default=0.0,
         help="Dark count level for detector channel 1, in counts/second")
@@ -774,6 +871,7 @@ if __name__ == "__main__":
         params = dict([(k, getattr(args, k, None)) for k in ARGUMENTS])
         params["logfile"] = path_logfile
         params["histogram"] = args.histogram
+        params["no_histogram"] = args.no_histogram
         params["averaging"] = args.averaging
         params["timestamp"] = timestamp
 

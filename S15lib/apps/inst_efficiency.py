@@ -675,6 +675,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--threshvolt", "-t", type=float, default="-0.4",
         help="Pulse trigger level for each detector channel, comma-delimited")
+    parser.add_argument(
+        "--fast", "-f", action="store_true",
+        help="Enable fast event readout mode, i.e. 32-bit wide events. Only for TDC2.")
 
     # Data processing arguments
     parser.add_argument(
@@ -765,6 +768,7 @@ if __name__ == "__main__":
             outfile_path=args.outfile_path,
         )
         timestamp.threshold = args.threshvolt
+        timestamp.fast = args.fast
 
         # Collect required arguments
         params = dict([(k, getattr(args, k, None)) for k in ARGUMENTS])

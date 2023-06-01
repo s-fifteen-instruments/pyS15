@@ -90,6 +90,7 @@ class TimestampTDC2:
         self._int_trig = False
         self._legacy = False
         self._mode = 2
+        self.fast = False  # sets whether fast readout mode to be used
 
     def _call(self, args: List[str], target_file: str = ""):
         """Convenience method to call underlying readevents.
@@ -111,6 +112,8 @@ class TimestampTDC2:
         ]
         if self.device_path:
             command.extend(["-U", self.device_path])
+        if self.fast:
+            command.append("-f")
 
         if not target_file:
             target_file = self.outfile_path

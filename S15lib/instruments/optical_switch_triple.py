@@ -16,10 +16,10 @@ class TripleOpticalSwitch:
 
     def __init__(
         self,
-        device_path=None,
+        device_path: str = "",
         connections: list = [],
     ):
-        if device_path is None:
+        if device_path == "":
             device_path = (
                 serial_connection.search_for_serial_devices(self.DEVICE_IDENTIFIER)
             )[0]

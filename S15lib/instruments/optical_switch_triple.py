@@ -16,10 +16,10 @@ class TripleOpticalSwitch:
 
     def __init__(
         self,
-        device_path: str = "",
+        device_path=None,
         connections: list = [],
     ):
-        if device_path == "":
+        if device_path is None:
             device_path = (
                 serial_connection.search_for_serial_devices(self.DEVICE_IDENTIFIER)
             )[0]
@@ -133,7 +133,7 @@ class TripleOpticalSwitch:
             self.write(f"MILLISEC {value}")
         else:
             raise ValueError(
-                f"Input argument of {value = } exceeds \
+                f"Input argument of duration {value} exceeds \
                 Maximum pulse duration of {MAX_PULSE_DURATION}"
             )
 
@@ -153,7 +153,7 @@ class TripleOpticalSwitch:
         if value <= 7:
             self.write(f"CONFIG {value}\n")
         else:
-            raise ValueError(f"Input argument of {value = } is invalid!")
+            raise ValueError(f"Input argument of config {value} is invalid!")
 
     def ask(self, txt: str) -> str:
         return self._com.getresponse(txt + "\n").strip()

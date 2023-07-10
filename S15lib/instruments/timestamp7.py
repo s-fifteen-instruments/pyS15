@@ -86,9 +86,11 @@ class TimestampTDC2:
         # Other initialization parameters
         self._int_time = 1.0
         self._threshold_dacs = (768, 768, 768, 768)
+        self._delay = (0, 0, 0, 0)
         self._int_trig = False
         self._legacy = False
         self._mode = 2
+        self.fast = False  # sets whether fast readout mode to be used
 
     def _call(self, args: List[str], target_file: str = ""):
         """Convenience method to call underlying readevents.
@@ -104,10 +106,14 @@ class TimestampTDC2:
             self.readevents_path,
             "-t",
             ",".join(map(str, self._threshold_dacs)),
+            "-D",
+            ",".join(map(str, self._delay)),
             *args,
         ]
         if self.device_path:
             command.extend(["-U", self.device_path])
+        if self.fast:
+            command.append("-f")
 
         if not target_file:
             target_file = self.outfile_path
@@ -218,21 +224,42 @@ class TimestampTDC2:
             raise ValueError("Invalid integration time.")
         self._int_time = value
 
-    def get_counts(self, duration=None) -> Tuple:
+    def get_counts(
+        self,
+        duration: Optional[float] = None,
+        return_actual_duration: bool = False,
+    ) -> Tuple:
         """Returns the singles counts in each channel.
 
         Currently copies TimestampTDC1 implementation using a blocking while loop,
         but can rewrite into asynchronous variety.
+
+        Args:
+            duration: Integration time in seconds.
+            return_actual_duration:
+                Appends time difference between first and last timestamp, in seconds.
+
+        Note:
+            Timestamp output validity checks should be performed on the application
+            level instead of on this lower-level interface, unless this feature
+            is separately enabled using a feature flag, e.g. "block_until_valid".
         """
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
         t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
 
-        # TODO(Justin): Add checks on timestamp output validity
         t1 = t[p & 0b0001 != 0]
         t2 = t[p & 0b0010 != 0]
         t3 = t[p & 0b0100 != 0]
         t4 = t[p & 0b1000 != 0]
+
+        # Retrieve actual integration time
+        inttime = duration
+        if len(t) > 0:
+            inttime = (t[-1] - t[0]) * 1e-9
+        if return_actual_duration:
+            return len(t1), len(t2), len(t3), len(t4), inttime
+
         return len(t1), len(t2), len(t3), len(t4)
 
     @staticmethod
@@ -247,6 +274,30 @@ class TimestampTDC2:
         Note: In DAC units, 0 corresponds to -1.024V, 4095 corresponds to +2.047V.
         """
         return round((value + 1.024) * 4095 / (2.047 + 1.024))
+
+    @property
+    def delay(self):
+        """Returns delay settings of channels, in 1/256 ns."""
+        return self._delay
+
+    @delay.setter
+    def delay(self, value: Union[int, Tuple[int, int, int, int]]):
+        """Sets threshold voltage by converting into DAC units, for each channel.
+
+        If 'value' is a single number, this value is broadcasted to all channels.
+        Args:
+            value: Either a 4-tuple of delay, or a single delay.
+        """
+        # Broadcast single values into a 4-tuple
+        avalue = np.asarray(value, dtype=np.int16)
+        if avalue.ndim == 0:
+            avalue = np.resize(avalue, 4)
+        # Check for length of tuple
+        if avalue.size != 4:
+            raise ValueError("Only arrays of size 4 is allowed.")
+
+        self._delay = tuple(avalue)  # type: ignore
+        return
 
     @property
     def threshold(self):

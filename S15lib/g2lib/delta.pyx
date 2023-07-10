@@ -2,7 +2,7 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-DTYPE = np.int
+DTYPE = np.int64
 ctypedef np.int_t DTYPE_t
 
 @cython.boundscheck(False)  # turn off bounds-checking

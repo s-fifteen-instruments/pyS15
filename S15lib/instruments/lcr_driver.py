@@ -61,7 +61,7 @@ class LCRDriver(object):
             float: Voltage of the selected channel.
         """
         cmd = "AMP? " + str(channel)
-        return float(self._com.getresponses(cmd))
+        return float(self._com.getresponse(cmd))
 
     @property
     def V1(self):
@@ -116,3 +116,59 @@ class LCRDriver(object):
 
     def help(self) -> str:
         return self._com.get_help()
+
+
+class MockLCRDriver:
+    """Mock for LCRDriver class.
+
+    Functions as stand-in replacement when interfacing with LCRDriver
+    is not required, e.g. in QKDServer.
+    """
+
+    DEVICE_IDENTIFIER = LCRDriver.DEVICE_IDENTIFIER
+
+    def __init__(self, device_path: str = ""):
+        self.is_output_on = False
+        self.ch_freqs = [2000, 2000, 2000, 2000]  # seems to be only value used
+        self.ch_volts = [0.0, 0.0, 0.0, 0.0]
+
+    def reset(self):
+        """Resets the device, by switching off and zeroing voltages."""
+        self.is_output_on = False
+        self.V1 = 0.0
+        self.V2 = 0.0
+        self.V3 = 0.0
+        self.V4 = 0.0
+
+    def all_channels_on(self):
+        self.is_output_on = True
+
+    def set_voltage(self, channel: int, voltage: float):
+        if not 0 <= voltage < 10:
+            raise ValueError("Voltage too high - only 0V to 10V accepted.")
+        if channel not in range(1, 5):
+            raise ValueError("Channel not allowed - only 1 to 4 accepted.")
+        self.ch_volts[int(channel) - 1] = float(voltage)
+
+    def read_voltage(self, channel: int) -> float:
+        return self.ch_volts[channel]
+
+    # Using this syntax instead of @property for compact code
+    V1 = property(
+        lambda self: self.ch_volts[0],
+        lambda self, value: self.set_voltage(1, value),
+    )
+    V2 = property(
+        lambda self: self.ch_volts[1],
+        lambda self, value: self.set_voltage(2, value),
+    )
+    V3 = property(
+        lambda self: self.ch_volts[2],
+        lambda self, value: self.set_voltage(3, value),
+    )
+    V4 = property(
+        lambda self: self.ch_volts[3],
+        lambda self, value: self.set_voltage(4, value),
+    )
+    identity = property(lambda self: "Mock LCRDriver v1")
+    help = property(lambda self: "Mock LCRDriver command set")

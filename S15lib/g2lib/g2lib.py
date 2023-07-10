@@ -111,10 +111,12 @@ except ImportError:
         return _cond_delta_loop(t1, t2, t3, bins, bin_width_ns, l_t1, l_t2, l_t3)
 
 
+# Indicates success import of Cython g2 script
+CFLAG = False
 try:
-    from .delta import delta_loop
+    from S15lib.g2lib.delta import delta_loop
 
-    cflag = True
+    CFLAG = True
 except ImportError:
     # print('delta.so module not found, using native option')
     def delta_loop(

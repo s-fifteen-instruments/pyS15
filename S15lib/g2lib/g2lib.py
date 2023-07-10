@@ -3,6 +3,113 @@
 from typing import List
 
 import numpy as np
+import pyximport
+
+pyximport.install(language_level=3)
+
+try:
+    from .delta import cond_delta_loop
+
+    cflag = True
+except ImportError:
+    print("Unable to import Cython conditional g2 module, using native option")
+
+    def _cond_delta_loop(t1, t2, t3, bins, bin_width, l_t1, l_t2, l_t3):
+        histogram_ba = np.zeros(bins, dtype=float)
+        histogram_ca = np.zeros(bins, dtype=float)
+        histogram_bc = np.zeros(bins, dtype=float)
+        histogram_cb = np.zeros(bins, dtype=float)
+        idx = 0
+        idx2 = 0
+        idx3 = 0
+        idx4 = 0
+        max_range = bins * bin_width
+        # List while checking t2 first before t3
+        for it_a in range(l_t1):
+            a = t1[it_a]  # current t1
+            idx = idx2  # set t2 pos to start
+            for it_b in range(l_t2):
+                if (it_b + idx) >= l_t2:  # protect against buffer overflow
+                    break
+                b = t2[it_b + idx]  # get t2 based on start and list index
+                if b < a:  # t2 still smaller than t1
+                    idx2 = (  # Store index of t2 for next t1.
+                        idx + it_b  # Don't need to start from the first one again.
+                    )
+                    continue  # go to next in the t2 list
+                else:  # t2 larger than t1
+                    idx3 = idx4  # set t3 pos to start
+                    for it_c in range(l_t3):  # go through t3 list
+                        if (it_c + idx3) >= l_t3:
+                            break
+                        c = t3[it_c + idx3]  # get t3 based on start and list index
+                        if c < a:  # similar to
+                            idx4 = idx3 + it_c
+                            continue
+                        else:
+                            k = c - b
+                            if k < 0 or k >= max_range:
+                                break
+                            histogram_cb[int(k // bin_width)] += 1
+                    k = b - a
+                    if k >= max_range:
+                        break
+                    histogram_ba[int(k // bin_width)] += 1
+        # List while checking t3 first before t2
+        idx2 = 0
+        idx4 = 0
+        for it_a in range(l_t1):
+            a = t1[it_a]
+            idx = idx2
+            for it_c in range(l_t3):
+                if (it_c + idx3) >= l_t3:
+                    break
+                c = t3[it_c + idx]
+                if c < a:
+                    idx2 = idx + it_c
+                    continue
+                else:
+                    idx3 = idx4
+                    for it_b in range(l_t2):
+                        if (it_b + idx) >= l_t2:
+                            break
+                        b = t2[it_b + idx3]
+                        if b < a:
+                            idx4 = idx3 + it_b
+                            continue
+                        else:
+                            k = b - c
+                            if k < 0 or k >= max_range:
+                                break
+                            histogram_bc[int(k // bin_width)] += 1
+                    k = c - a
+                    if k >= max_range:
+                        break
+                    histogram_ca[int(k // bin_width)] += 1
+        return histogram_ba, histogram_ca, histogram_cb, histogram_bc
+
+    def cond_delta_loop(t1, t2, t3, bins: int = 500, bin_width_ns: float = 2):
+        """Returns time difference histogram from the given lists (t1, t2, t3) with
+           timestamps. List t1 contains the heralding times and t2, t3 the signal times.
+           Correlated t2, t3 events should arrive after t1 events, since this function
+           does not look for correlated events before t1 events.
+        Args:
+            t1 (List[float]): heralding times.
+            t2 (List[float]): Start/Stop times.
+            t3 (List[float]): Start/Stop times.
+            bins (int, optional): Number of histogram bins. Defaults to 500 bins.
+            bin_width_ns (float, optional): Bin width in nano seconds. Defaults to 2 ns.
+        Returns:
+            List[int]: Time difference histogram between t2 and t1.
+            List[int]: Time difference histogram between t3 and t1.
+            List[int]: Time difference histogram between t3 and t2 given a .
+            List[int]: Time difference histogram.
+        """
+        l_t1 = len(t1)
+        l_t2 = len(t2)
+        l_t3 = len(t3)
+        return _cond_delta_loop(t1, t2, t3, bins, bin_width_ns, l_t1, l_t2, l_t3)
+
 
 # Indicates success import of Cython g2 script
 CFLAG = False
@@ -77,6 +184,12 @@ def _data_extractor(filename: str, highres_tscard: bool = False):
         return t, p
 
 
+def cond_g2_extr():
+    """Unimplemented yet. Use cond_delta_loop() directly"""
+    cond_delta_loop()
+    return
+
+
 def g2_extr(
     filename: str,
     bins: int = 100,
@@ -86,6 +199,7 @@ def g2_extr(
     channel_stop: int = 1,
     c_stop_delay: int = 0,
     highres_tscard: bool = False,
+    normalise: bool = False,
 ):
     """Generates G2 histogram from a raw timestamp file
 
@@ -103,6 +217,8 @@ def g2_extr(
             Adds time (in nanoseconds) to the stop channel time stamps. Defaults to 0.
         highres_tscard (bool, optional):
             Setting for timestamp cards with higher time resolution. Defaults to False.
+        normalise (bool, optional):
+            Setting to normalise the g2 with N1*N2*dT/T . Defaults to False.
 
     Raises:
         ValueError: When channel is not between 0 - 3.
@@ -129,8 +245,13 @@ def g2_extr(
     )
     try:
         t_max = t[-1] - t[0]
+        if normalise:
+            N = len(t1) * len(t2) / t_max * bin_width
+            hist = hist / N
     except IndexError:
         t_max = 0
+        if normalise:
+            print("Unable to normalise, intergration time error")
     dt = np.arange(0, bins * bin_width, bin_width)
     return hist, dt + min_range, len(t1), len(t2), t_max
 

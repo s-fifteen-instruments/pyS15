@@ -8,7 +8,7 @@ import pyximport
 pyximport.install(language_level=3)
 
 try:
-    from .delta import cond_delta_loop
+    from S15lib.g2lib.delta import cond_delta_loop
 
     cflag = True
 except ImportError:
@@ -62,7 +62,7 @@ except ImportError:
             a = t1[it_a]
             idx = idx2
             for it_c in range(l_t3):
-                if (it_c + idx3) >= l_t3:
+                if (it_c + idx) >= l_t3:
                     break
                 c = t3[it_c + idx]
                 if c < a:
@@ -71,7 +71,7 @@ except ImportError:
                 else:
                     idx3 = idx4
                     for it_b in range(l_t2):
-                        if (it_b + idx) >= l_t2:
+                        if (it_b + idx3) >= l_t2:
                             break
                         b = t2[it_b + idx3]
                         if b < a:

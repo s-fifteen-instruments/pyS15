@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from typing import List
+import typing
+from typing import List, Optional, Union
 
 import numpy as np
 import pyximport
@@ -278,6 +279,176 @@ def peak_finder(
     t_array = np.arange(0, n * t_resolution, t_resolution)
     idx_max = np.argmax(convolution)
     return t_array[idx_max], convolution, t_array
+
+
+@typing.no_type_check
+def histogram(
+    alice: list,
+    bob: list,
+    duration: Union[float, tuple[float, float]],
+    resolution: float = 1,
+    center: float = 0.0,
+    statistics: bool = False,
+    window: Optional[Union[float, tuple[float, float]]] = None,
+):
+    """Returns the coincidence histogram and corresponding (left-edge) bin timings.
+
+    This is a convenience function for commonly used routines when extracting
+    information from a coincidence measurement. This wraps the 'delta_loop'
+    function.
+
+    'duration' specifies the minimum window of the histogram, in nanoseconds.
+    If 'duration' is a number, the duration is distributed evenly across the 'center'
+    time, otherwise 'duration' is a 2-tuple of offsets from the 'center'. The end
+    offset is inclusive, i.e. there will be an extra rightmost bin.
+
+    'window' specifies the minimum window of the expected signal in the histogram,
+    in nanoseconds. Functionally similar to 'duration', but applied to the signal
+    instead. Used only if 'statistics' is True. If 'window' is not supplied, the
+    window size is assumed to be half the histogram duration, centered at 'center'.
+
+    If 'statistics' is True, then a third argument containing relevant statistical
+    properties will be returned.
+
+    Args:
+        alice: First (earlier) set of timestamps.
+        bob: Second (later) set of timestamps.
+        duration: Minimum window for histogram, in ns.
+        resolution: Size of each timing bin for histogram, in ns.
+        center: Center of the histogram/signal, in ns.
+        statistics: Whether statistics should be computed.
+        window: Minimum window for signal in histogram, in ns.
+
+    Examples:
+
+        >>> a = [1,2,52]; b = [2,52]
+        >>> def _viz(args):
+        ...     if len(args) > 2:
+        ...         print(f"Significance: {args[2]['significance']}")
+        ...         return
+        ...     bins = np.array(args[1]);          hist = np.array(args[0])
+        ...     bins = bins[np.flatnonzero(hist)]; hist = hist[hist != 0]
+        ...     return list(zip(bins, hist))
+
+        ###################
+        #  Regular usage  #
+        ###################
+
+        >>> _viz(histogram(a, b, duration=100))
+        [(-50.0, 1), (0.0, 2), (1.0, 1), (50.0, 1)]
+        >>> _viz(histogram(a, b, duration=(-1, 50), resolution=1))
+        [(0.0, 2), (1.0, 1), (50.0, 1)]
+
+        ###################
+        #  Adjust center  #
+        ###################
+
+        >>> _viz(histogram(a, b, duration=50, resolution=2, center=-25))
+        [(-51.0, 1), (-1.0, 2), (1.0, 1)]
+        >>> _viz(histogram(a, b, duration=50, resolution=2, center=-26))
+        [(-50.0, 1), (0.0, 3)]
+        >>> _viz(histogram(a, b, duration=(-50, 0), resolution=2))  # alternate usage
+        [(-50.0, 1), (0.0, 3)]
+
+        #######################
+        #  Obtain statistics  #
+        #######################
+
+        >>> _viz(histogram(a, b, duration=100, statistics=True, window=50))
+        Significance: 10.002
+        >>> _viz(histogram(a, b, duration=100, statistics=True))
+        Significance: 10.002
+        >>> _viz(histogram(a, b, duration=100, statistics=True, window=(0, 1)))
+        Significance: 14.072
+
+    Bugs:
+        Currently insensitive to the sign of the numbers in 'duration' and 'window',
+            when specified as a 2-tuple, i.e. 'left' is always assumed to the left of
+            the center.
+    """
+    # Convert timestamps into ndarrays for vectorization
+    alice = np.array(alice, dtype=np.float64)
+    bob = np.array(bob, dtype=np.float64)
+
+    # Extract duration information and align start time
+    try:
+        left, right = duration
+        duration = right - left
+    except TypeError:
+        left = right = duration / 2  # split between both sides equally
+
+    num_bins_left = int(
+        np.ceil(np.abs(left) / resolution)
+    )  # ensure left/right bins cover at least duration
+    num_bins_right = int(np.ceil(np.abs(right) / resolution))
+    num_bins = (
+        num_bins_left + num_bins_right + 1
+    )  # +1 to accomodate an additional rightmost bin
+
+    # Compute histogram
+    time_offset = np.float64(center) - num_bins_left * resolution
+    hist = delta_loop(alice, bob - time_offset, num_bins, resolution)
+    bins = time_offset + np.arange(num_bins) * resolution
+    bins = np.round(
+        bins, 8
+    )  # correct for floating errors, up to 1/256 ns (i.e. 8 decimals)
+
+    # Early termination if no need to calculate statistics
+    if not statistics:
+        return hist, bins
+
+    # Obtain coincidence window to identify signal
+    stats = {}
+    left = right = None
+    if window is not None:
+        try:
+            left, right = window  # relative to center
+        except TypeError:
+            left = -window / 2  # defaults to balanced left and right
+            right = window / 2
+
+    # If still missing, need to guess window, i.e. half the total duration
+    # split between each side of the center, but still bounded by full window
+    if left is None:
+        left = -duration / 4
+    if right is None:
+        right = duration / 4
+
+    num_windowbins_left = int(np.ceil(np.abs(left) / resolution))
+    num_windowbins_right = int(np.ceil(np.abs(right) / resolution))
+    bin_offset_left = num_bins_left - min(num_windowbins_left, num_bins_left)
+    bin_offset_right = num_bins_left + min(num_windowbins_right, num_bins_right)
+
+    # Extract signal
+    signal = hist[bin_offset_left : bin_offset_right + 1]
+    background = np.hstack((hist[:bin_offset_left], hist[bin_offset_right + 1 :]))
+
+    # Populate statistics
+    stats = {
+        "signal": signal,
+        "background": background,
+        "max": np.inf,
+        "mean": 0,
+        "stdev": 0,
+        "total": 0,
+        "significance": np.inf,
+        "significance2": np.inf,
+    }
+    if len(background) != 0:
+        stats["mean"] = np.mean(background)
+        stats["stdev"] = np.std(background)
+    if len(signal) != 0:
+        stats["max"] = max(signal)
+        stats["total"] = sum(signal) - len(signal) * stats["mean"]
+    if stats["stdev"] != 0:
+        stats["significance"] = round(
+            (stats["max"] - stats["mean"]) / stats["stdev"], 3
+        )  # single point
+        stats["significance2"] = round(
+            stats["total"] / stats["stdev"], 3
+        )  # area under signal
+
+    return hist, bins, stats
 
 
 if __name__ == "__main__":

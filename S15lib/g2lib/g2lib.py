@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import typing
+from dataclasses import dataclass
 from typing import List, Optional, Union
 
 import numpy as np
@@ -281,6 +282,71 @@ def peak_finder(
     return t_array[idx_max], convolution, t_array
 
 
+@dataclass
+class PeakStatistics:
+    signal: list
+    background: list
+
+    @property
+    def max(self):
+        if len(self.signal) == 0:
+            return None
+        return np.max(self.signal)
+
+    @property
+    def mean(self):
+        if len(self.background) == 0:
+            return None
+        return np.mean(self.background)
+
+    @property
+    def stdev(self):
+        if len(self.background) == 0:
+            return None
+        return np.std(self.background)
+
+    @property
+    def total(self):
+        if len(self.signal) == 0:
+            return None
+        return sum(self.signal) - len(self.signal) * self.mean
+
+    @property
+    def significance(self):
+        if self.stdev == 0:
+            return None
+        return round((self.max - self.mean) / self.stdev, 3)
+
+    @property
+    def significance_raw(self):
+        if self.stdev == 0:
+            return None
+        full = np.hstack(self.signal, self.background)
+        return (np.max(full) - np.mean(full)) / np.std(full)
+
+    @property
+    def significance2(self):
+        if self.stdev == 0:
+            return None
+        # Estimate stdev after grouping in bins of 'len(signal)'
+        length = (len(self.background) // len(self.signal)) * len(self.signal)
+        if length == 0:
+            return None
+        rebinned = np.sum(
+            self.background[:length].reshape(-1, len(self.signal)), axis=1
+        )
+        stdev = np.std(rebinned)
+        if stdev == 0:
+            return None
+        return round(self.total / stdev, 3)
+
+    @property
+    def g2(self):
+        if self.mean == 0:
+            return None
+        return self.max / self.mean
+
+
 @typing.no_type_check
 def histogram(
     alice: list,
@@ -424,31 +490,58 @@ def histogram(
     background = np.hstack((hist[:bin_offset_left], hist[bin_offset_right + 1 :]))
 
     # Populate statistics
-    stats = {
-        "signal": signal,
-        "background": background,
-        "max": np.inf,
-        "mean": 0,
-        "stdev": 0,
-        "total": 0,
-        "significance": np.inf,
-        "significance2": np.inf,
-    }
-    if len(background) != 0:
-        stats["mean"] = np.mean(background)
-        stats["stdev"] = np.std(background)
-    if len(signal) != 0:
-        stats["max"] = max(signal)
-        stats["total"] = sum(signal) - len(signal) * stats["mean"]
-    if stats["stdev"] != 0:
-        stats["significance"] = round(
-            (stats["max"] - stats["mean"]) / stats["stdev"], 3
-        )  # single point
-        stats["significance2"] = round(
-            stats["total"] / stats["stdev"], 3
-        )  # area under signal
-
+    stats = PeakStatistics(signal, background)
     return hist, bins, stats
+
+
+def get_statistics(
+    hist: list,
+    resolution: Optional[float] = None,
+    center: Optional[float] = None,
+    window: float = 0.0,
+):
+    """Returns statistics of histogram, after performing cross-correlation.
+
+    Args:
+        hist: Timing histogram to analyze.
+        resolution: Resolution of the histogram.
+        center: Timing center of the peak, if known beforehand.
+        window: Desired timing window width to exclude from background mean calculation.
+    """
+    # Fallback to simple statistics, if not other arguments supplied
+    if resolution is None:
+        if center is None:
+            return PeakStatistics(hist, hist)
+        else:
+            raise ValueError("Resolution must be supplied if 'center' is supplied.")
+
+    # Guess non-negative center bin position, assuming aligned at zero
+    if center is None:
+        bin_center = np.argmax(hist)
+    else:
+        bin_center = np.abs(center) // resolution
+        if center < 0:
+            bin_center = len(hist) - bin_center
+
+    # Retrieve size of symmetrical window
+    num_windowbins_onesided = int(np.ceil(window / 2 / resolution))
+    bin_offset_left = max(0, bin_center - num_windowbins_onesided)
+    bin_offset_right = min(len(hist), bin_center + num_windowbins_onesided)
+
+    # Avoid tails of the cross-correlation by taking only half of the spectrum
+    # Use-case when same timestamp is used to obtain histogram, resulting in deadtime
+    bin_offset_left_bg = bin_offset_left // 2
+    bin_offset_right_bg = (len(hist) + bin_offset_right) // 2
+
+    # Retrieve signal
+    signal = hist[bin_offset_left : bin_offset_right + 1]
+    background = np.hstack(
+        (
+            hist[bin_offset_left_bg:bin_offset_left],
+            hist[bin_offset_right + 1 : bin_offset_right_bg + 1],
+        )
+    )
+    return PeakStatistics(signal, background)
 
 
 if __name__ == "__main__":

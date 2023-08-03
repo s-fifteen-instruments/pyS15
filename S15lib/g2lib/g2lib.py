@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import typing
+import warnings
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
@@ -10,11 +11,16 @@ import pyximport
 pyximport.install(language_level=3)
 
 try:
+    import scipy
+except ImportError:
+    warnings.warn("Unable to import scipy module")
+
+try:
     from S15lib.g2lib.delta import cond_delta_loop
 
     cflag = True
 except ImportError:
-    print("Unable to import Cython conditional g2 module, using native option")
+    warnings.warn("Unable to import Cython conditional g2 module, using native option")
 
     def _cond_delta_loop(t1, t2, t3, bins, bin_width, l_t1, l_t2, l_t3):
         histogram_ba = np.zeros(bins, dtype=float)
@@ -542,6 +548,100 @@ def get_statistics(
         )
     )
     return PeakStatistics(signal, background)
+
+
+@typing.no_type_check
+def generate_fft(
+    arr: list,
+    num_bins: int,
+    time_res: float,
+    acq_start: Optional[float] = None,
+    duration: Optional[float] = None,
+):
+    """Returns the FFT and frequency resolution for the set of timestamps.
+
+    Assumes the inputs are real-valued, i.e. the FFT output is symmetrical.
+
+    Args:
+        arr: The timestamp series.
+        num_bins: The number of bins in the time/frequency domain.
+        bin_size: The size of each timing bin, in ns.
+        acq_start: The starting time, relative to the first timestamp, in s.
+        duration: The duration to capture for the FFT, in ns.
+
+    Note:
+        This function is technically not cacheable due to the mutability of
+        np.ndarray.
+    """
+    acq_start = arr[0] if acq_start is None else acq_start * 1e9
+    duration = arr[-1] - arr[0] if duration is None else duration * 1e9
+
+    new_arr = arr[np.where((arr >= acq_start) & (arr < (acq_start + duration)))]
+    bin_arr = np.bincount(
+        np.int64((new_arr // time_res) % num_bins), minlength=num_bins
+    )
+    return scipy.fft.rfft(bin_arr)
+
+
+def get_xcorr(afft: list, bfft: list, filter: Optional[list] = None):
+    """Returns the cross-correlation.
+
+    Note:
+        The conjugation operation on an FFT is essentially a time-reversal
+        operation on the original time-series data.
+    """
+    fft = np.conjugate(afft) * bfft
+    if filter is not None:
+        fft = fft * filter
+    result = scipy.fft.irfft(fft)
+    return np.abs(result)
+
+
+def histogram_fft(
+    alice: list,
+    bob: list,
+    num_bins: int,
+    num_wraps: int = 1,
+    resolution: float = 1,
+    acq_start: Optional[float] = None,
+    filter: Optional[list] = None,
+    statistics: bool = False,
+    center: Optional[float] = None,
+    window: float = 0.0,
+):
+    """Returns the cross-correlation histogram.
+
+    Args:
+        acq_start: Starting timing, relative to first common timestamp.
+        filter: Optional filter in frequency-space.
+    """
+    if not isinstance(num_wraps, (int, np.integer)):
+        warnings.warn(
+            "Number of wraps is not an integer - "
+            "statistical significance will be lower."
+        )
+
+    duration = num_wraps * num_bins * resolution
+    first_timestamp = max(alice[0], bob[0])
+    last_timestamp = min(alice[-1], bob[-1])
+    if first_timestamp + duration > last_timestamp:
+        warnings.warn(
+            f"Desired duration of timestamps ({duration} ns) "
+            f"exceeds available data ({last_timestamp - first_timestamp} ns)."
+        )
+
+    # Normalize timestamps
+    alice -= first_timestamp
+    bob -= first_timestamp
+
+    # Generate FFT
+    afft = generate_fft(alice, num_bins, resolution, acq_start, duration)
+    bfft = generate_fft(bob, num_bins, resolution, acq_start, duration)
+    result = get_xcorr(afft, bfft, filter)
+    bins = np.arange(num_bins) * resolution
+    if statistics:
+        return result, bins, get_statistics(result, resolution, center, window)
+    return result, bins
 
 
 if __name__ == "__main__":

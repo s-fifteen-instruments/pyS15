@@ -12,6 +12,7 @@ import os
 import time
 import warnings
 from os.path import expanduser
+from struct import unpack
 from typing import Optional, Tuple
 
 import numpy as np
@@ -92,7 +93,7 @@ class TimestampTDC1(object):
             print("Connected to", device_path)
         self._device_path = device_path
         # self._com = serial_connection.SerialConnection(device_path)
-        self._com = serial.Serial(device_path, timeout=0.1)
+        self._com = serial.Serial(device_path, timeout=0.01)
         self._com.write(b"\r\n")
         self._com.readlines()
         self.mode = mode
@@ -255,14 +256,17 @@ class TimestampTDC1(object):
         # streams data from device for the integration time.
 
         # Stream data for acq_time seconds into a buffer
-        ts_list = []
+        buf = b""
+        tr = []
         time0 = time.time()
         self._com.write((cmd + "\r\n").encode())
         while (time.time() - time0) <= acq_time + 0.01:
-            ts_list.append(self._com.read((1 << 20) * 4))
-        # self._com.write(b"abort\r\n")
-        self._com.readlines()
-        return b"".join(ts_list)
+            bytes_to_read = self._com.in_waiting
+            if bytes_to_read == 0:
+                continue
+            buf += self._com.read(bytes_to_read)
+            tr.append(bytes_to_read)
+        return buf  # ,tr
 
     def get_counts_and_coincidences(self, t_acq: float = 1) -> Tuple[int, ...]:
         """Counts single events and coinciding events in channel pairs.
@@ -294,7 +298,7 @@ class TimestampTDC1(object):
         self._com.timeout = 0.05
         return tuple([int(i) for i in singlesAndPairs.split()])
 
-    def get_timestamps(self, t_acq: float = 1):
+    def get_timestamps(self, t_acq: float = 1, legacy=True):
         """Acquires timestamps and returns 2 lists. The first one containing
         the time and the second the event channel.
 
@@ -310,45 +314,46 @@ class TimestampTDC1(object):
                 For example an event in channel 2 would correspond to "0010".
                 Two coinciding events in channel 3 and 4 correspond to "1100"
         """
-        self.mode = "singles"
-        level = float(self.level.split()[0])
-        level_str = "NEG" if level < 0 else "POS"
-        self._com.readlines()  # empties buffer
+        if self._com.in_waiting:
+            self._com.readlines()  # empties buffer
+        if self.mode != "timestamp":
+            self.mode = "timestamp"
+        # level = float(self.level.split()[0])
+        # level_str = "NEG" if level < 0 else "POS"
         # t_acq_for_cmd = t_acq if t_acq < 65 else 0
-        cmd_str = "INPKT;{} {};time {};timestamp;counts?;".format(
-            level_str, level, (t_acq if t_acq < 65 else 0) * 1000
-        )
-        buffer = self._stream_response_into_buffer(cmd_str, t_acq + 0.1)
+        cmd_str = "INPKT;counts?;"
+        buf = self._stream_response_into_buffer(cmd_str, t_acq)
         # '*RST;INPKT;'+level+';time '+str(t_acq * 1000)+';timestamp;counts?',t_acq+0.1) # noqa
 
         # buffer contains the timestamp information in binary.
         # Now convert them into time and identify the event channel.
         # Each timestamp is 32 bits long.
-        bytes_hex = buffer[::-1].hex()
-        ts_word_list = [
-            int(bytes_hex[i : i + 8], 16) for i in range(0, len(bytes_hex), 8)
-        ][::-1]
+        # bytes_hex = buffer[::-1].hex()
+        # ts_word_list = [
+        #    int(bytes_hex[i : i + 8], 16) for i in range(0, len(bytes_hex), 8)
+        # ][::-1]
 
-        ts_list = []
-        event_channel_list = []
-        periode_count = 0
-        periode_duration = 1 << 27
-        prev_ts = -1
-        for ts_word in ts_word_list:
-            time_stamp = ts_word >> 5
-            pattern = ts_word & 0x1F
-            if prev_ts != -1 and time_stamp < prev_ts:
-                periode_count += 1
-                # print(periode_count)
-            prev_ts = time_stamp
-            if (pattern & 0x10) == 0:
-                ts_list.append(time_stamp + periode_duration * periode_count)
-                event_channel_list.append("{0:04b}".format(pattern & 0xF))
+        # ts_list = []
+        # event_channel_list = []
+        # periode_count = 0
+        # periode_duration = 1 << 27
+        # prev_ts = -1
+        # for ts_word in ts_word_list:
+        #    time_stamp = ts_word >> 5
+        #    pattern = ts_word & 0x1F
+        #    if prev_ts != -1 and time_stamp < prev_ts:
+        #        periode_count += 1
+        # print(periode_count)
+        #    prev_ts = time_stamp
+        #    if (pattern & 0x10) == 0:
+        #        ts_list.append(time_stamp + periode_duration * periode_count)
+        #        event_channel_list.append("{0:04b}".format(pattern & 0xF))
 
-        ts_list = np.array(ts_list) * 2
-        event_channel_list = event_channel_list
+        # ts_list = np.array(ts_list) * 2
+        # event_channel_list = event_channel_list
 
-        return ts_list, event_channel_list
+        # return ts_list, event_channel_list
+        return self.read_timestamps_bin(buf, legacy)
 
     def count_g2(
         self,
@@ -380,23 +385,11 @@ class TimestampTDC1(object):
         actual acquisition time.
         """
 
-        t, channel = self.get_timestamps(t_acq)
+        t, channel = self.get_timestamps(t_acq, legacy=False)
 
-        """
-        OLDER CODE:
-        """
-        # channel = np.array([pattern_to_channel(int(i, 2)) for i in channel])
-        # t_ch1 = t[channel == ch_start]
-        # t_ch2 = t[channel == ch_stop]
+        t_ch1 = t[(channel & (1 << (ch_start - 1))).nonzero()]
+        t_ch2 = t[(channel & (1 << (ch_stop - 1))).nonzero()]
 
-        """
-        NEWER CODE:
-        convert string expression of channel elements to a number, and mask it against
-        desired channels the mask ensures that timestamp events that arrive at the
-        channels within one time resolution is still registered.
-        """
-        t_ch1 = t[[int(ch, 2) & channel_to_pattern(ch_start) != 0 for ch in channel]]
-        t_ch2 = t[[int(ch, 2) & channel_to_pattern(ch_stop) != 0 for ch in channel]]
         histo = g2lib.delta_loop(
             t_ch1, t_ch2 + ch_stop_delay, bins=bins, bin_width_ns=bin_width
         )
@@ -464,7 +457,23 @@ class TimestampTDC1(object):
         self._com.write(b"abort\r\n")
         self._com.readlines()
 
-    def read_timestamps_bin(self, binary_stream):
+    def read_timestamps_bin2(self, binary_stream):
+        """
+        Reads the timestamps and returns tuple of lists
+        """
+        total = len(binary_stream) // 4
+        uint_list = unpack(f"<{total}I", binary_stream)  # unpack little endian
+        uint_list = np.array(uint_list)
+        raw_ts_list = (
+            uint_list >> 5
+        ) << 1  # 27 timing info bits out of 32, 2ns per lsb
+        (neg_diff_list,) = (np.diff(raw_ts_list) < 0).nonzero()
+        for i in range(len(neg_diff_list)):
+            raw_ts_list[neg_diff_list[i] + 1 :] += 1 << 28
+        event_channel_list = uint_list & 0xF
+        return raw_ts_list, event_channel_list
+
+    def read_timestamps_bin(self, binary_stream, legacy=True):
         """
         Reads the timestamps accumulated in a binary sequence
         Returns:
@@ -494,10 +503,14 @@ class TimestampTDC1(object):
             prev_ts = time_stamp
             if (pattern & 0x10) == 0:
                 ts_list.append(time_stamp + periode_duration * periode_count)
-                event_channel_list.append("{0:04b}".format(pattern & 0xF))
+                if legacy:
+                    event_channel_list.append("{0:04b}".format(pattern & 0xF))
+                else:
+                    event_channel_list.append(pattern & 0xF)
 
         ts_list = np.array(ts_list) * 2
-        event_channel_list = event_channel_list
+        if not legacy:
+            event_channel_list = np.array(event_channel_list)
         return ts_list, event_channel_list
 
     def read_timestamps_from_file(self):

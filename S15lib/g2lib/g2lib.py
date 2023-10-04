@@ -6,9 +6,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Union
 
 import numpy as np
-import pyximport
-
-pyximport.install(language_level=3)
 
 try:
     import scipy
@@ -16,6 +13,10 @@ except ImportError:
     warnings.warn("Unable to import scipy module")
 
 try:
+    import pyximport
+
+    pyximport.install(language_level=3)
+    # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
     from S15lib.g2lib.delta import cond_delta_loop
 
     cflag = True
@@ -122,6 +123,7 @@ except ImportError:
 # Indicates success import of Cython g2 script
 CFLAG = False
 try:
+    # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
     from S15lib.g2lib.delta import delta_loop
 
     CFLAG = True

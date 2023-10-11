@@ -358,7 +358,7 @@ class TimestampTDC1(object):
 
         # return ts_list, event_channel_list
         if highcount:
-            return self.read_timestamps_bin3(buf, tr)
+            return self.read_timestamps_bin3(buf, tr, legacy)
         return self.read_timestamps_bin(buf, legacy)
 
     def count_g2(
@@ -463,7 +463,7 @@ class TimestampTDC1(object):
         self._com.write(b"abort\r\n")
         self._com.readlines()
 
-    def read_timestamps_bin3(self, buf, tr, min_time_step=1 << 25):
+    def read_timestamps_bin3(self, buf, tr, min_time_step=1 << 25, legacy=False):
         """
         Reads timestamps, checks for corrupt data according to min_time_step
         fix data and returns tuple of lists. Default min_time_step ~ 2ms
@@ -518,6 +518,9 @@ class TimestampTDC1(object):
         for i in range(len(neg_diff_list)):
             raw_ts_list[neg_diff_list[i] + 1 :] += 1 << 28
         event_channel_list = ts_raw_list & 0xF
+        if legacy:
+            format_vec = np.vectorize("{0:04b}".format)
+            event_channel_list = format_vec(event_channel_list)
         return raw_ts_list, event_channel_list
 
     def read_timestamps_bin2(self, binary_stream):

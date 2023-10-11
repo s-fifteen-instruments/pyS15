@@ -13,7 +13,7 @@ import time
 import warnings
 from os.path import expanduser
 from struct import unpack
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import serial
@@ -243,7 +243,7 @@ class TimestampTDC1(object):
 
     def _stream_response_into_buffer(
         self, cmd: str, acq_time: float
-    ) -> Tuple[bytes, list[int]]:
+    ) -> Tuple[bytes, List[int]]:
         """Streams data from the timestamp unit into a buffer.
 
         Args:
@@ -300,7 +300,7 @@ class TimestampTDC1(object):
         self._com.timeout = 0.05
         return tuple([int(i) for i in singlesAndPairs.split()])
 
-    def get_timestamps(self, t_acq: float = 1, legacy=True):
+    def get_timestamps(self, t_acq: float = 1, legacy=True, highcount=False):
         """Acquires timestamps and returns 2 lists. The first one containing
         the time and the second the event channel.
 
@@ -323,6 +323,8 @@ class TimestampTDC1(object):
         # level = float(self.level.split()[0])
         # level_str = "NEG" if level < 0 else "POS"
         # t_acq_for_cmd = t_acq if t_acq < 65 else 0
+        if t_acq != self.int_time / 1000:
+            self.int_time = t_acq
         cmd_str = "INPKT;counts?;"
         buf, tr = self._stream_response_into_buffer(cmd_str, t_acq)
         # '*RST;INPKT;'+level+';time '+str(t_acq * 1000)+';timestamp;counts?',t_acq+0.1) # noqa
@@ -355,6 +357,8 @@ class TimestampTDC1(object):
         # event_channel_list = event_channel_list
 
         # return ts_list, event_channel_list
+        if highcount:
+            return self.read_timestamps_bin3(buf, tr)
         return self.read_timestamps_bin(buf, legacy)
 
     def count_g2(
@@ -459,6 +463,61 @@ class TimestampTDC1(object):
         self._com.write(b"abort\r\n")
         self._com.readlines()
 
+    def read_timestamps_bin3(self, buf, tr, min_time_step=1 << 25):
+        """
+        Reads timestamps, checks for corrupt data according to min_time_step
+        fix data and returns tuple of lists. Default min_time_step ~ 2ms
+        """
+        corrupted = False
+        corrupt_count = 0
+        start = 0
+        end = 0
+        skip = 0  # possible values are [0, 2]
+        neg_list = np.zeros(np.shape(tr), "int64")
+        ts_raw_list = np.array([], dtype="int64")
+        for idx, i in enumerate(tr):
+            end += i
+            uint_list = unpack(f"<{i//4}I", buf[start - skip : end - skip])
+            uint_list = np.array(uint_list)
+            diff_l = np.diff(uint_list)
+            neg_l = diff_l < 0
+            neg_list[idx] = sum(neg_l)
+            while neg_list[idx] > 1:  # Something fishy in timesteps check more
+                # + 1 because diff function is 1 less
+                corrupt_index = np.argmax(np.abs(diff_l) > min_time_step) + 1
+                if corrupt_index == 1:  # no previous in uint_list
+                    check_prev = ts_raw_list[-1]
+                else:
+                    check_prev = uint_list[corrupt_index - 1]
+                # +2 to discard 2 corrupt timestamp
+                new_start = start + (corrupt_index + 2) * 4
+                if skip == 0:
+                    skip = 2
+                elif skip == 2:
+                    skip = 0
+                check_buf = buf[new_start - skip : new_start - skip + 8]
+                dat = unpack("<2I", check_buf)
+                time_diff = np.abs(dat[1] - dat[0])
+                if time_diff < min_time_step:
+                    corrupt_count += 1
+                check_prev - dat[0]
+                bal = (end - new_start) // 4
+                bal_list = np.array(
+                    unpack(f"<{bal}I", buf[new_start - skip : end - skip])
+                )
+                corrupted = False if corrupted else True
+                uint_list = np.append(uint_list[:corrupt_index], bal_list)
+                diff_l = np.diff(uint_list)
+                neg_list[idx] = sum(diff_l < 0)
+            ts_raw_list = np.append(ts_raw_list, uint_list)
+            start += i
+        raw_ts_list = (ts_raw_list >> 5) << 1
+        (neg_diff_list,) = (np.diff(raw_ts_list) < (-1 << 25)).nonzero()
+        for i in range(len(neg_diff_list)):
+            raw_ts_list[neg_diff_list[i] + 1 :] += 1 << 28
+        event_channel_list = ts_raw_list & 0xF
+        return raw_ts_list, event_channel_list
+
     def read_timestamps_bin2(self, binary_stream):
         """
         Reads the timestamps and returns tuple of lists
@@ -469,7 +528,7 @@ class TimestampTDC1(object):
         raw_ts_list = (
             uint_list >> 5
         ) << 1  # 27 timing info bits out of 32, 2ns per lsb
-        (neg_diff_list,) = (np.diff(raw_ts_list) < 0).nonzero()
+        (neg_diff_list,) = (np.diff(raw_ts_list) < (-1 << 25)).nonzero()
         for i in range(len(neg_diff_list)):
             raw_ts_list[neg_diff_list[i] + 1 :] += 1 << 28
         event_channel_list = uint_list & 0xF

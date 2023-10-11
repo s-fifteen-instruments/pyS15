@@ -358,8 +358,8 @@ class TimestampTDC1(object):
 
         # return ts_list, event_channel_list
         if highcount:
-            return self.read_timestamps_bin3(buf, tr, legacy)
-        return self.read_timestamps_bin(buf, legacy)
+            return self.read_timestamps_bin3(buf, tr, legacy=legacy)
+        return self.read_timestamps_bin(buf, legacy=legacy)
 
     def count_g2(
         self,

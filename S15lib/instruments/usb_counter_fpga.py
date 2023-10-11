@@ -477,7 +477,9 @@ class TimestampTDC1(object):
         ts_raw_list = np.array([], dtype="int64")
         for idx, i in enumerate(tr):
             end += i
-            uint_list = unpack(f"<{i//4}I", buf[start - skip : end - skip])
+            # print(idx,i,i//4,end-start)
+            end_idx = end - (end - start) % 4  # ensure multiple of 4
+            uint_list = unpack(f"<{i//4}I", buf[start - skip : end_idx - skip])
             uint_list = np.array(uint_list)
             diff_l = np.diff(uint_list)
             neg_l = diff_l < 0

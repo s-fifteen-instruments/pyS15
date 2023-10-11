@@ -241,7 +241,9 @@ class TimestampTDC1(object):
         self._com.write("ECLOCK?\r\n".encode())
         return self._com.readline()
 
-    def _stream_response_into_buffer(self, cmd: str, acq_time: float) -> bytes:
+    def _stream_response_into_buffer(
+        self, cmd: str, acq_time: float
+    ) -> Tuple[bytes, list[int]]:
         """Streams data from the timestamp unit into a buffer.
 
         Args:
@@ -266,7 +268,7 @@ class TimestampTDC1(object):
                 continue
             buf += self._com.read(bytes_to_read)
             tr.append(bytes_to_read)
-        return buf  # ,tr
+        return buf, tr
 
     def get_counts_and_coincidences(self, t_acq: float = 1) -> Tuple[int, ...]:
         """Counts single events and coinciding events in channel pairs.
@@ -322,7 +324,7 @@ class TimestampTDC1(object):
         # level_str = "NEG" if level < 0 else "POS"
         # t_acq_for_cmd = t_acq if t_acq < 65 else 0
         cmd_str = "INPKT;counts?;"
-        buf = self._stream_response_into_buffer(cmd_str, t_acq)
+        buf, tr = self._stream_response_into_buffer(cmd_str, t_acq)
         # '*RST;INPKT;'+level+';time '+str(t_acq * 1000)+';timestamp;counts?',t_acq+0.1) # noqa
 
         # buffer contains the timestamp information in binary.

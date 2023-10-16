@@ -3,7 +3,7 @@
 import typing
 import warnings
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 import numpy as np
 import pyximport
@@ -357,11 +357,11 @@ class PeakStatistics:
 def histogram(
     alice: list,
     bob: list,
-    duration: Union[float, tuple[float, float]],
+    duration: Union[float, Tuple[float, float]],
     resolution: float = 1,
     center: float = 0.0,
     statistics: bool = False,
-    window: Optional[Union[float, tuple[float, float]]] = None,
+    window: Optional[Union[float, Tuple[float, float]]] = None,
 ):
     """Returns the coincidence histogram and corresponding (left-edge) bin timings.
 

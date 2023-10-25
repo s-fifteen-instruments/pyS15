@@ -2,6 +2,7 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
+# distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 DTYPE = np.int64
 ctypedef np.int_t DTYPE_t
 
@@ -145,6 +146,9 @@ def delta_loop(t1,
         """
     cdef int l_t1 = len(t1)
     cdef int l_t2 = len(t2)
+    if isinstance(t1[0],np.int64):
+        t1 = np.float64(t1)
+        t2 = np.float64(t2)
     return _delta_loop(t1, t2, bins, bin_width_ns, l_t1, l_t2)
 
 def cond_delta_loop(t1,

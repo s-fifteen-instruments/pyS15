@@ -13,7 +13,7 @@ def _delta_loop(double [:] t1 not None,
                 double [:] t2 not None,
                 int bins,
                 double bin_width,
-                int l_t1, 
+                int l_t1,
                 int l_t2):
 
     cdef np.ndarray histogram = np.zeros(bins, dtype=DTYPE)
@@ -178,3 +178,103 @@ def cond_delta_loop(t1,
     cdef int l_t2 = len(t2)
     cdef int l_t3 = len(t3)
     return _cond_delta_loop(t1, t2, t3, bins, bin_width_ns, l_t1, l_t2, l_t3)
+
+
+@cython.boundscheck(False)  # turn off bounds-checking
+@cython.wraparound(False)   # turn off negative index wrapping
+@cython.nonecheck(False)
+def _delta_loop_ts(
+    double [:] t1s not None,
+    double [:] t2s not None,
+    int bins_len,
+    double bin_width,
+    int t1s_len,
+    int t2s_len,
+):
+    """See documentation for 'delta_loop_ts'."""
+
+    # Define masks
+    cdef np.ndarray mask1 = np.zeros(t1s_len, dtype=np.int32)
+    cdef np.ndarray mask2 = np.zeros(t2s_len, dtype=np.int32)
+    cdef np.ndarray histogram = np.zeros(bins_len, dtype=DTYPE)
+
+    # Define looping variables
+    cdef int t1_idx, t2_idx
+    cdef int n, t2_idx0 = 0, t2_idx_left = 0
+    cdef double t1, t2, dt
+    cdef double window_size = bins_len * bin_width
+
+    # Start loop
+    for t1_idx in range(t1s_len):
+        t1 = t1s[t1_idx]
+
+        # Iterate starting from cached left bound
+        n = -1
+        t2_idx0 = t2_idx_left
+        while True:
+            n += 1
+
+            t2_idx = t2_idx0 + n
+            if t2_idx >= t2s_len:
+                break  # no more valid timestamps
+
+            t2 = t2s[t2_idx]
+            if t2 < t1:
+                t2_idx_left = t2_idx + 1
+                continue  # outside left of window, cache
+
+            dt = t2 - t1
+            if dt >= window_size:
+                break  # outside right of window, done
+
+            # Store valid coincidence
+            mask1[t1_idx] = 1
+            mask2[t2_idx] = 1
+            histogram[int(dt // bin_width)] += 1
+
+    return histogram, mask1.astype(bool), mask2.astype(bool)
+
+def delta_loop_ts(
+    t1,
+    t2,
+    bins: int = 500,
+    bin_width_ns: float = 2,
+):
+    """Returns histogram and masks for coincidences.
+
+    This is essentially 'delta_loop', but collects the mask values
+    for the coincidences as well. This is required to avoid stray
+    background not arising from the heralding process, when building
+    up the g(3) coincidences.
+
+    In practice, the error from using 'cond_delta_loop' should be
+    small due to the large timing separation between consecutive
+    photon events in the same channel/detector.
+
+    Args:
+        t1: Timestamps of start events.
+        t2: Timestamps of stop events.
+        bins: Number of histogram bins for coincidence binning.
+        bin_width_ns: Bin width, in nanoseconds.
+
+    Returns:
+        histogram: Histogram of coincidence window.
+        mask1: Mask of t1 for coincidence timestamps.
+        mask2: Mask of t2 for coincidence timestamps.
+
+    Examples:
+        >>> hist2, _, mask2 = delta_loop_ts(t1, t2, 20, 2)  # 40 ns window of 20 bins, left-aligned at 0
+        >>> hist3, _, mask3 = delta_loop_ts(t1, t3, 20, 2)
+        >>> hist, m2p, m3p = delta_loop_ts(t2[mask2], t3[mask3]+500, 500, 2)  # 1 us window, centered at 0
+        >>> print(f"Trigger 1 rate: {len(t2[mask2])/len(t2)}")
+        >>> print(f"Trigger 2 rate: {len(t3[mask3])/len(t3)}")
+        >>> print(f"Heralding rate: {len(t2[mask2][m2p])/len(t2[mask2])}")
+
+    TODO:
+        Extend this in another function to automatically guess duration.
+    """
+    cdef int l_t1 = len(t1)
+    cdef int l_t2 = len(t2)
+    histogram, mask1, mask2 = _delta_loop_ts(t1, t2, bins, bin_width_ns, l_t1, l_t2)
+
+    return histogram, mask1, mask2

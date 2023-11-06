@@ -15,7 +15,7 @@ except ImportError:
 try:
     import pyximport
 
-    pyximport.install(language_level=3)
+    pyximport.install(setup_args={"include_dirs": np.get_include()}, language_level=3)
     # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
     from S15lib.g2lib.delta import cond_delta_loop
 

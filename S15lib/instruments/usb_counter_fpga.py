@@ -380,7 +380,7 @@ class TimestampTDC1(object):
         :type t_acq: float
         :returns: ch_start counts, ch_stop counts, actual acquistion time,
                   time bin array, histogram
-        :rtype: {int, int, int, float, float}
+        :rtype: {int, int, float, float, int}
 
         Notes
         -----
@@ -392,6 +392,7 @@ class TimestampTDC1(object):
         """
 
         t, channel = self.get_timestamps(t_acq, legacy=False)
+        t = t.astype(np.float64)
 
         t_ch1 = t[(channel & (1 << (ch_start - 1))).nonzero()]
         t_ch2 = t[(channel & (1 << (ch_stop - 1))).nonzero()]

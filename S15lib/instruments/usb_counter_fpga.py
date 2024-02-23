@@ -530,13 +530,13 @@ class TimestampTDC1(object):
         """
         total = len(binary_stream) // 4
         uint_list = unpack(f"<{total}I", binary_stream)  # unpack little endian
-        uint_list = np.array(uint_list)
+        uint_list = np.array(uint_list,dtype='int64') # signed bc rollover later
         raw_ts_list = (
             uint_list >> 5
         ) << 1  # 27 timing info bits out of 32, 2ns per lsb
         (neg_diff_list,) = (np.diff(raw_ts_list) < (-1 << 25)).nonzero()
         for i in range(len(neg_diff_list)):
-            raw_ts_list[neg_diff_list[i] + 1 :] += 1 << 28
+            raw_ts_list[neg_diff_list[i] + 1 :] += 1 << 28 # add rollovers
         event_channel_list = uint_list & 0xF
         return raw_ts_list, event_channel_list
 
@@ -575,7 +575,7 @@ class TimestampTDC1(object):
                 else:
                     event_channel_list.append(pattern & 0xF)
 
-        ts_list = np.array(ts_list) * 2
+        ts_list = np.array(ts_list,dtype='int64') * 2 # 2ns per step
         if not legacy:
             event_channel_list = np.array(event_channel_list)
         return ts_list, event_channel_list

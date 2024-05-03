@@ -126,6 +126,7 @@ class TimestampTDC1(object):
         if value < 1:
             print("Invalid integration time.")
         else:
+            value = value if value < 65535 else 0
             self._com.write("time {:d};".format(int(value)).encode())
             self._com.readlines()
 
@@ -262,12 +263,15 @@ class TimestampTDC1(object):
         tr = []
         time0 = time.time()
         self._com.write((cmd + "\r\n").encode())
-        while (time.time() - time0) <= acq_time + 0.01:
+        while (time.time() - time0) <= acq_time + 0.02:
             bytes_to_read = self._com.in_waiting
             if bytes_to_read == 0:
                 continue
             buf += self._com.read(bytes_to_read)
             tr.append(bytes_to_read)
+        self._com.write(b"abort\r\n")
+        while self._com.in_waiting:
+            self._com.readlines()  # empties buffer
         return buf, tr
 
     def get_counts_and_coincidences(self, t_acq: float = 1) -> Tuple[int, ...]:
@@ -316,7 +320,7 @@ class TimestampTDC1(object):
                 For example an event in channel 2 would correspond to "0010".
                 Two coinciding events in channel 3 and 4 correspond to "1100"
         """
-        if self._com.in_waiting:
+        while self._com.in_waiting:
             self._com.readlines()  # empties buffer
         if self.mode != "timestamp":
             self.mode = "timestamp"

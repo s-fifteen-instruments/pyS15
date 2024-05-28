@@ -1,7 +1,7 @@
 import setuptools
 
 requirements = [
-    "psutils",
+    "psutil",
     "pyserial",
     "numpy",
 ]

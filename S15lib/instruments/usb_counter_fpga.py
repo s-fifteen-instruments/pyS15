@@ -118,15 +118,18 @@ class TimestampTDC1(object):
         :rtype: int
         """
         self._com.write(b"time?\r\n")
-        return int(self._com.readline())
+        t = int(self._com.readline())
+        t = t if t >= 0 else t + (1 << 16)  # Fixing wrong TDC1 return type
+        return t
 
     @int_time.setter
     def int_time(self, value: float):
         value *= 1000
         if value < 1:
             print("Invalid integration time.")
+        elif value > 65535:
+            print("Integration time cannot exceed 65535 ms in counter/coincidence mode")
         else:
-            value = value if value < 65535 else 0
             self._com.write("time {:d};".format(int(value)).encode())
             self._com.readlines()
 
@@ -270,8 +273,12 @@ class TimestampTDC1(object):
             buf += self._com.read(bytes_to_read)
             tr.append(bytes_to_read)
         self._com.write(b"abort\r\n")
-        while self._com.in_waiting:
-            self._com.readlines()  # empties buffer
+        if acq_time > 65.6:
+            time.sleep(0.02)  # For abort to process?
+        while self._com.in_waiting != 0:
+            bytes_to_read = self._com.in_waiting
+            buf += self._com.read(bytes_to_read)
+            tr.append(bytes_to_read)
         return buf, tr
 
     def get_counts_and_coincidences(self, t_acq: float = 1) -> Tuple[int, ...]:
@@ -324,12 +331,16 @@ class TimestampTDC1(object):
             self._com.readlines()  # empties buffer
         if self.mode != "timestamp":
             self.mode = "timestamp"
-        # level = float(self.level.split()[0])
-        # level_str = "NEG" if level < 0 else "POS"
-        # t_acq_for_cmd = t_acq if t_acq < 65 else 0
-        if t_acq != self.int_time / 1000:
-            self.int_time = t_acq
-        cmd_str = "INPKT;counts?;"
+        if t_acq > 65.536:
+            time_cmd = "time 0;"
+        else:
+            if t_acq != self.int_time / 1000:
+                time_cmd = "time {:d};".format(int(t_acq * 1000))
+            else:
+                time_cmd = ""
+        cmd_begin_str = "INPKT;"
+        cmd_end_str = "counts?;"
+        cmd_str = cmd_begin_str + time_cmd + cmd_end_str
         buf, tr = self._stream_response_into_buffer(cmd_str, t_acq)
         # '*RST;INPKT;'+level+';time '+str(t_acq * 1000)+';timestamp;counts?',t_acq+0.1) # noqa
 

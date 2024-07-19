@@ -1,7 +1,6 @@
-from setuptools import Extension, setup
-
 import numpy as np
 from Cython.Build import cythonize
+from setuptools import Extension, setup
 
 package = Extension(
     name="delta",

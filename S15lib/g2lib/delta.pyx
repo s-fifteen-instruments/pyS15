@@ -4,7 +4,6 @@ cimport numpy as np
 
 # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 DTYPE = np.int64
-ctypedef np.int_t DTYPE_t
 
 @cython.boundscheck(False)  # turn off bounds-checking
 @cython.wraparound(False)   # turn off negative index wrapping

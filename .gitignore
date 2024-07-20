@@ -1,5 +1,6 @@
 # Compiled library files
 S15lib/g2lib/delta.so
+build/
 
 # Virtual environments
 venv/

@@ -1,3 +1,4 @@
+import numpy as np
 import setuptools
 
 requirements = [
@@ -7,12 +8,12 @@ requirements = [
 ]
 requirements_dev = [
     "pre-commit",
+    "Cython",
 ]
 requirements_apps = [
     "PyQt5",
     "Pyqtgraph",
     "configargparse",
-    "Cython",
 ]
 
 setuptools.setup(
@@ -30,4 +31,12 @@ setuptools.setup(
         "apps": requirements_apps,
     },
     python_requires=">=3.6",
+    ext_modules=[
+        setuptools.Extension(
+            name="S15lib.g2lib.delta",
+            sources=["S15lib/g2lib/delta.c"],
+            include_dirs=[np.get_include()],
+            define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+        )
+    ],
 )

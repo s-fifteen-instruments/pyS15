@@ -7,11 +7,6 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
-try:
-    import scipy
-except ImportError:
-    warnings.warn("Unable to import scipy module")
-
 # Indicates success import of Cython g2 script
 CFLAG = False
 try:
@@ -563,6 +558,8 @@ def generate_fft(
         This function is technically not cacheable due to the mutability of
         np.ndarray.
     """
+    import scipy  # nested in function
+
     acq_start = arr[0] if acq_start is None else acq_start * 1e9
     duration = arr[-1] - arr[0] if duration is None else duration * 1e9
 
@@ -580,6 +577,8 @@ def get_xcorr(afft: list, bfft: list, filter: Optional[list] = None):
         The conjugation operation on an FFT is essentially a time-reversal
         operation on the original time-series data.
     """
+    import scipy  # nested in function
+
     fft = np.conjugate(afft) * bfft
     if filter is not None:
         fft = fft * filter

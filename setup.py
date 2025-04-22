@@ -1,3 +1,7 @@
+import os
+import shutil
+import sysconfig
+
 import numpy as np
 import setuptools
 
@@ -16,6 +20,25 @@ requirements_apps = [
     "configargparse",
 ]
 
+
+# Use C compiler as specified in env, or system's default, for compiling delta.so
+# Necessary on portable Python built with other compilers, e.g. gcc/clang
+#
+# Precedence:
+#   1. User environment variable, e.g. CC=gcc
+#   2. OS executable in PATH, e.g. /usr/bin/cc
+#   3. Python build-time compiler
+config = sysconfig.get_config_vars()
+cc = os.environ.get("CC", shutil.which("cc"))
+if cc is not None:
+    config["CC"] = cc
+    config["LDSHARED"] = f"{cc} -shared"  # for shared libraries
+ldshared = os.environ.get("LDSHARED", None)  # allow user override
+if ldshared is not None:
+    config["LDSHARED"] = ldshared
+
+
+# setuptools project configuration
 setuptools.setup(
     name="S15lib",
     version="0.2.0",

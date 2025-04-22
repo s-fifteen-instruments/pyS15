@@ -1,52 +1,28 @@
 # Developer guide
 
-Mainly for ab-initio introduction to the conventions used within the project,
-so that the codebase looks consistent across developer transitions.
+Instructions below use `uv` as the frontend.
+
 
 ## Environment setup
 
-### Initial repository cloning
+Clone the repository and create a virtual environment for dependencies as usual,
 
-Clone the repository as usual.
-
-```
+```bash
+# Clone repository
 git clone git@github.com:s-fifteen-instruments/pyS15.git
 cd pyS15
-```
 
-If using SSH-based authentication, register the SSH key associated with the
-corresponding GitHub account.
+# Create virtual environment
+uv venv
+source .venv/bin/activate  # for Linux
 
-```
-git config core.sshCommand "ssh -i ~/.ssh/id_rsa"
-```
-
-### Create virtual environment
-
-Create a virtual environment to isolate all required dependencies
-from your own global pacakage environment.
-
-```
-# For Windows
-python -m venv .venv
-.\env\Scripts\activate  # activate virtual environment
-
-# For Mac/Linux
-python3 -m venv .venv
-source env/bin/activate
-```
-
-### Install dependencies
-
-Install the required dependencies using the following,
-
-```
-python -e .[dev]
+# Install dependencies
+uv pip install -e .[dev]
 ```
 
 > :warning: If working on the apps within the `apps/` directory, additionally
 specify the `apps` flag to install the corresponding dependencies,
-> i.e. `python -e .[dev,apps]`
+> i.e. `uv pip install -e .[dev,apps]`
 
 Finally, set up the necessary pre-commit hooks for the project, which provide
 auto-formatting and linting services, facilitated by the
@@ -56,7 +32,7 @@ auto-formatting and linting services, facilitated by the
 pre-commit install
 ```
 
-The pre-commit configuration is specified in `.pre-commit-config.yaml`.
+> The pre-commit configuration is specified in `.pre-commit-config.yaml`.
 The same checks are used on the repository to validate changes to commits pushed
 or submitted as part of a pull request, for continuous integration.
 For more information on the formatting/linting tools used, see the corresponding
@@ -66,15 +42,24 @@ documentation:
 [flake8](https://github.com/pycqa/flake8),
 [mypy](https://mypy.readthedocs.io/en/latest/).
 
-To run ad-hoc formatting and linting, run the following command:
+Prior to pushing, sign the commits using a registered GPG/SSH key, e.g.
+`git config core.sshCommand "ssh -i ~/.ssh/id_rsa"`
 
-```
-pre-commit run --all-files
+## Pushing changes in delta.pyx
+
+Previous versions of the library required a separate build step for the C-based $g^{(2)}$ code
+in `S15lib/g2lib/delta.pyx`, involving (a) Cython compile from `.pyx` to `.c`, and (b) CC compile into shared library `.so`.
+Step (b) is now automatically performed during package installation.
+
+Step (a) is relatively expensive, and requires the `Cython` package. This should now be performed out-of-band to speed up
+package installation, i.e. changes to the `delta.pyx` source should accompany a recompilation to `delta.c` in the same commit,
+
+```bash
+cython -3 S15lib/g2lib/delta.pyx
 ```
 
 ## Documentation
 
-Currently mixed with various styles...
 To standardize with [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) moving forward,
 for three main reasons:
 
@@ -87,5 +72,3 @@ for three main reasons:
   Google-style docstrings are sufficiently readable (Sphinx uses multiple directives for the same variable),
   while remaining compact (Numpy-style generally takes up much more vertical space)
 - Google-style docstrings already exist within the repository
-
-TODO: To add `darglint` with `strictness=long` for validating docstrings.

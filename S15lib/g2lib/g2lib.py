@@ -12,14 +12,12 @@ try:
 except ImportError:
     warnings.warn("Unable to import scipy module")
 
+# Indicates success import of Cython g2 script
+CFLAG = False
 try:
-    import pyximport
+    from S15lib.g2lib.delta import cond_delta_loop, delta_loop
 
-    pyximport.install(setup_args={"include_dirs": np.get_include()}, language_level=3)
-    # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
-    from .delta import cond_delta_loop
-
-    cflag = True
+    CFLAG = True
 except ImportError:
     warnings.warn("Unable to import Cython conditional g2 module, using native option")
 
@@ -119,16 +117,6 @@ except ImportError:
         l_t3 = len(t3)
         return _cond_delta_loop(t1, t2, t3, bins, bin_width_ns, l_t1, l_t2, l_t3)
 
-
-# Indicates success import of Cython g2 script
-CFLAG = False
-try:
-    # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
-    from S15lib.g2lib.delta import delta_loop
-
-    CFLAG = True
-except ImportError:
-    # print('delta.so module not found, using native option')
     def delta_loop(
         t1: List[float], t2: List[float], bins: int = 500, bin_width_ns: float = 2
     ) -> List[int]:

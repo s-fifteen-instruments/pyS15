@@ -27,30 +27,23 @@ requirements_apps = [
 #
 # Precedence:
 #   1. User environment variable, e.g. CC=gcc
-#   2. Python build-time compiler
-#   3. OS executable in PATH, e.g. /usr/bin/cc
+#   2. OS executable in PATH, e.g. /usr/bin/cc
+#   3. Python build-time compiler
 #
 # TODO: Check if compatible with Windows installations
-config = sysconfig.get_config_vars()
-
-# Check if Python was cross-compiled (i.e. build-time compiler does not exist)
-def tokenize(command):  # noqa
-    return shlex.split(command)
 
 
 def get_executable_index(tokens, check_exists=True):
     for i, token in enumerate(tokens):
-        # Ignore environment variables, and check executable exists
-        if "=" not in token:
+        if "=" not in token:  # ignore environment variables
             if check_exists and not shutil.which(token):
                 continue
             return i
-    else:
-        return None
+    return None
 
 
 def replace_executable(target, command):
-    tokens = tokenize(command)
+    tokens = shlex.split(command)
     idx = get_executable_index(tokens, check_exists=False)
     tokens = list(tokens)  # replace with mutable container
     tokens[idx] = target
@@ -58,53 +51,80 @@ def replace_executable(target, command):
 
 
 def find_executable(command):
-    tokens = tokenize(command)
+    tokens = shlex.split(command)
     idx = get_executable_index(tokens)
     return idx is not None
 
 
-u_cc = os.environ.get("CC", None)  # user-specified compiler
-if u_cc is not None:
-    config["CC"] = u_cc
-    config["LDSHARED"] = f"{u_cc} -shared"  # for shared libraries
-    u_ldshared = os.environ.get("LDSHARED", None)
-    if u_ldshared is not None:
-        config["LDSHARED"] = u_ldshared  # if manual library linking required
+def get_compiler(config=sysconfig.get_config_vars(), env={}):
+    """Returns preferred cc and ldshared programs.
 
-else:
-    b_cc = config.get("CC", None)  # build compiler
-    b_ldshared = config.get("LDSHARED", None)
-    p_cc = shutil.which("cc")  # platform default compiler (w/o options)
-    if b_cc is None:
-        config["CC"] = p_cc
-        config["LDSHARED"] = f"{p_cc} -shared"
-    elif not find_executable(b_cc):
-        config["CC"] = replace_executable(p_cc, b_cc)
-        config["LDSHARED"] = replace_executable(p_cc, b_ldshared)
+    Args:
+        config: config dictionary from Python's sysconfig.
+        env: environment variables.
 
+    Examples:
+        $ export PROG="python -c 'import setup, os; \
+            print(setup.get_compiler(setup.config, os.environ))'"
+
+        # Assuming gcc build compiler, not present on host
+        $ eval $PROG
+        ('cc -pthread', 'cc -pthread -shared -Wl,--exclude-libs,ALL -LModules/_hacl')
+
+        # Creating a symlink named 'gcc'
+        $ ln -s /usr/bin/cc /usr/bin/gcc
+        $ eval $PROG
+        ('gcc -pthread', 'gcc -pthread -shared -Wl,--exclude-libs,ALL -LModules/_hacl')
+
+        # Use env-defined compilers
+        $ CC='clang -Wall' eval $PROG
+        ('clang -Wall', 'clang -Wall -shared')
+        $ CC=clang LDSHARED='clang -shared -O2' eval $PROG
+        ('clang', 'clang -shared -O2')
+    """
+
+    # Prefer user-supplied compiler (flags)
+    if "CC" in env:
+        cc = env.get("CC")
+        return cc, env.get("LDSHARED", f"{cc} -shared")
+
+    platform_cc = shutil.which("cc")
+    cc = config.get("CC", platform_cc)
+    ldshared = config.get("LDSHARED", f"{platform_cc} -shared")
+    if not find_executable(cc):  # replace build compiler with platform's
+        return (
+            replace_executable(platform_cc, cc),
+            replace_executable(platform_cc, ldshared),
+        )
+    return cc, ldshared  # use default compiler
+
+
+config = sysconfig.get_config_vars()
+config["CC"], config["LDSHARED"] = get_compiler(config, os.environ)
 
 # setuptools project configuration
-setuptools.setup(
-    name="S15lib",
-    version="0.2.0",
-    description="S-Fifteen Python Library",
-    url="https://s-fifteen.com/",
-    author="Mathias Seidler;",
-    author_email="",
-    license="MIT",
-    packages=setuptools.find_packages(),
-    install_requires=requirements,
-    extras_require={
-        "dev": requirements_dev,
-        "apps": requirements_apps,
-    },
-    python_requires=">=3.6",
-    ext_modules=[
-        setuptools.Extension(
-            name="S15lib.g2lib.delta",
-            sources=["S15lib/g2lib/delta.c"],
-            include_dirs=[np.get_include()],
-            define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-        )
-    ],
-)
+if __name__ == "__main__":
+    setuptools.setup(
+        name="S15lib",
+        version="0.2.0",
+        description="S-Fifteen Python Library",
+        url="https://s-fifteen.com/",
+        author="Mathias Seidler;",
+        author_email="",
+        license="MIT",
+        packages=setuptools.find_packages(),
+        install_requires=requirements,
+        extras_require={
+            "dev": requirements_dev,
+            "apps": requirements_apps,
+        },
+        python_requires=">=3.6",
+        ext_modules=[
+            setuptools.Extension(
+                name="S15lib.g2lib.delta",
+                sources=["S15lib/g2lib/delta.c"],
+                include_dirs=[np.get_include()],
+                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+            )
+        ],
+    )

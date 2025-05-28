@@ -8,7 +8,11 @@ S15lib is a Python package for controlling [S-Fifteen instruments](https://s-fif
 Install the package directly with
 
 ```
+# For Linux/MacOS
 pip install git+https://github.com/s-fifteen-instruments/pyS15.git
+
+# For Windows and/or systems with compile-related installation difficulties
+pip install git+https://github.com/s-fifteen-instruments/pyS15.git@no_compile
 ```
 
 Alternatively, clone or [download](https://github.com/s-fifteen-instruments/pyS15/archive/refs/heads/master.zip)

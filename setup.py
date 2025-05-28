@@ -1,9 +1,7 @@
-import os
 import shlex
 import shutil
 import sysconfig
 
-import numpy as np
 import setuptools
 
 requirements = [
@@ -99,9 +97,6 @@ def get_compiler(config=sysconfig.get_config_vars(), env={}):
     return cc, ldshared  # use default compiler
 
 
-config = sysconfig.get_config_vars()
-config["CC"], config["LDSHARED"] = get_compiler(config, os.environ)
-
 # setuptools project configuration
 if __name__ == "__main__":
     setuptools.setup(
@@ -119,12 +114,4 @@ if __name__ == "__main__":
             "apps": requirements_apps,
         },
         python_requires=">=3.6",
-        ext_modules=[
-            setuptools.Extension(
-                name="S15lib.g2lib.delta",
-                sources=["S15lib/g2lib/delta.c"],
-                include_dirs=[np.get_include()],
-                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-            )
-        ],
     )

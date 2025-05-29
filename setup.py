@@ -99,11 +99,12 @@ def get_compiler(config=sysconfig.get_config_vars(), env={}):
     return cc, ldshared  # use default compiler
 
 
-config = sysconfig.get_config_vars()
-config["CC"], config["LDSHARED"] = get_compiler(config, os.environ)
-
 # setuptools project configuration
 if __name__ == "__main__":
+
+    config = sysconfig.get_config_vars()
+    config["CC"], config["LDSHARED"] = get_compiler(config, os.environ)
+
     setuptools.setup(
         name="S15lib",
         version="0.2.0",

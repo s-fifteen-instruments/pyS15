@@ -1,0 +1,44 @@
+%% This is an example script. %% Are comments for Mermaid and # are
+%% comments for the mermaid_dpg.py parser, it will come up in the final flowchart
+
+%% Example 1, simple repetitive sequence for DPG2 (128bit)
+
+flowchart TD
+    %%control block for settings of DPG
+    %%Settings accepted are {CLOCK}, {evars}, {ivars}, {auxout}, {auxconfig}
+    %% {dacconfig}, {inlevel}, {version}, {dacstatic}, {startaddress}, {inthresh}
+    control[CLOCK 100MHz auto
+    auxout nim
+    auxconfig normal
+    dacconfig half
+    inlevel nim
+    version 128bit
+    dacstatic, 0:1.0,1:300,2:0,3:4000
+    startaddress 0
+    ]
+
+    %%trigger blocks, not used here
+
+    %%sequential blocks
+    seq1[ #single
+    100ns chan 0, 24 dac 0:1.5 #Channel 0, sync pulse, 100ns
+    9900ns chan  # off
+    100ns chan 1
+    900ns chan
+    100ns chan 1
+    8900ns chan dac 0:10.3
+    100ns chan 2
+    900ns chan dac 1:-10.3
+    100ns chan 2
+    900ns chan
+    100ns chan 2 dac 3:2.2
+    77900ns chan dac 2:-5.2
+    ]
+
+    %%loop blocks, not used here
+
+    %%branching blocks, not used here
+
+    %% Actual flow starts here
+    seq1-->seq1
+

@@ -1,0 +1,50 @@
+%% This is an example script.  %% Are comments for Mermaid and # are
+%% comments for the gen3.py parser, if will come up in the final flowchart
+
+%% Example 4, branching based on count rates via external trigger for DPG2
+
+flowchart TD
+    %%control block for settings of DPG
+    %%Settings accepted are {CLOCK}, {evars}, {ivars}, {auxout}, {auxconfig}
+    %% {dacconfig}, {inlevel}, {version}, {dacstatic}, {startaddress}, {inthresh}
+    control[CLOCK 100MHz auto
+    evars 100, 0, 0, 0
+    ivars 10,0,0,0
+    auxout nim
+    auxconfig normal
+    dacconfig static
+    inlevel nim
+    version 128bit
+    dacstatic, 0:10000,1:300
+    startaddress 0
+    ]
+
+    %%trigger blocks
+    trigger1[ #low block
+    extinput, e1
+    chan 0
+    %%rate 5000Hz
+    count 100 in 10 ms
+    success trigger2
+    failure trigger1
+    ]
+    trigger2[ #high block
+    extinput, e1
+    chan 1, 24,28
+    %%rate 5000Hz
+    count 100 in 10 ms
+    success trigger2
+    failure trigger1
+    ]
+
+
+    %%sequential blocks
+    %%loop blocks, not used here
+
+    %%branching blocks, not used here
+
+    %% Actual flow starts here
+    trigger1-->|success|trigger2
+    trigger1-->|failure|trigger1
+    trigger2-->|success|trigger2
+    trigger2-->|failure|trigger1

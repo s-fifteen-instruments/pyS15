@@ -1,0 +1,56 @@
+%% This is an example script two.  %% Are comments for Mermaid and # are
+%% comments for the gen3.py parser, it will come up in the final flowchart
+
+%% Example 2, branching via external input for DPG2 (128bit)
+
+flowchart TD
+    %%control block for settings of DPG
+    %%Settings accepted are {CLOCK}, {evars}, {ivars}, {auxout}, {auxconfig}
+    %% {dacconfig}, {inlevel}, {version}, {dacstatic}, {startaddress}, {inthresh}
+    control[CLOCK 100MHz auto
+    evars 25,1,0,0
+    ivars 10,100,12,0
+    auxout nim
+    auxconfig normal
+    inlevel nim
+    version 128bit
+    startaddress 0
+    ]
+
+    %%trigger blocks, not used here
+
+    %%sequential blocks
+    seq1[ #1MHz on
+    100ns chan 0, 24, 31
+    ]
+    seq2[ #5MHz on
+    500ns chan 0, 24, 31
+    ]
+    seq3[ #5MHz bal off
+    400ns chan
+    ]
+
+    %%loop blocks, not used here
+
+    %%branching blocks
+    branch1[
+    extinput e1
+    100ns
+    high seq1
+    low seq2
+    ]
+    branch2[
+    extinput e1
+    100ns
+    high seq1
+    low seq3
+    ]
+
+    %% Actual flow starts here
+    seq1-->branch1
+    branch1-->|low|seq2
+    branch1-->|high|seq1
+    seq2-->branch2
+    branch2-->|low|seq3
+    branch2-->|high|seq1
+    seq3-->seq2

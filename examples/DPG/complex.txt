@@ -1,0 +1,103 @@
+%% This is a complex example that shows using triggers, loop and sequence.
+%% An example is 
+flowchart TD
+    %%control block for settings of DPG
+    control[CLOCK 100MHz auto
+    evars 25,1,0,0
+    ivars 10,100,12,0
+    auxout nim
+    auxconfig normal
+    inlevel nim
+    version 64bit
+    startaddress 0
+    ]
+
+    %%trigger blocks
+    trigger1[ #MOT loading
+    extinput, e1
+    chan 0,1,13,15
+    %%rate 5000Hz
+    count 25 in 5 ms
+    success seq1
+    failure trigger1
+    ]
+    trigger2[ #Check pumping
+    extinput e2,
+    chan 0 1 2 3
+    %%rate 3MHz
+    count 1 in 330ns
+    success seq4
+    failure loop_check
+    ]
+    trigger3[ #Check atom
+    extinput e1,
+    chan 1 2 3
+    count 25 in 5 ms
+    success seq6
+    failure seq7
+    ]
+
+    %%sequential blocks
+    seq1[ #pumpO
+    5 ms use_ivar 1 chan 0, 1, 12, 13 #comment what this
+    2ms chan 1, 13, 16-19
+    ]
+    seq2[ #something
+    120us chan 1, 13, 16-19
+    150us chan 2, 10, 13, 16-19
+    2us chan 1, 13, 16-19
+    100ns chan 12, 13, 16-19
+    40ns chan 3, 16-19
+    30ns chan 16-19
+    20ns chan 16-19, 23
+    100ns chan 16-19
+    280ns chan 13, 16-19
+    80ns chan 13, 16-19
+    ]
+    seq3[ #special step
+    250ns chan 6, 13 16-19
+    ]
+    seq4[ #do physics
+    21930ns chan 13, 16-19, 24 #long step
+    10ns chan 13, 16-19
+    100us chan 5, 13, 16-19
+    ]
+    seq5[ #long wait
+    1966080ns chan 13
+    ]
+
+    seq6[ #success end
+    200ns chan 0, 1, 13, 15
+    40ns chan 0, 1, 9, 13, 15
+    110ns chan 0, 1, 13, 15
+    ]
+
+    seq7[ #failure end
+    200ns chan 0, 1, 13
+    40ns chan 0, 1, 8, 13
+    110ns chan 0, 1, 13, 15
+    ]
+
+    %%loop blocks
+    subgraph loop1 [  #loop_name Perform loop 120 times
+    ivar 3, 120 chan 0, 1, 8, 13
+    ]
+        seq2-->seq3 
+        seq3-->trigger2
+        trigger2-->|failure|loop_check
+    end
+
+    %%branching blocks, not used here
+
+    %% Actual flow starts here
+    trigger1-->|success| seq1
+    trigger1-->|failure| trigger1
+    seq1-->loop1
+    loop1-->|end| seq5
+    trigger2-->|success| seq4
+    seq4-->seq5
+    seq5-->trigger3
+    trigger3-->|success| seq6
+    trigger3-->|failure| seq7
+    seq6-->seq1
+    seq7-->trigger1

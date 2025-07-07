@@ -1,0 +1,38 @@
+%% This is an example script.  %% Are comments for Mermaid and # are
+%% comments for the gen3.py parser, if will come up in the final flowchart
+
+%% Example 3, simple loop sequence with internal variable for DPG1
+
+flowchart TD
+    %%control block for settings of DPG
+    %%Settings accepted are {CLOCK}, {evars}, {ivars}, {auxout}, {auxconfig}
+    %% {dacconfig}, {inlevel}, {version}, {dacstatic}, {startaddress}, {inthresh}
+    control[CLOCK 100MHz auto
+    ivars 10,2,0,0
+    auxout nim
+    auxconfig normal
+    dacconfig single
+    inlevel nim
+    version 128bit
+    dacstatic, 0:10000,1:300
+    startaddress 0
+    ]
+
+    %%trigger blocks, not used here
+
+    %%sequential blocks
+    seq1 [#delay
+    2ms use_ivar 1 chan 2 30 31
+    ]
+    %%loop blocks
+    subgraph loop1 [  #burst
+    ivar 3, 120 chan 0
+    ]
+    end
+
+
+    %%branching blocks, not used here
+
+    %% Actual flow starts here
+    loop1-->seq1
+    seq1-->loop1

@@ -1969,6 +1969,9 @@ class Translator:
         )
 
         ivar_idx = loop_block.counter_var  # 0-3
+        assert (
+            self.ivars[ivar_idx] == loop_block.counter_val
+        ), "Count in loop block doesn't match ivars in control block"
         dig_chan_settings = {
             "chan": loop_block.loop_set["chan"],
             "dac": loop_block.loop_set["dac"],

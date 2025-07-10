@@ -710,6 +710,8 @@ class ControlBlock(Block):
         self.patgen_128bit = False  # Set to 64bit version by default
         self.dacs = [0, 0, 0, 0, 0, 0, 0, 0]  # Static DAC values
         self.inthreshold = 59000  # Nim by default
+        self.clock = 100_000_000  # Default to 100MHz clock
+        self.timestep = 10  # Default to 10 ns
 
         self.auxselect = {"normal": 0, "delayed": 1, "main": 2, "ref": 3}
         self.clockselect = {"auto": 0, "external": 1, "internal": 2, "direct": 3}
@@ -1647,7 +1649,8 @@ class Translator:
         with open(self.fileout, "w") as f:
             f.write(self.dpatt_str)  # Header, config, params
             f.write(self.new_dpatt_str)  # Main pattern program
-            f.write("\n\nrun; #Run sequence")
+            f.write(f"\n\nconfig {self.config_bits}; #Release hold")
+            # f.write("\n\nrun; #Run sequence")
 
     def preprocess_blocks(self):
         """
@@ -1859,10 +1862,15 @@ class Translator:
         by iterating through the `self.logic` flow and calling specific
         `process_<block_type>_logic` methods for each unwritten block.
         """
-        self.new_dpatt_str += (
-            "\nholdaddr; ramprog;\n"  # Commands to prepare for pattern writing
-        )
-        self.pattern_row = 0  # Initialize current pattern row number
+        # self.new_dpatt_str += (
+        #    "\nholdaddr; ramprog;\n"  # Commands to prepare for pattern writing
+        # )
+        ADDRESSRESET = 4  # Bit 2: Reset address counter on jump
+        TABLERESET = 1  # Bit 0: Reset table pointer
+        self.write_config(
+            ADDRESSRESET + TABLERESET
+        )  # nominally writes config 5 unless other bits are set too
+        self.pattern_row = self.param_register[0]  # Initialize current patt row number
         for block_start_id, block_end_id, condition_str in self.logic:
             start_block = self.blocks[block_start_id]
             # end_block might not always be a Block object if
@@ -2041,8 +2049,8 @@ class Translator:
             else:
                 nested_end_target = self.blocks[nested_end_id]
 
-            if nested_start_block.written:
-                continue
+            # if nested_start_block.written:
+            #    continue
 
             if nested_start_block.block_type == "trigger":
                 self.process_trigger_logic(
@@ -2669,6 +2677,8 @@ class Translator:
         Returns:
             str: Formatted comment string (e.g., "\t# row 5 # My comment").
         """
+        if self.pattern_row == 512:
+            warnings.warn("Warning, current_row_count exceed 512")
         row_str = f"\t# row {self.pattern_row}"
         if comment:  # Append provided comment if any
             # Ensure comment doesn't already start with #

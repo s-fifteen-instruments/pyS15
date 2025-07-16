@@ -265,7 +265,7 @@ class TimestampTDC1(object):
         buf = b""
         ts_list = []
         tr = []
-        chunk_size = int((1 << 20) * self._com.timeout) * 4 # 1Mevent/s
+        chunk_size = int((1 << 22) * self._com.timeout) * 4  # 4Mevent/s
         time0 = time.time()
         self._com.write((cmd + "\r\n").encode())
         while (time.time() - time0) <= acq_time + 0.02:
@@ -280,7 +280,7 @@ class TimestampTDC1(object):
             bytes_to_read = self._com.in_waiting
             buf += self._com.read(bytes_to_read)
             tr.append(bytes_to_read)
-        return buf, list(filter(None,tr)) # takes out empty tr
+        return buf, list(filter(None, tr))  # takes out empty tr
 
     def get_counts_and_coincidences(self, t_acq: float = 1) -> Tuple[int, ...]:
         """Counts single events and coinciding events in channel pairs.

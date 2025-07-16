@@ -263,23 +263,24 @@ class TimestampTDC1(object):
 
         # Stream data for acq_time seconds into a buffer
         buf = b""
+        ts_list = []
         tr = []
+        chunk_size = int((1 << 22) * self._com.timeout) * 4  # 4Mevent/s
         time0 = time.time()
         self._com.write((cmd + "\r\n").encode())
         while (time.time() - time0) <= acq_time + 0.02:
-            bytes_to_read = self._com.in_waiting
-            if bytes_to_read == 0:
-                continue
-            buf += self._com.read(bytes_to_read)
-            tr.append(bytes_to_read)
+            ts_list.append(self._com.read(chunk_size))
+        for i in range(len(ts_list)):
+            tr.append(len(ts_list[i]))
         self._com.write(b"abort\r\n")
+        buf = b"".join(ts_list)
         if acq_time > 65.6:
             time.sleep(0.02)  # For abort to process?
         while self._com.in_waiting != 0:
             bytes_to_read = self._com.in_waiting
             buf += self._com.read(bytes_to_read)
             tr.append(bytes_to_read)
-        return buf, tr
+        return buf, list(filter(None, tr))  # takes out empty tr
 
     def get_counts_and_coincidences(self, t_acq: float = 1) -> Tuple[int, ...]:
         """Counts single events and coinciding events in channel pairs.
@@ -374,7 +375,7 @@ class TimestampTDC1(object):
         # return ts_list, event_channel_list
         if highcount:
             return self.read_timestamps_bin3(buf, tr, legacy=legacy)
-        return self.read_timestamps_bin(buf, legacy=legacy)
+        return self.read_timestamps_bin2(buf, legacy=legacy)
 
     def count_g2(
         self,
@@ -539,7 +540,7 @@ class TimestampTDC1(object):
             event_channel_list = format_vec(event_channel_list)
         return raw_ts_list, event_channel_list
 
-    def read_timestamps_bin2(self, binary_stream):
+    def read_timestamps_bin2(self, binary_stream, legacy=True):
         """
         Reads the timestamps and returns tuple of lists
         """
@@ -553,6 +554,9 @@ class TimestampTDC1(object):
         for i in range(len(neg_diff_list)):
             raw_ts_list[neg_diff_list[i] + 1 :] += 1 << 28  # add rollovers
         event_channel_list = uint_list & 0xF
+        if legacy:
+            format_vec = np.vectorize("{0:04b}".format)
+            event_channel_list = format_vec(event_channel_list)
         return raw_ts_list, event_channel_list
 
     def read_timestamps_bin(self, binary_stream, legacy=True):

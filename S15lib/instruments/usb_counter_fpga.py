@@ -545,6 +545,8 @@ class TimestampTDC1(object):
         Reads the timestamps and returns tuple of lists
         """
         total = len(binary_stream) // 4
+        rem = len(binary_stream) % 4
+        binary_stream = binary_stream[:-rem] if rem else binary_stream
         uint_list = unpack(f"<{total}I", binary_stream)  # unpack little endian
         uint_list = np.array(uint_list, dtype="int64")  # signed bc rollover later
         raw_ts_list = (

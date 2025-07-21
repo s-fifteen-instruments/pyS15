@@ -1,0 +1,321 @@
+flowchart TD
+    %%control block for settings of DPG
+    %%Settings accepted are {CLOCK}, {evars}, {ivars}, {auxout}, {auxconfig}
+    %% {dacconfig}, {inlevel}, {version}, {dacstatic}, {startaddress}, {inthresh}
+    control[ivars
+    ivars 10, 100
+    version 64bit
+    ]
+
+    %%sequential blocks
+    seq1[ #single
+10ns chan 0 8
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4800ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4820ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4820ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4820ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4840ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4840ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4860ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4880ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4920ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4960ns chan
+5000ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4960ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4920ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4880ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4860ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4840ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4840ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4820ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4820ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4820ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+10ns chan 1 9
+10ns chan
+4820ns chan
+    ]
+
+seq1-->seq1

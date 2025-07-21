@@ -9,8 +9,10 @@ generate a .dpatt file for the Digital Pattern Generator DPG1
 
 from numpy import abs, exp, linspace, round
 
-c1 = 0
-c2 = 2
+c1_nim = 0
+c2_nim = 1
+c1_ttl = 8
+c2_ttl = 9
 span = 100_000  # 105us
 center = 50_000  # 50us
 time_const = 35_000  # 20us
@@ -49,14 +51,14 @@ top_mermaid_string = """flowchart TD
     seq1[ #single
 """
 
-top_seq_string = f"10ns chan {c1}\n10ns chan\n"
+top_seq_string = f"10ns chan {c1_nim} {c1_ttl}\n10ns chan\n"
 new_str = ""
 current_time = 20
 for i, val in enumerate(y_counts.astype(int)):
     bin_i = i * bin_width
     bin_f = (i + 1) * bin_width
     while val > 0:
-        new_str += f"10ns chan {c2}\n10ns chan\n"
+        new_str += f"10ns chan {c2_nim} {c2_ttl}\n10ns chan\n"
         current_time += 20
         val -= 1
         if current_time > bin_f:
@@ -81,7 +83,7 @@ for i, val in enumerate(y2_counts.astype(int)):
     bin_i = i * bin_width
     bin_f = (i + 1) * bin_width
     while val > 0:
-        new_str += f"10ns chan {c2}\n10ns chan\n"
+        new_str += f"10ns chan {c2_nim} {c2_ttl}\n10ns chan\n"
         current_time += 20
         val -= 1
         if current_time > bin_f:

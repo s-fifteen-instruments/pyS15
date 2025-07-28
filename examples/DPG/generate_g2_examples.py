@@ -10,7 +10,7 @@ generate a .dpatt file for the Digital Pattern Generator DPG1
 from numpy import abs, exp, linspace, round
 
 c1_nim = 0
-c2_nim = 1
+c2_nim = 2
 c1_ttl = 8
 c2_ttl = 9
 span = 100_000  # 105us

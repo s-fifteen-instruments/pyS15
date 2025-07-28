@@ -11,309 +11,309 @@ flowchart TD
     seq1[ #single
 10ns chan 0 8
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4800ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
-10ns chan
-4820ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4820ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4820ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+4820ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
 10ns chan
 4840ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4840ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4860ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4880ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4920ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4960ns chan
 5000ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4960ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4920ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4880ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4860ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
-10ns chan
-4840ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4840ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+4840ns chan
+10ns chan 2 9
 10ns chan
-4820ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
-10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4820ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
 4820ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
 10ns chan
-10ns chan 1 9
+10ns chan 2 9
+10ns chan
+4820ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
+10ns chan
+10ns chan 2 9
 10ns chan
 4820ns chan
     ]

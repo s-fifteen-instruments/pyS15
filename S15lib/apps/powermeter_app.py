@@ -9,6 +9,7 @@ from PyQt5.QtCore import QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
     QComboBox,
+    QFileDialog,
     QGridLayout,
     QLabel,
     QMainWindow,
@@ -213,7 +214,7 @@ class MainWindow(QMainWindow):
             + "_powermeter."
             + default_filetype
         )
-        self._logfile_name = QtGui.QFileDialog.getSaveFileName(
+        self._logfile_name = QFileDialog.getSaveFileName(
             self, "Save to log file", start
         )[0]
         self.label_logfile.setText(self._logfile_name)

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
+from fpfind.lib.parse_timestamps import read_a1
 
 # Indicates success import of Cython g2 script
 CFLAG = False
@@ -216,6 +217,7 @@ def g2_extr(
     Raises:
         ValueError: When channel is not between 0 - 3.
             (0: channel 1, 1: channel 2, 2: channel 3, 3: channel 4)
+        RuntimeError: When no timestamps events are in specified channels.
 
     Returns:
         [int], [float], int, int, int:
@@ -227,11 +229,19 @@ def g2_extr(
         raise ValueError("Selected start channel not in range")
     if channel_stop not in range(4):
         raise ValueError("Selected stop channel not in range")
-    t, p = _data_extractor(filename, highres_tscard)
-    # t1 = t[(p & (0b1 << channel_start)) == (0b1 << channel_start)]
-    t1 = t[p == (0b1 << channel_start)]
-    # t2 = t[(p & (0b1 << channel_stop)) == (0b1 << channel_stop)]
-    t2 = t[p == (0b1 << channel_stop)]
+
+    if highres_tscard:
+        t, p = read_a1(filename, legacy=True, ignore_rollover=True)
+    else:
+        t, p = _data_extractor(filename, highres_tscard)
+
+    t1 = t[(p & (1 << channel_start)).astype(bool)].astype(np.float64)
+    t2 = t[(p & (1 << channel_stop)).astype(bool)].astype(np.float64)
+    if t1.size == 0 and t2.size == 0:
+        raise RuntimeError(
+            "No timestamp events recorded in channels "
+            f"{channel_start+1} and {channel_stop+1}."
+        )
 
     hist = delta_loop(
         t1, t2 - min_range + c_stop_delay, bins=bins, bin_width_ns=bin_width

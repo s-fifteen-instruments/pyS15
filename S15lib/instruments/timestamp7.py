@@ -19,7 +19,10 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import psutil
 
-from ..g2lib import parse_timestamps as parser
+try:
+    from fpfind.lib.parse_timestamps import read_a1  # python >= 3.8
+except ImportError:
+    from S15lib.g2lib.parse_timestamps import read_a1  # python < 3.8
 
 
 class TimestampTDC2:
@@ -228,6 +231,7 @@ class TimestampTDC2:
         self,
         duration: Optional[float] = None,
         return_actual_duration: bool = False,
+        ignore_rollover: bool = True,
     ) -> Tuple:
         """Returns the singles counts in each channel.
 
@@ -246,7 +250,9 @@ class TimestampTDC2:
         """
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
-        t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
+        t, p = read_a1(
+            self.outfile_path, legacy=self._legacy, ignore_rollover=ignore_rollover
+        )
 
         t1 = t[p & 0b0001 != 0]
         t2 = t[p & 0b0010 != 0]
@@ -346,11 +352,15 @@ class TimestampTDC2:
         self._threshold_dacs = value_dac  # type: ignore
         return
 
-    def get_timestamps(self, duration: Optional[float] = None):
+    def get_timestamps(
+        self, duration: Optional[float] = None, ignore_rollover: bool = True
+    ):
         """See parser.read_a1 doc."""
         duration = duration if duration else self.int_time
         self._call_with_duration(["-a1"], duration=duration)
-        t, p = parser.read_a1(self.outfile_path, legacy=self._legacy)
+        t, p = read_a1(
+            self.outfile_path, legacy=self._legacy, ignore_rollover=ignore_rollover
+        )
         return t, p
 
     def begin_readevents(

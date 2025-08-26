@@ -10,6 +10,7 @@ requirements = [
     "psutil",
     "pyserial",
     "numpy",
+    "fpfind @ git+https://github.com/s-fifteen-instruments/fpfind.git ; python_version >= '3.8'",  # noqa: E501
 ]
 requirements_dev = [
     "pre-commit",

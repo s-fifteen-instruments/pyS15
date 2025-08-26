@@ -46,7 +46,7 @@ def print_a1(filename: str, legacy: bool = False, **kwargs):
         print(f"{event:064b}")  # noqa: E231
 
 
-def read_a0(filename: str, legacy=None, **kwargs):
+def read_a0(filename: str, legacy=None, ignore_rollover=None, **kwargs):
     data = np.genfromtxt(filename, delimiter="\n", dtype="U8")
     data = np.array([int(v, 16) for v in data]).reshape(-1, 2)
     t = ((np.uint64(data[:, 1]) << 22) + (data[:, 0] >> 10)) / TIMESTAMP_RESOLUTION
@@ -54,13 +54,20 @@ def read_a0(filename: str, legacy=None, **kwargs):
     return t, p
 
 
-def read_a1(filename: str, legacy: bool = False, **kwargs):
+def read_a1(
+    filename: str, legacy: bool = False, ignore_rollover: bool = True, **kwargs
+):
     high_pos = 1
     low_pos = 0
     if legacy:
         high_pos, low_pos = low_pos, high_pos
     with open(filename, "rb") as f:
         data = np.fromfile(file=f, dtype="=I").reshape(-1, 2)
+
+    if ignore_rollover:
+        r = (data[:, low_pos] & 0b10000).astype(bool)  # check rollover flag
+        data = data[~r]
+
     t = (
         (np.uint64(data[:, high_pos]) << 22) + (data[:, low_pos] >> 10)
     ) / TIMESTAMP_RESOLUTION
@@ -68,7 +75,7 @@ def read_a1(filename: str, legacy: bool = False, **kwargs):
     return t, p
 
 
-def read_a2(filename: str, legacy=None, **kwargs):
+def read_a2(filename: str, legacy=None, ignore_rollover=None, **kwargs):
     data = np.genfromtxt(filename, delimiter="\n", dtype="U16")
     data = np.array([int(v, 16) for v in data])
     t = (np.uint64(data >> 10)) / TIMESTAMP_RESOLUTION

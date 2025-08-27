@@ -34,7 +34,7 @@ import numpy as np
 TIMESTAMP_RESOLUTION = 256  # units of 1/ns
 
 
-def print_a1(filename: str, legacy: bool = False):
+def print_a1(filename: str, legacy: bool = False, **kwargs):
     high_pos = 1
     low_pos = 0
     if legacy:
@@ -43,10 +43,10 @@ def print_a1(filename: str, legacy: bool = False):
         data = np.fromfile(file=f, dtype="=I").reshape(-1, 2)
     events = (np.uint64(data[:, high_pos]) << 32) + (data[:, low_pos])
     for event in events:
-        print(f"{event:064b}")
+        print(f"{event:064b}")  # noqa: E231
 
 
-def read_a0(filename: str, legacy=None):
+def read_a0(filename: str, legacy=None, ignore_rollover=None, **kwargs):
     data = np.genfromtxt(filename, delimiter="\n", dtype="U8")
     data = np.array([int(v, 16) for v in data]).reshape(-1, 2)
     t = ((np.uint64(data[:, 1]) << 22) + (data[:, 0] >> 10)) / TIMESTAMP_RESOLUTION
@@ -54,13 +54,20 @@ def read_a0(filename: str, legacy=None):
     return t, p
 
 
-def read_a1(filename: str, legacy: bool = False):
+def read_a1(
+    filename: str, legacy: bool = False, ignore_rollover: bool = True, **kwargs
+):
     high_pos = 1
     low_pos = 0
     if legacy:
         high_pos, low_pos = low_pos, high_pos
     with open(filename, "rb") as f:
         data = np.fromfile(file=f, dtype="=I").reshape(-1, 2)
+
+    if ignore_rollover:
+        r = (data[:, low_pos] & 0b10000).astype(bool)  # check rollover flag
+        data = data[~r]
+
     t = (
         (np.uint64(data[:, high_pos]) << 22) + (data[:, low_pos] >> 10)
     ) / TIMESTAMP_RESOLUTION
@@ -68,7 +75,7 @@ def read_a1(filename: str, legacy: bool = False):
     return t, p
 
 
-def read_a2(filename: str, legacy=None):
+def read_a2(filename: str, legacy=None, ignore_rollover=None, **kwargs):
     data = np.genfromtxt(filename, delimiter="\n", dtype="U16")
     data = np.array([int(v, 16) for v in data])
     t = (np.uint64(data >> 10)) / TIMESTAMP_RESOLUTION
@@ -84,24 +91,24 @@ def _consolidate_events(t: list, p: list):
     return np.sort(data)
 
 
-def write_a2(filename: str, t: list, p: list, legacy=None):
+def write_a2(filename: str, t: list, p: list, legacy=None, **kwargs):
     data = _consolidate_events(t, p)
     with open(filename, "w") as f:
         for line in data:
-            f.write(f"{line:016x}\n")
+            f.write(f"{line:016x}\n")  # noqa: E231
 
 
-def write_a0(filename: str, t: list, p: list, legacy=None):
+def write_a0(filename: str, t: list, p: list, legacy=None, **kwargs):
     events = _consolidate_events(t, p)
     data = np.empty((2 * events.size,), dtype=np.uint32)
     data[0::2] = events & 0xFFFFFFFF
     data[1::2] = events >> 32
     with open(filename, "w") as f:
         for line in data:
-            f.write(f"{line:08x}\n")
+            f.write(f"{line:08x}\n")  # noqa: E231
 
 
-def write_a1(filename: str, t: list, p: list, legacy: bool = False):
+def write_a1(filename: str, t: list, p: list, legacy: bool = False, **kwargs):
     events = _consolidate_events(t, p)
     with open(filename, "wb") as f:
         for line in events:

@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
-from fpfind.lib.parse_timestamps import read_a1
+
+try:
+    from fpfind.lib.parse_timestamps import read_a1  # python >= 3.8
+except ImportError:
+    from S15lib.g2lib.parse_timestamps import read_a1  # python < 3.8
 
 # Indicates success import of Cython g2 script
 CFLAG = False

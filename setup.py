@@ -52,9 +52,12 @@ def replace_executable(target, command):
 
 
 def find_executable(command):
+    if command is None:
+        return False
     tokens = shlex.split(command)
     idx = get_executable_index(tokens)
-    return idx is not None
+    if idx is not None:
+        return True
 
 
 def get_compiler(config=sysconfig.get_config_vars(), env={}):
@@ -92,7 +95,7 @@ def get_compiler(config=sysconfig.get_config_vars(), env={}):
     platform_cc = shutil.which("cc")
     cc = config.get("CC", platform_cc)
     ldshared = config.get("LDSHARED", f"{platform_cc} -shared")
-    if not find_executable(cc):  # replace build compiler with platform's
+    if find_executable(cc):  # replace build compiler with platform's
         return (
             replace_executable(platform_cc, cc),
             replace_executable(platform_cc, ldshared),

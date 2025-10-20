@@ -1,6 +1,7 @@
 import os
 import shlex
 import shutil
+import sys
 import sysconfig
 
 import numpy as np
@@ -48,7 +49,10 @@ def replace_executable(target, command):
     idx = get_executable_index(tokens, check_exists=False)
     tokens = list(tokens)  # replace with mutable container
     tokens[idx] = target
-    return shlex.join(tokens)
+    if sys.version_info >= (3, 8):
+        return shlex.join(tokens)
+    else:
+        return " ".join(shlex.quote(token) for token in tokens)
 
 
 def find_executable(command):

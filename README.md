@@ -4,7 +4,7 @@ S15lib is a Python package for controlling [S-Fifteen instruments](https://s-fif
 
 ## Installation
 
-[Python](https://www.python.org) 3.6+ is required.
+[Python](https://www.python.org) 3.7+ is required.
 Install the package directly with
 
 ```
@@ -28,6 +28,10 @@ The library can be uninstalled with,
 ```
 pip uninstall S15lib
 ```
+
+For older versions of Python, see the relevant commit / version to install below:
+
+* Python 3.6: `cf1487991b8f318b27d95ccdd0f5c09fec6b6ec1`
 
 ## Usage
 

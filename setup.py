@@ -7,23 +7,6 @@ import sysconfig
 import numpy as np
 import setuptools
 
-requirements = [
-    "psutil",
-    "pyserial",
-    "numpy",
-    "fpfind; python_version >= '3.8'",  # noqa: E501
-]
-requirements_dev = [
-    "pre-commit",
-    "Cython",
-]
-requirements_apps = [
-    "PyQt5",
-    "Pyqtgraph",
-    "configargparse",
-]
-
-
 # Use C compiler as specified in env, or system's default, for compiling delta.so
 # Necessary on portable Python built with other compilers, e.g. gcc/clang
 #
@@ -114,20 +97,7 @@ if __name__ == "__main__":
     config["CC"], config["LDSHARED"] = get_compiler(config, os.environ)
 
     setuptools.setup(
-        name="S15lib",
-        version="0.2.0",
-        description="S-Fifteen Python Library",
-        url="https://s-fifteen.com/",
-        author="Mathias Seidler;",
-        author_email="",
         license="MIT",
-        packages=setuptools.find_packages(),
-        install_requires=requirements,
-        extras_require={
-            "dev": requirements_dev,
-            "apps": requirements_apps,
-        },
-        python_requires=">=3.6",
         ext_modules=[
             setuptools.Extension(
                 name="S15lib.g2lib.delta",

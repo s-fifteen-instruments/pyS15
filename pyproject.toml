@@ -1,2 +1,40 @@
 [build-system]
 requires = ["setuptools", "wheel", "numpy"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "S15lib"
+version = "0.2.0"
+description = "S-Fifteen Python Library"
+authors = [
+    { name = "Mathias Seidler" },
+]
+maintainers = [
+    { name = "S-Fifteen Instruments" },
+]
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "psutil",
+    "pyserial",
+    "numpy",
+    "fpfind; python_version >= '3.8'",  # noqa: E501
+]
+dynamic = ["license"]  # using legacy setup.py assignment as workaround
+#license = { text = "MIT" }  # syntax for setuptools < 77 (Python <=3.8), Feb 2026 deprecation
+#license = "MIT"  # supported only in setuptools >=77 (Python >=3.9)
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "Cython",
+]
+apps = [
+    "PyQt5",
+    "Pyqtgraph",
+    "configargparse",
+]
+
+[tool.setuptools.packages.find]
+include = ["S15lib*"]
+namespaces = false

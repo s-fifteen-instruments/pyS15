@@ -2,6 +2,8 @@
 S15lib/g2lib/delta*.so
 S15lib/g2lib/delta*.c
 build/
+dist/
+wheelhouse/
 
 # Virtual environments
 venv/

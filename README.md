@@ -29,9 +29,9 @@ The library can be uninstalled with,
 pip uninstall S15lib
 ```
 
-For older versions of Python, see the relevant commit / version to install below:
+For older versions of Python, see the relevant last supported version:
 
-* Python 3.6: `cf1487991b8f318b27d95ccdd0f5c09fec6b6ec1`
+* Python 3.6 @ [v0.2.0](https://github.com/s-fifteen-instruments/pyS15/releases/tag/v0.2.0): `pip install git+https://github.com/s-fifteen-instruments/pyS15.git@v0.2.0`
 
 ## Usage
 

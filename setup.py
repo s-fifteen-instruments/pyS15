@@ -97,7 +97,7 @@ if __name__ == "__main__":
     config["CC"], config["LDSHARED"] = get_compiler(config, os.environ)
 
     setuptools.setup(
-        license="MIT",
+        license="MIT",  # legacy field for Python 3.7
         ext_modules=[
             setuptools.Extension(
                 name="S15lib.g2lib.delta",

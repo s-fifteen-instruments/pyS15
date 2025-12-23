@@ -9,7 +9,8 @@ authors = [
     { name = "Mathias Seidler" },
 ]
 maintainers = [
-    { name = "S-Fifteen Instruments" },
+    { name = "S-Fifteen Instruments", email = "info@s-fifteen.com" },
+    { name = "Justin Peh", email = "pehyuxiang@gmail.com" },
 ]
 readme = "README.md"
 requires-python = ">=3.7"
@@ -22,6 +23,19 @@ dependencies = [
 dynamic = ["license", "version"]  # using legacy setup.py assignment as workaround
 #license = { text = "MIT" }  # syntax for setuptools < 77 (Python <=3.8), Feb 2026 deprecation
 #license = "MIT"  # supported only in setuptools >=77 (Python >=3.9)
+keywords = [
+  "instrumentation",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Physics",
+]
 
 [project.optional-dependencies]
 dev = [

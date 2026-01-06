@@ -1,11 +1,20 @@
 # S-Fifteen Python library
 
-S15lib is a Python package for controlling [S-Fifteen instruments](https://s-fifteen.com/).
+S15lib is a [Python](https://www.python.org) package for controlling [S-Fifteen Instruments](https://s-fifteen.com/) devices.
 
 ## Installation
 
-[Python](https://www.python.org) 3.7+ is required.
-Install the package directly with
+Python 3.7+ is required.
+Install the package directly with:
+
+```
+pip install S15lib
+```
+
+<details>
+<summary>Alternative installation methods</summary>
+
+To install directly from the source:
 
 ```
 # For Linux/MacOS
@@ -15,23 +24,35 @@ pip install git+https://github.com/s-fifteen-instruments/pyS15.git
 pip install git+https://github.com/s-fifteen-instruments/pyS15.git@no_compile
 ```
 
-Alternatively, clone or [download](https://github.com/s-fifteen-instruments/pyS15/archive/refs/heads/master.zip)
-the repository and execute the following
-command from within the project directory.
+or alternatively, clone or [download](https://github.com/s-fifteen-instruments/pyS15/archive/refs/heads/master.zip)
+the repository and install as an editable local library with `pip install -e .` from within the project directory.
+
+</details>
+
+<details>
+<summary>Last supported versions for older Python versions</summary>
+
+| Python | S15lib version | EOL |
+|--------|----------------|-----|
+| 3.6    | [v0.2.0](https://github.com/s-fifteen-instruments/pyS15/releases/tag/v0.2.0) | June 2023 |
+
+For example, to install version `v0.2.0` of the library from source:
 
 ```
-pip install -e .
+pip install git+https://github.com/s-fifteen-instruments/pyS15.git@v0.2.0
 ```
 
-The library can be uninstalled with,
+:warning: Upgrading your version of Python is highly recommended to benefit from bug fixes.
+Consider using a Python manager to install current versions of Python on the same system (to avoid mangling system Python).
+Recommended Python version management tools include [uv](https://docs.astral.sh/uv/) and [pyenv](https://github.com/pyenv/pyenv), e.g.
 
+```powershell
+uv venv --python 3.13
+.venv\Scripts\activate.ps1
+uv pip install S15lib
 ```
-pip uninstall S15lib
-```
 
-For older versions of Python, see the relevant last supported version:
-
-* Python 3.6 @ [v0.2.0](https://github.com/s-fifteen-instruments/pyS15/releases/tag/v0.2.0): `pip install git+https://github.com/s-fifteen-instruments/pyS15.git@v0.2.0`
+</details>
 
 ## Usage
 

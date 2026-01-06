@@ -2,6 +2,15 @@
 
 Instructions below use `uv` as the frontend.
 
+## Versioning
+
+Versioning is automatically handled by `versioningit`, which extracts the version tag information from `git` for use as the S15lib library version.
+Expected syntax for the lightweight git tag is `v[0-9]+\.[0-9]+\.[0-9]+`. For example,
+
+```
+git tag v0.3.0
+git push origin v0.3.0
+```
 
 ## Environment setup
 
@@ -44,19 +53,6 @@ documentation:
 
 Prior to pushing, sign the commits using a registered GPG/SSH key, e.g.
 `git config core.sshCommand "ssh -i ~/.ssh/id_rsa"`
-
-## Pushing changes in delta.pyx
-
-Previous versions of the library required a separate build step for the C-based $g^{(2)}$ code
-in `S15lib/g2lib/delta.pyx`, involving (a) Cython compile from `.pyx` to `.c`, and (b) CC compile into shared library `.so`.
-Step (b) is now automatically performed during package installation.
-
-Step (a) is relatively expensive, and requires the `Cython` package. This should now be performed out-of-band to speed up
-package installation, i.e. changes to the `delta.pyx` source should accompany a recompilation to `delta.c` in the same commit,
-
-```bash
-cython -3 S15lib/g2lib/delta.pyx
-```
 
 ## Documentation
 

@@ -1,0 +1,176 @@
+name: Build wheels
+on:
+  push:
+    tags: [ 'v[0-9]+.[0-9]+.[0-9]+' ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    outputs:
+      SDIST_NAME: ${{ steps.sdist.outputs.SDIST_NAME }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Build sdist
+        id: sdist
+        run: |
+          pipx run build --sdist
+          python3 ci/export_sdist_name.py
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  build-wheels:
+    needs: build-sdist
+    name: Build wheels on ${{ matrix.os }} for ${{ matrix.cibw_archs }}
+    runs-on: ${{ matrix.os }}
+    env:
+      CIBW_BEFORE_BUILD: >-
+        rm -rf {package}/build
+      CIBW_BEFORE_BUILD_WINDOWS: >-
+        pip install delvewheel &&
+        rm -rf {package}/build
+      CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
+        delvewheel repair -w {dest_dir} {wheel}
+      # Request for MSVC compilers instead of MinGW, see: https://github.com/matplotlib/matplotlib/blob/main/.github/workflows/cibuildwheel.yml
+      CIBW_CONFIG_SETTINGS_WINDOWS: >-
+        setup-args="--vsenv"
+        setup-args="-Db_vscrt=mt"
+        setup-args="-Dcpp_link_args=['ucrt.lib','vcruntime.lib','/nodefaultlib:libucrt.lib','/nodefaultlib:libvcruntime.lib']"
+      CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+      CIBW_SKIP: "*-musllinux_aarch64"
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Supported OS architectures: <https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for-public-repositories>
+        include:
+          - os: ubuntu-latest
+            cibw_archs: "x86_64"
+          - os: ubuntu-24.04-arm
+            cibw_archs: "aarch64"
+          - os: windows-latest
+            cibw_archs: "AMD64"
+          - os: windows-11-arm
+            cibw_archs: "ARM64"
+          - os: macos-15-intel
+            cibw_archs: "x86_64"
+          - os: macos-14
+            cibw_archs: "arm64"
+
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        with:
+          pattern: cibw-sdist
+          path: dist/
+
+      # We avoid spinning up too many virtual machines, by specifying each Python version here.
+      # See available builds here: <https://cibuildwheel.pypa.io/en/stable/options/#build-skip>
+      - name: Build wheels for CPython 3.14
+        uses: pypa/cibuildwheel@63fd63b352a9a8bdcc24791c9dbee952ee9a8abc  # v3.3.0
+        with:
+          package-dir: dist/${{ needs.build-sdist.outputs.SDIST_NAME }}
+        env:
+          CIBW_BUILD: "cp314-* cp314t-*"
+          CIBW_ENABLE: "cpython-freethreading cpython-prerelease"
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+
+      - name: Build wheels for CPython 3.13
+        uses: pypa/cibuildwheel@63fd63b352a9a8bdcc24791c9dbee952ee9a8abc  # v3.3.0
+        with:
+          package-dir: dist/${{ needs.build-sdist.outputs.SDIST_NAME }}
+        env:
+          CIBW_BUILD: "cp313-* cp313t-*"
+          CIBW_ENABLE: "cpython-freethreading"
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+
+      - name: Build wheels for CPython 3.12
+        uses: pypa/cibuildwheel@63fd63b352a9a8bdcc24791c9dbee952ee9a8abc  # v3.3.0
+        with:
+          package-dir: dist/${{ needs.build-sdist.outputs.SDIST_NAME }}
+        env:
+          CIBW_BUILD: "cp312-*"
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+
+      - name: Build wheels for CPython 3.11
+        uses: pypa/cibuildwheel@63fd63b352a9a8bdcc24791c9dbee952ee9a8abc  # v3.3.0
+        with:
+          package-dir: dist/${{ needs.build-sdist.outputs.SDIST_NAME }}
+        env:
+          CIBW_BUILD: "cp311-*"
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+
+      - name: Build wheels for CPython 3.10
+        uses: pypa/cibuildwheel@63fd63b352a9a8bdcc24791c9dbee952ee9a8abc  # v3.3.0
+        with:
+          package-dir: dist/${{ needs.build-sdist.outputs.SDIST_NAME }}
+        env:
+          CIBW_BUILD: "cp310-*"
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+        if: matrix.os != 'windows-11-arm'
+
+      - name: Build wheels for CPython 3.9
+        uses: pypa/cibuildwheel@63fd63b352a9a8bdcc24791c9dbee952ee9a8abc  # v3.3.0
+        with:
+          package-dir: dist/${{ needs.build-sdist.outputs.SDIST_NAME }}
+        env:
+          CIBW_BUILD: "cp39-*"
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+        if: matrix.os != 'windows-11-arm'
+
+      - name: Build wheels for CPython 3.8
+        uses: pypa/cibuildwheel@63fd63b352a9a8bdcc24791c9dbee952ee9a8abc  # v3.3.0
+        with:
+          package-dir: dist/${{ needs.build-sdist.outputs.SDIST_NAME }}
+        env:
+          CIBW_BUILD: "cp38-*"
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+        if: matrix.os != 'windows-11-arm'
+
+      # Dropped automated build for Python 3.7:
+      #  - PyPI deviated from specification and started enforcing wheel normalization, see:
+      #    <https://packaging.python.org/en/latest/specifications/binary-distribution-format/#escaping-and-unicode>
+      #  - setuptools ~v68 for Python 3.7 however does not correctly normalize the library name,
+      #    to lowercase capital letters (feature was backported to Python 3.8 but not 3.7), see:
+      #    <https://github.com/pypa/setuptools/issues/4877#issuecomment-2717816710>
+      #  - Note that support for Python 3.7 is only available on cibuildwheel v2.23.3, and with
+      #    build targets of "matrix.os != 'windows-11-arm' && matrix.os != 'macos-14'"
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        with:
+          name: cibw-wheels-${{ runner.os }}-${{ matrix.cibw_archs }}
+          path: ./wheelhouse/*.whl
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Push wheels to PyPI
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/p/s15lib
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # v1.13.0
+        with:
+          verbose: true

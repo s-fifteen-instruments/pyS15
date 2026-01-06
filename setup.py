@@ -6,6 +6,7 @@ import sysconfig
 
 import numpy as np
 import setuptools
+from Cython.Build import cythonize
 
 # Use C compiler as specified in env, or system's default, for compiling delta.so
 # Necessary on portable Python built with other compilers, e.g. gcc/clang
@@ -97,13 +98,16 @@ if __name__ == "__main__":
     config["CC"], config["LDSHARED"] = get_compiler(config, os.environ)
 
     setuptools.setup(
-        license="MIT",
-        ext_modules=[
-            setuptools.Extension(
-                name="S15lib.g2lib.delta",
-                sources=["S15lib/g2lib/delta.c"],
-                include_dirs=[np.get_include()],
-                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-            )
-        ],
+        license="MIT",  # legacy field for Python 3.7
+        ext_modules=cythonize(
+            [
+                setuptools.Extension(
+                    name="S15lib.g2lib.delta",
+                    sources=["S15lib/g2lib/delta.pyx"],
+                    include_dirs=[np.get_include()],
+                    define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+                ),
+            ],
+            language_level=3,
+        ),
     )

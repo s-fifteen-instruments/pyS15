@@ -8,7 +8,7 @@ flowchart TD
     %%Settings accepted are {CLOCK}, {evars}, {ivars}, {auxout}, {auxconfig}
     %% {dacconfig}, {inlevel}, {version}, {dacstatic}, {startaddress}, {inthresh}
     control[CLOCK 100MHz auto
-    ivars 10,2,0,0
+    ivars 10,2,0,120
     auxout nim
     auxconfig normal
     inlevel nim
